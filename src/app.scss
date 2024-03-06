@@ -2,6 +2,7 @@
 @import 'assets/scss/variables.scss';
 @import 'assets/scss/option-groups.scss';
 @import 'assets/scss/buttons-container.scss';
+@import 'assets/scss/scroll-container.scss';
 
 
 html, body {
@@ -60,6 +61,7 @@ body {
     background-color: #fff;
     width: 100%;
     border-radius: 8px;
+    aspect-ratio: 1/1;
     box-shadow: 8px 8px 16px 0px rgba(0,0,0,.16);
 }
 

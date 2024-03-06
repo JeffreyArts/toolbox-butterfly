@@ -1,15 +1,14 @@
 <template>
 
-    <div class="scroll-drop-container">
+    <div class="active-surface-container">
         <header class="title">
             <h1>Active surface</h1>
         </header>
 
         <hr>
         <section class="viewport">
-            <div class="viewport-content" ref="scrollContainer">
-                <div class="scroll-container">
-                    <i class="subject" ref="subject"/>
+            <div class="viewport-content">
+                <div class="scroll-container" ref="scrollContainer">
                     <div 
                         class="block"
                         b-solid="true"
@@ -31,7 +30,7 @@
                 <div class="option-group" name="Options">
                     <div class="option">
                         <label for="inputNumber">
-                            Aantal blokken
+                            # Blocks
                         </label>
                         <input type="number" id="inputNumber" v-model="amountOfBlocks" step="1" min="1" max="50">
                     </div>
@@ -98,55 +97,6 @@ export default defineComponent ({
 
     @import './../assets/scss/variables.scss';
 
-    .scroll-drop-container {
-        .viewport-content {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: $accentColor;
-            font-size: 16vw;
-            aspect-ratio: 1/1;
-            overflow-y: auto;
-            position: relative;
-            background-color: #2a2a2a;
-        }
-    }
-
-    .scroll-container {
-        height: 100%;
-        width: 100%;
-        padding-top: 120px;
-        padding-bottom: 120px;
-
-        .block {
-            width: 80%;
-            height: 500px;
-            display: block;
-            position: relative;
-            background-color: #fff;
-            + .block {
-                margin-top: 80px;
-            }
-
-            &.__isLeft {
-                float: left;
-            }
-            &.__isRight {
-                float: right;
-            }
-            &.__isActive {
-                background-color: $accentColor;
-                color: #fff;
-            }
-        }
-
-        .block-index {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            translate: -50% -50%;
-        }
-    }
     .subject {
         position: absolute;
         left: 25%;
@@ -167,6 +117,16 @@ export default defineComponent ({
             top: -24px;
             background-color: $accentColor;
         }
-
     }
+
+    .scroll-container {
+        padding-top: 120px;
+        padding-bottom: 120px;
+        
+        .block {
+            color: $accentColor;
+            font-size: 16vw;
+        }
+    }
+
 </style>
