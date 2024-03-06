@@ -1,6 +1,7 @@
 import { createWebHistory, createRouter } from "vue-router"
 import Home from "./home/home.vue"
 import ActiveSurface from "./active-surface.vue"
+import PhysicsDiv from "./physics-div.vue"
 import OptionsOverview from "./options-overview/options-overview.vue"
 
 const routes = [
@@ -11,13 +12,18 @@ const routes = [
     },
     {
         path: "/active-surface",
-        name: "Active",
+        name: "Active surface",
         component: ActiveSurface,
     },
     {
         path: "/options-overview",
         name: "Options overview",
         component: OptionsOverview,
+    },
+    {
+        path: "/physics-div",
+        name: "Physics div",
+        component: PhysicsDiv,
     }
 ]
 
