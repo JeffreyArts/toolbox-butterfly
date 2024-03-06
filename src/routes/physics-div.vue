@@ -9,7 +9,7 @@
         <section class="viewport">
             <div class="viewport-content" ref="matterContainer" ratio="1x1">
                 <div class="scroll-container">
-                    <i class="ball" v-for="(number,k) in amountOfBalls" :key="k" />
+                    <i class="ball" v-for="(number,k) in options.amountOfBalls" :key="k" />
                 </div>
             </div>
         </section>
@@ -17,12 +17,87 @@
         <aside class="sidebar">
             <div class="options">
 
-                <div class="option-group" name="Options">
+                <div class="option-group" name="General">
                     <div class="option">
-                        <label for="inputNumber">
+                        <label for="amountOfBalls">
                             # Balls
                         </label>
-                        <input type="number" id="inputNumber" v-model="amountOfBalls" step="1" min="1" max="64">
+                        <input type="number" id="amountOfBalls" v-model="options.amountOfBalls" step="1" min="1" max="64">
+                    </div>
+                </div>
+                <div class="option-group" name="Ball options">
+                    <div class="option">
+                        <label for="density">
+                            Density 
+                            <a href="https://brm.io/matter-js/docs/classes/Body.html#property_density" target="_blank" class="info">
+                                <span class="info-icon">?</span>
+                                <span class="info-details">
+                                    A Number that defines the density of the body (mass per unit area). <br>
+                                    <br>
+                                    Mass will also be updated when set. <br>
+                                    (click for more info)
+                                </span>
+                            </a>
+                        </label>
+                        <input type="number" id="density" v-model="options.density" step="0.001" min="0" max="1">
+                    </div>
+                    <div class="option">
+                        <label for="friction">
+                            Friction
+                            <a href="https://brm.io/matter-js/docs/classes/Body.html#property_friction" target="_blank" class="info">
+                                <span class="info-icon">?</span>
+                                <span class="info-details">
+                                    A Number that defines the friction of the body. The value is always positive and is in the range (0, 1). A value of 0 means that the body may slide indefinitely. A value of 1 means the body may come to a stop almost instantly after a force is applied. <br>
+                                    <br>
+                                    (click for more info)
+                                </span>
+                            </a>
+                        </label>
+                        <input type="number" id="friction" v-model="options.friction" step="0.01" min="0" max="1">
+                    </div>
+                    <div class="option">
+                        <label for="mass">
+                            Mass
+                            <a href="https://brm.io/matter-js/docs/classes/Body.html#property_mass" target="_blank" class="info">
+                                <span class="info-icon">?</span>
+                                <span class="info-details">
+                                    A Number that defines the mass of the body.<br>
+                                    <br>
+                                    Density will also be updated when set.
+                                    <br>
+                                    (click for more info)
+                                </span>
+                            </a>
+                        </label>
+                        <input type="number" id="mass" v-model="options.mass" step=".005" min="0.01" max="64">
+                    </div>
+                    <div class="option">
+                        <label for="restitution">
+                            Restitution
+                            <a href="https://brm.io/matter-js/docs/classes/Body.html#property_restitution" target="_blank" class="info">
+                                <span class="info-icon">?</span>
+                                <span class="info-details">
+                                    A Number that defines the restitution (elasticity) of the body. The value is always positive and is in the range (0, 1). A value of 0 means collisions may be perfectly inelastic and no bouncing may occur. A value of 0.8 means the body may bounce back with approximately 80% of its kinetic energy.<br>
+                                    <br>
+                                    (click for more info)
+                                </span>
+                            </a>
+                        </label>
+                        <input type="number" id="restitution" v-model="options.restitution" step=".01" min="0" max="4">
+                    </div>
+                    <div class="option">
+                        <label for="slop">
+                            Slop
+                            <a href="https://brm.io/matter-js/docs/classes/Body.html#property_slop" target="_blank" class="info">
+                                <span class="info-icon">?</span>
+                                <span class="info-details">
+                                    A Number that specifies a thin boundary around the body where it is allowed to slightly sink into other bodies.<br>
+                                    <br>
+                                    (click for more info)
+                                </span>
+                            </a>
+                        </label>
+                        <input type="number" id="slop" v-model="options.slop" step=".001" min="0" max="16">
                     </div>
                 </div>
 
@@ -43,44 +118,185 @@ export default defineComponent ({
     props: [],
     data() {
         return {
-            amountOfBalls: 1,
             mWorld: null as null | Matter.World,
             mEngine: null as null | Matter.Engine,
             mRunner: null as null | Matter.Runner,
             mObject: [] as Array<Matter.Body>,
-            animation: true
+            animation: true,
+            options: {
+                density: 0.001,
+                friction: 0.1,
+                amountOfBalls: 1,
+                mass: 1,
+                slop: 0.05,
+                restitution: 0
+            }
         }
     },
     watch: {
-        amountOfBalls: {
+        "options.amountOfBalls": {
             handler(current, prev) {
-                const ballsEl = this.$el.querySelectorAll(".ball")
+                if (this.options.amountOfBalls == 0) {
+                    this.options.amountOfBalls = 1
+                    return
+                }
+                
+                if (this.options.amountOfBalls > 96) {
+                    this.options.amountOfBalls = 96
+                    return
+                }
+
                 const el = this.$refs["matterContainer"] as HTMLElement
                 if (!this.mWorld || !el) {
                     return
                 }
 
+                let balls = _.filter(this.mWorld.bodies, body => {
+                    return body.label.startsWith("Circle")
+                })
+
                 if (current > prev) {
                     // Add ball
-                    const ball = ballsEl[ballsEl.length-1]
-                    Matter.World.add(this.mWorld, Matter.Bodies.circle(
-                        el.clientWidth/2,
-                        16,
-                        ball.clientWidth/2, // Radius
-                    ))
+                    setTimeout(() => {
+
+                        const ballsEl = this.$el.querySelectorAll(".ball")
+                        const ball = ballsEl[ballsEl.length-1]
+                        const newBalls = ballsEl.length - balls.length
+                        if (!this.mWorld) {
+                            return
+                        }
+                        for (let index = 0; index < newBalls; index++) {
+                            Matter.World.add(this.mWorld, Matter.Bodies.circle(
+                                el.clientWidth/2,
+                                16,
+                                ball.clientWidth/2, // Radius
+                            ))
+                        }
+                    })
                         
                 } else {
                     // Remove ball
-                    const balls = _.filter(this.mWorld.bodies, body => {
-                        return body.label.startsWith("Circle")
-                    })
+                    setTimeout(() => {
+                        const ballsEl = this.$el.querySelectorAll(".ball")
                     
-                    // This prevents from balls being removed twice, cause they could also have been removed already by falling off-screen
-                    if (ballsEl.length == balls.length) {
-                        Matter.World.remove(this.mWorld, balls[0])
-                    }
+                        // This prevents from balls being removed twice, cause they could also have been removed already by falling off-screen
+                        while (ballsEl.length != balls.length) {
+                            if (!this.mWorld) {
+                                return
+                            }
+
+                            Matter.World.remove(this.mWorld, balls[0])
+                            balls = _.filter(this.mWorld.bodies, body => {
+                                return body.label.startsWith("Circle")
+                            })
+                            console.log("asdf")
+                        }
+                    })
                 }
             },
+        },
+        "options.density": {
+            handler(current, prev) {
+                if (!this.mWorld) {
+                    return
+                }
+                if (this.options.density == 0) {
+                    this.options.density = 0.001
+                    return
+                }
+
+                const balls = _.filter(this.mWorld.bodies, body => {
+                    return body.label.startsWith("Circle")
+                })
+
+                balls.forEach(ball => {
+                    Matter.Body.setDensity(ball, this.options.density)
+                })
+
+            }
+        },
+        "options.friction": {
+            handler(current, prev) {
+                if (!this.mWorld) {
+                    return
+                }
+                if (this.options.friction < 0) {
+                    this.options.friction = 0.001
+                    return
+                }
+
+                const balls = _.filter(this.mWorld.bodies, body => {
+                    return body.label.startsWith("Circle")
+                })
+
+                balls.forEach(ball => {
+                    ball.friction = this.options.friction
+                })
+
+            }
+        },
+        "options.mass": {
+            handler(current, prev) {
+                if (!this.mWorld) {
+                    return
+                }
+                if (this.options.mass == 0) {
+                    this.options.mass = 0.001
+                    return
+                }
+
+                const balls = _.filter(this.mWorld.bodies, body => {
+                    return body.label.startsWith("Circle")
+                })
+
+                balls.forEach(ball => {
+                    Matter.Body.setMass(ball, this.options.mass)
+                })
+
+            }
+        },
+        "options.slop": {
+            handler(current, prev) {
+                if (!this.mWorld) {
+                    return
+                }
+                if (this.options.slop > 16) {
+                    this.options.slop = 16
+                    return
+                }
+
+                const balls = _.filter(this.mWorld.bodies, body => {
+                    return body.label.startsWith("Circle")
+                })
+
+                balls.forEach(ball => {
+                    ball.slop =  this.options.slop
+                })
+
+            }
+        },
+        "options.restitution": {
+            handler(current, prev) {
+                if (!this.mWorld) {
+                    return
+                }
+                if (this.options.restitution < 0) {
+                    this.options.restitution = 0
+                    return
+                }
+                if (this.options.restitution > 4) {
+                    this.options.restitution = 4
+                    return
+                }
+
+                const balls = _.filter(this.mWorld.bodies, body => {
+                    return body.label.startsWith("Circle")
+                })
+
+                balls.forEach(ball => {
+                    ball.restitution =  this.options.restitution
+                })
+            }
         }
     },
     mounted() {
@@ -150,7 +366,7 @@ export default defineComponent ({
 
                 if (ballBody.position.y > el.clientHeight) {
                     Matter.World.remove(this.mWorld, ballBody)
-                    this.amountOfBalls--
+                    this.options.amountOfBalls--
                 }
                 
             })
