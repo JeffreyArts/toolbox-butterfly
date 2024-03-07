@@ -9,7 +9,7 @@
         <section class="viewport">
             <div class="viewport-content" ref="matterContainer" ratio="1x1">
                 <div class="scroll-container">
-                    <i class="ball" v-for="(number,k) in options.amountOfBalls" :key="k" />
+                    <i class="ball" :style="`width:${options.ballSize}px; height:${options.ballSize}px`" v-for="(number,k) in options.amountOfBalls" :key="k" />
                 </div>
             </div>
         </section>
@@ -23,6 +23,12 @@
                             # Balls
                         </label>
                         <input type="number" id="amountOfBalls" v-model="options.amountOfBalls" step="1" min="1" max="64">
+                    </div>
+                    <div class="option">
+                        <label for="ballSize">
+                            Ball size
+                        </label>
+                        <input type="number" id="ballSize" v-model="options.ballSize" step="1" min="1" max="256">
                     </div>
                 </div>
                 <div class="option-group" name="Ball options">
@@ -124,9 +130,10 @@ export default defineComponent ({
             mObject: [] as Array<Matter.Body>,
             animation: true,
             options: {
+                amountOfBalls: 1,
+                ballSize: 32,
                 density: 0.001,
                 friction: 0.1,
-                amountOfBalls: 1,
                 mass: 1,
                 slop: 0.05,
                 restitution: 0
@@ -170,6 +177,13 @@ export default defineComponent ({
                                 el.clientWidth/2,
                                 16,
                                 ball.clientWidth/2, // Radius
+                                _.pick(this.options, [
+                                    "friction",
+                                    "mass",
+                                    "slop",
+                                    "density",
+                                    "restitution",
+                                ])
                             ))
                         }
                     })
@@ -194,6 +208,31 @@ export default defineComponent ({
                     })
                 }
             },
+        },
+        "options.ballSize": {
+            handler(current, prev) {
+                if (!this.mWorld) {
+                    return
+                }
+                if (this.options.density == 0) {
+                    this.options.density = 0.001
+                    return
+                }
+
+                const balls = _.filter(this.mWorld.bodies, body => {
+                    return body.label.startsWith("Circle")
+                })
+
+                balls.forEach(ball => {
+                    if (!this.mWorld) {
+                        return
+                    }
+                    const newBall = _.cloneDeep(ball)
+                    Matter.World.remove(this.mWorld, ball)
+                    Matter.World.add(this.mWorld, newBall)
+                })
+
+            }
         },
         "options.density": {
             handler(current, prev) {
@@ -300,8 +339,16 @@ export default defineComponent ({
         }
     },
     mounted() {
-        window.dispatchEvent(new Event("resize"))
         this.initMatterJS()
+    },
+    unmounted() {
+        this.mWorld = null
+        if (this.mRunner) {
+            Matter.Runner.stop(this.mRunner)
+        }
+        if (this.mEngine) {
+            Matter.Engine.clear(this.mEngine)
+        }
     },
     methods: {
         initMatterJS() {
@@ -318,7 +365,14 @@ export default defineComponent ({
                 balls.push(Matter.Bodies.circle(
                     ball.offsetLeft,
                     ball.offsetTop,
-                    ball.clientWidth/2, // Radius
+                    this.options.ballSize/2, // Radius
+                    _.pick(this.options, [
+                        "friction",
+                        "mass",
+                        "slop",
+                        "density",
+                        "restitution",
+                    ])
                 ))
             })
             
@@ -336,9 +390,9 @@ export default defineComponent ({
 
             // run the engine
             Matter.Runner.run(this.mRunner, this.mEngine)
-            this.animationUpdate()
+            this.render()
         },
-        animationUpdate() {
+        render() {
             if (!this.mWorld) {
                 return
             }
@@ -371,7 +425,7 @@ export default defineComponent ({
                 
             })
 
-            requestAnimationFrame(this.animationUpdate)
+            requestAnimationFrame(this.render)
         }
     }
 })
