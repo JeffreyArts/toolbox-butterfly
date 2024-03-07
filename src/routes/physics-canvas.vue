@@ -22,7 +22,7 @@
                         <label for="amountOfBalls">
                             # Balls
                         </label>
-                        <input type="number" id="amountOfBalls" v-model="options.amountOfBalls" step="1" min="1" max="64">
+                        <input type="number" id="amountOfBalls" v-model="options.amountOfBalls" step="1" min="1" max="96">
                     </div>
                     <div class="option">
                         <label for="ballSize">
@@ -119,6 +119,7 @@
 import {defineComponent} from "vue"
 import Matter from "matter-js"
 import _ from "lodash"
+import StatsJS from "stats.js"
     
 export default defineComponent ({ 
     props: [],
@@ -128,6 +129,7 @@ export default defineComponent ({
             mEngine: null as null | Matter.Engine,
             mRunner: null as null | Matter.Runner,
             mObject: [] as Array<Matter.Body>,
+            stats: null as null | Stats,    
             animation: true,
             options: {
                 density: 0.001,
@@ -141,6 +143,12 @@ export default defineComponent ({
         }
     },
     watch: {
+        "options": {
+            handler(){
+                localStorage.setItem("options", JSON.stringify(this.options))
+            },
+            deep: true
+        },
         "options.amountOfBalls": {
             handler(current, prev) {
                 if (this.options.amountOfBalls == 0) {
@@ -329,10 +337,15 @@ export default defineComponent ({
         }
     },
     mounted() {
+        this.loadOptions()
         this.initMatterJS()
+        const el = this.$el.querySelector(".scroll-container")
+        this.displayFPS(el)
     },
     unmounted() {
         this.mWorld = null
+        this.stats = null
+        
         if (this.mRunner) {
             Matter.Runner.stop(this.mRunner)
         }
@@ -341,6 +354,13 @@ export default defineComponent ({
         }
     },
     methods: {
+        loadOptions() {
+            let options = this.options
+            const optionsString = localStorage.getItem("options")
+            if (optionsString) {
+                this.options = JSON.parse(optionsString)
+            }
+        },
         initMatterJS() {
             const el = this.$refs["matterContainer"] as HTMLElement
             if (!el) {
@@ -382,6 +402,24 @@ export default defineComponent ({
             // run the engine
             Matter.Runner.run(this.mRunner, this.mEngine)
             this.render()
+        },
+        displayFPS(targetEl: HTMLElement) {
+            this.stats = new StatsJS()
+            this.stats.showPanel( 0 ) // 0: fps, 1: ms, 2: mb, 3+: custom
+            this.stats.update() // 0: fps, 1: ms, 2: mb, 3+: custom
+            targetEl.appendChild( this.stats.dom )
+            requestAnimationFrame( this.updateFPS )    
+            
+        },
+        updateFPS () {
+            if (!this.stats) {
+                return
+            }
+
+            this.stats.begin()
+            this.stats.end()
+
+            requestAnimationFrame( this.updateFPS )
         },
         render() {
             if (!this.mWorld) {

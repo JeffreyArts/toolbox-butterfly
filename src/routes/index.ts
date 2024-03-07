@@ -23,12 +23,12 @@ const routes = [
     },
     {
         path: "/physics-div",
-        name: "Physics <div>",
+        name: "Physics <div> position",
         component: PhysicsDiv,
     },
     {
         path: "/physics-canvas",
-        name: "Physics canvas",
+        name: "Physics Canvas API",
         component: PhysicsCanvas,
     }
 ]
