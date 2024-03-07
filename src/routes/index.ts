@@ -2,6 +2,7 @@ import { createWebHistory, createRouter } from "vue-router"
 import Home from "./home/home.vue"
 import ActiveSurface from "./active-surface.vue"
 import PhysicsDiv from "./physics-div.vue"
+import PhysicsDivTranslate from "./physics-div-translate.vue"
 import PhysicsCanvas from "./physics-canvas.vue"
 import OptionsOverview from "./options-overview/options-overview.vue"
 
@@ -22,9 +23,14 @@ const routes = [
         component: OptionsOverview,
     },
     {
-        path: "/physics-div",
+        path: "/physics-div-position",
         name: "Physics <div> position",
         component: PhysicsDiv,
+    },
+    {
+        path: "/physics-div-translate",
+        name: "Physics <div> translate",
+        component: PhysicsDivTranslate,
     },
     {
         path: "/physics-canvas",
