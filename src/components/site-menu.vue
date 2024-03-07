@@ -40,13 +40,18 @@ export default defineComponent ({
     },
     mounted() {
         
-        console.log(this.$router.currentRoute)
         _.each(this.$router.getRoutes(), (route: RouteRecord) :void => {
             if (route.name != "Home") {
                 this.routes.push(route)
             }
         })
         
+        if (localStorage.getItem("siteMenuOpen") === "1") {
+            this.isOpen = false 
+        } else {
+            this.isOpen = true
+        }
+        this.toggleMenu()
         document.addEventListener("mousemove", this.displayToggle)
     },
     unmounted() {
@@ -72,6 +77,7 @@ export default defineComponent ({
                     window.dispatchEvent(new Event("resize"))
                 },160)
             }
+            localStorage.setItem("siteMenuOpen", this.isOpen ? "1" : "0")
         },
         displayToggle(event: MouseEvent) :void {
             var width = this.$el.querySelector(".site-menu").clientWidth
