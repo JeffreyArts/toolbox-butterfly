@@ -165,7 +165,7 @@ export default defineComponent ({
                 if (current > prev) {
                     // Add ball
                     const newBalls = this.options.amountOfBalls - balls.length
-                    console.log(newBalls)
+
                     for (let index = 0; index < newBalls; index++) {
                         Matter.World.add(this.mWorld, Matter.Bodies.circle(
                             el.clientWidth/2,
@@ -385,8 +385,6 @@ export default defineComponent ({
         },
         render() {
             if (!this.mWorld) {
-
-                console.log("Kill render")
                 return
             }
 
@@ -427,27 +425,6 @@ export default defineComponent ({
                     this.options.amountOfBalls--
                 }
             })
-            // context.stroke(); 
-            // context.moveTo(vertices[0].x, vertices[0].y);
-                
-            
-            // this.$el.querySelectorAll(".ball").forEach((ball, index) => {
-            //     const ballEl = ball as HTMLElement
-            //     const ballBody = balls[index]
-            //     // console.log(index, "ball length", balls.length)
-            //     if (!ballBody || !this.mWorld) {
-            //         return
-            //     }
-
-            //     ballEl.style.left = `${ballBody.position.x}px`
-            //     ballEl.style.top = `${ballBody.position.y}px`
-
-            //     if (ballBody.position.y > el.clientHeight) {
-            //         Matter.World.remove(this.mWorld, ballBody)
-            //         this.options.amountOfBalls--
-            //     }
-                
-            // })
 
             requestAnimationFrame(this.render)
         }

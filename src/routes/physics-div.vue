@@ -203,7 +203,6 @@ export default defineComponent ({
                             balls = _.filter(this.mWorld.bodies, body => {
                                 return body.label.startsWith("Circle")
                             })
-                            console.log("asdf")
                         }
                     })
                 }
