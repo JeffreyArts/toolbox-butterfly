@@ -2,6 +2,7 @@ import { createWebHistory, createRouter } from "vue-router"
 import Home from "./home/home.vue"
 import ActiveSurface from "./active-surface.vue"
 import PhysicsDiv from "./physics-div.vue"
+import PhysicsCanvas from "./physics-canvas.vue"
 import OptionsOverview from "./options-overview/options-overview.vue"
 
 const routes = [
@@ -22,8 +23,13 @@ const routes = [
     },
     {
         path: "/physics-div",
-        name: "Physics div",
+        name: "Physics <div>",
         component: PhysicsDiv,
+    },
+    {
+        path: "/physics-canvas",
+        name: "Physics canvas",
+        component: PhysicsCanvas,
     }
 ]
 
