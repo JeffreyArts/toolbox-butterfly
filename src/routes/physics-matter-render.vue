@@ -2,14 +2,14 @@
 
     <div class="options-overview">
         <header class="title">
-            <h1>Physics &lt;div&gt; Position </h1>
+            <h1>Physics Matter-JS Render</h1>
         </header>
 
         <hr>
         <section class="viewport">
             <div class="viewport-content" ref="matterContainer" ratio="1x1">
                 <div class="scroll-container">
-                    <i class="ball" :style="`width:${options.ballSize}px; height:${options.ballSize}px; margin-top:-${options.ballSize / 2}px`" v-for="(number,k) in options.amountOfBalls" :key="k" />
+                    <div class="render-canvas" ref="renderCanvas" />
                 </div>
             </div>
         </section>
@@ -129,13 +129,13 @@ export default defineComponent ({
             mEngine: null as null | Matter.Engine,
             mRunner: null as null | Matter.Runner,
             mObject: [] as Array<Matter.Body>,
-            stats: null as null | Stats,
+            stats: null as null | Stats,    
             animation: true,
             options: {
-                amountOfBalls: 1,
-                ballSize: 32,
                 density: 0.001,
                 friction: 0.1,
+                amountOfBalls: 1,
+                ballSize: 32,
                 mass: 1,
                 slop: 0.05,
                 restitution: 0
@@ -158,7 +158,7 @@ export default defineComponent ({
                 
                 if (this.options.amountOfBalls > 96) {
                     this.options.amountOfBalls = 96
-                    return
+                    // return
                 }
 
                 const el = this.$refs["matterContainer"] as HTMLElement
@@ -172,47 +172,38 @@ export default defineComponent ({
 
                 if (current > prev) {
                     // Add ball
-                    setTimeout(() => {
+                    const newBalls = this.options.amountOfBalls - balls.length
 
-                        const ballsEl = this.$el.querySelectorAll(".ball")
-                        const ball = ballsEl[ballsEl.length-1]
-                        const newBalls = ballsEl.length - balls.length
-                        if (!this.mWorld) {
-                            return
-                        }
-                        for (let index = 0; index < newBalls; index++) {
-                            Matter.World.add(this.mWorld, Matter.Bodies.circle(
-                                el.clientWidth/2,
-                                16,
-                                ball.clientWidth/2, // Radius
-                                _.pick(this.options, [
-                                    "friction",
-                                    "mass",
-                                    "slop",
-                                    "density",
-                                    "restitution",
-                                ])
-                            ))
-                        }
-                    })
+                    for (let index = 0; index < newBalls; index++) {
+                        Matter.World.add(this.mWorld, Matter.Bodies.circle(
+                            el.clientWidth/2,
+                            16,
+                            this.options.ballSize/2, // Radius,
+                            _.pick(this.options, [
+                                "friction",
+                                "mass",
+                                "slop",
+                                "density",
+                                "restitution",
+                            ])
+                        ))
+                    }
                         
                 } else {
                     // Remove ball
-                    setTimeout(() => {
-                        const ballsEl = this.$el.querySelectorAll(".ball")
-                    
-                        // This prevents from balls being removed twice, cause they could also have been removed already by falling off-screen
-                        while (ballsEl.length != balls.length) {
-                            if (!this.mWorld) {
-                                return
-                            }
-
-                            Matter.World.remove(this.mWorld, balls[0])
-                            balls = _.filter(this.mWorld.bodies, body => {
-                                return body.label.startsWith("Circle")
-                            })
+                    // const ballsEl = this.$el.querySelectorAll(".ball")
+                
+                    // This prevents from balls being removed twice, cause they could also have been removed already by falling off-screen
+                    while (balls.length > this.options.amountOfBalls) {
+                        if (!this.mWorld) {
+                            return
                         }
-                    })
+
+                        Matter.World.remove(this.mWorld, balls[0])
+                        balls = _.filter(this.mWorld.bodies, body => {
+                            return body.label.startsWith("Circle")
+                        })
+                    }
                 }
             },
         },
@@ -354,7 +345,7 @@ export default defineComponent ({
     unmounted() {
         this.mWorld = null
         this.stats = null
-
+        
         if (this.mRunner) {
             Matter.Runner.stop(this.mRunner)
         }
@@ -372,19 +363,24 @@ export default defineComponent ({
         },
         initMatterJS() {
             const el = this.$refs["matterContainer"] as HTMLElement
+            const canvasEl = this.$refs["renderCanvas"] as HTMLCanvasElement
             if (!el) {
                 throw new Error("matterContainer ref can not be found")
             }
+            if (!canvasEl) {
+                throw new Error("renderCanvas ref can not be found")
+            }
 
             // create an engine
-            var engine = Matter.Engine.create()
+            const engine = Matter.Engine.create()
+
             const balls = [] as Array<Matter.Body>
                 
-            this.$el.querySelectorAll(".ball").forEach((ball: HTMLElement) => {
+            for (let index = 0; index < this.options.amountOfBalls; index++) {
                 balls.push(Matter.Bodies.circle(
-                    ball.offsetLeft,
-                    ball.offsetTop,
-                    this.options.ballSize/2, // Radius
+                    el.clientWidth/2,
+                    16,
+                    this.options.ballSize/2, // Radius,
                     _.pick(this.options, [
                         "friction",
                         "mass",
@@ -393,23 +389,27 @@ export default defineComponent ({
                         "restitution",
                     ])
                 ))
-            })
+            }
             
             // create ground
-            var ground = Matter.Bodies.rectangle(el.clientWidth/2, el.clientHeight-16, el.clientWidth, 16, { isStatic: true })
+            const ground = Matter.Bodies.rectangle(el.clientWidth/2, el.clientHeight-16, el.clientWidth, 16, { isStatic: true })
             
             // add all of the bodies to the world
             Matter.Composite.add(engine.world, [...balls, ground])
             // create runner
-            var runner = Matter.Runner.create()
+            const render = Matter.Render.create({
+                element: canvasEl,
+                engine: engine
+            })
+            const runner = Matter.Runner.create()
 
             this.mWorld = engine.world
             this.mRunner = runner
             this.mEngine = engine
-
+            Matter.Render.run(render)
             // run the engine
             Matter.Runner.run(this.mRunner, this.mEngine)
-            this.render()
+            this.renderLoop()
         },
         displayFPS(targetEl: HTMLElement) {
             this.stats = new StatsJS()
@@ -429,40 +429,28 @@ export default defineComponent ({
 
             requestAnimationFrame( this.updateFPS )
         },
-        render() {
+        renderLoop() {
             if (!this.mWorld) {
                 return
             }
 
+            const el = this.$refs["matterContainer"] as HTMLElement
             const balls = _.filter(this.mWorld.bodies, body => {
                 return body.label.startsWith("Circle")
             })
 
-            const el = this.$refs["matterContainer"] as HTMLElement
-            if (!el) {
-                throw new Error("matterContainer ref can not be found")
-            }
-
-            
-            this.$el.querySelectorAll(".ball").forEach((ball, index) => {
-                const ballEl = ball as HTMLElement
-                const ballBody = balls[index]
-                // console.log(index, "ball length", balls.length)
-                if (!ballBody || !this.mWorld) {
+            balls.forEach((ball) => {
+                if (!this.mWorld) {
                     return
                 }
 
-                ballEl.style.left = `${ballBody.position.x}px`
-                ballEl.style.top = `${ballBody.position.y}px`
-
-                if (ballBody.position.y > el.clientHeight) {
-                    Matter.World.remove(this.mWorld, ballBody)
+                if (ball.position.y > el.clientHeight) {
+                    Matter.World.remove(this.mWorld, ball)
                     this.options.amountOfBalls--
                 }
-                
             })
 
-            requestAnimationFrame(this.render)
+            requestAnimationFrame(this.renderLoop)
         }
     }
 })
@@ -483,5 +471,9 @@ export default defineComponent ({
     }
     .scroll-container {
         overflow: hidden;
+    }
+    .render-canvas {
+        width: 100%;
+        height: 100%;
     }
 </style>

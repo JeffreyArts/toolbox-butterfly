@@ -4,6 +4,7 @@ import ActiveSurface from "./active-surface.vue"
 import PhysicsDiv from "./physics-div.vue"
 import PhysicsDivTranslate from "./physics-div-translate.vue"
 import PhysicsCanvas from "./physics-canvas.vue"
+import PhysicsMatterRender from "./physics-matter-render.vue"
 import OptionsOverview from "./options-overview/options-overview.vue"
 import svgForeignObject from "./svg-foreign-object.vue"
 
@@ -37,6 +38,11 @@ const routes = [
         path: "/physics-canvas",
         name: "Physics Canvas API",
         component: PhysicsCanvas,
+    },
+    {
+        path: "/physics-matterjs-render",
+        name: "Physics Matter-JS Render",
+        component: PhysicsMatterRender,
     },
     {
         path: "/svg-foreign-object",

@@ -479,6 +479,7 @@ export default defineComponent ({
         height: 32px;
         left: calc(50% - 16px);
         border-radius: 100%;
+        translate: -50% -50%;
         display: block;
         background-color: #fff;
         position: absolute;

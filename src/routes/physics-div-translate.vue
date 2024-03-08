@@ -382,7 +382,7 @@ export default defineComponent ({
                 
             this.$el.querySelectorAll(".ball").forEach((ball: HTMLElement) => {
                 balls.push(Matter.Bodies.circle(
-                    ball.offsetLeft,
+                    el.clientWidth/2,
                     ball.offsetTop,
                     this.options.ballSize/2, // Radius
                     _.pick(this.options, [
@@ -452,7 +452,7 @@ export default defineComponent ({
                     return
                 }
 
-                ballEl.style.translate = `${ballBody.position.x}px ${ballBody.position.y}px`
+                ballEl.style.translate = `${ballBody.position.x - this.options.ballSize / 2 }px ${ballBody.position.y - this.options.ballSize / 2}px`
 
                 if (ballBody.position.y > el.clientHeight) {
                     Matter.World.remove(this.mWorld, ballBody)
