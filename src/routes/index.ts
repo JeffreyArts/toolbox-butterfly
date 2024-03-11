@@ -5,6 +5,7 @@ import PhysicsDiv from "./physics-div.vue"
 import PhysicsDivTranslate from "./physics-div-translate.vue"
 import PhysicsCanvas from "./physics-canvas.vue"
 import PhysicsMatterRender from "./physics-matter-render.vue"
+import PhysicsMatterPaper from "./physics-matter-paper.vue"
 import OptionsOverview from "./options-overview/options-overview.vue"
 import svgForeignObject from "./svg-foreign-object.vue"
 
@@ -43,6 +44,11 @@ const routes = [
         path: "/physics-matterjs-render",
         name: "Physics Matter-JS Render",
         component: PhysicsMatterRender,
+    },
+    {
+        path: "/physics-matterjs-paperjs",
+        name: "Physics Matter-JS PaperJS",
+        component: PhysicsMatterPaper,
     },
     {
         path: "/svg-foreign-object",
