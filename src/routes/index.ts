@@ -1,7 +1,7 @@
 import { createWebHistory, createRouter } from "vue-router"
 import Home from "./home/home.vue"
 import ActiveSurface from "./active-surface.vue"
-import PaperSmooth from "./paper-smooth.vue"
+import PaperBlobSmooth from "./paper-blob-smooth.vue"
 import PhysicsDiv from "./physics-div.vue"
 import PhysicsDivTranslate from "./physics-div-translate.vue"
 import PhysicsCanvas from "./physics-canvas.vue"
@@ -52,9 +52,9 @@ const routes = [
         component: PhysicsMatterPaper,
     },
     {
-        path: "/paperjs-smooth",
-        name: "PaperJS Smooth",
-        component: PaperSmooth,
+        path: "/paperjs-blob-smooth",
+        name: "PaperJS Blob (smooth)",
+        component: PaperBlobSmooth,
     },
     {
         path: "/svg-foreign-object",

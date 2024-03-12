@@ -2,7 +2,7 @@
 
     <div class="options-overview">
         <header class="title">
-            <h1>Paper-JS - Smooth</h1>
+            <h1>Paper-JS - Blob smooth</h1>
         </header>
 
         <hr>
