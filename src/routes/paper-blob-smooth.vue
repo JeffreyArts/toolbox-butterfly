@@ -292,14 +292,13 @@ export default defineComponent ({
             this.removeBlob()
 
             const center = {x: el.clientWidth/2, y: el.clientHeight/2}
-            
 
             const staticRadius = Math.min(el.clientHeight/2, el.clientWidth/2) - offset
             let radius = Math.min(el.clientHeight/2, el.clientWidth/2) - offset
             let prev = null
             let first = null
 
-            const centerCircle = Matter.Bodies.circle( center.x, center.y, this.options.size, {
+            const centerCircle = Matter.Bodies.circle( center.x, center.y, this.options.size*.9, {
                 label: "centerPoint",
                 isStatic: true
             })
@@ -443,6 +442,10 @@ export default defineComponent ({
                     }
                 }
             })
+
+            if (this.options.smooth && this.imgBlob.paperPath) {
+                this.imgBlob.paperPath.smooth()
+            }
             // _.each(this.imgBlob.matterCircle, segment => {
             //     console.log(segment.point)
             // })
