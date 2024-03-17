@@ -1,7 +1,9 @@
 import { createWebHistory, createRouter } from "vue-router"
 import Home from "./home/home.vue"
 import ActiveSurface from "./active-surface.vue"
+import ActiveSurfaceCatterpillar from "./active-surface-catterpillar.vue"
 import PaperBlobSmooth from "./paper-blob-smooth.vue"
+import CatterpillarFalling from "./catterpillar-falling.vue"
 import PhysicsDiv from "./physics-div.vue"
 import PhysicsDivTranslate from "./physics-div-translate.vue"
 import PhysicsCanvas from "./physics-canvas.vue"
@@ -22,9 +24,14 @@ const routes = [
         component: ActiveSurface,
     },
     {
-        path: "/options-overview",
-        name: "Options overview",
-        component: OptionsOverview,
+        path: "/active-surface-catterpillar",
+        name: "Active surface catterpillar",
+        component: ActiveSurfaceCatterpillar,
+    },
+    {
+        path: "/catterpillar-falling",
+        name: "Catterpillar falling",
+        component: CatterpillarFalling,
     },
     {
         path: "/physics-div-position",
@@ -60,6 +67,11 @@ const routes = [
         path: "/svg-foreign-object",
         name: "SVG Foreign Object",
         component: svgForeignObject,
+    },
+    {
+        path: "/options-overview",
+        name: "Options overview",
+        component: OptionsOverview,
     }
 ]
 
