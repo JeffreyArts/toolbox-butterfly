@@ -84,6 +84,7 @@ export default defineComponent ({
             stats: null as null | Stats,    
             scrollY: 0,
             catterPillar: {
+                reset: false,
                 paths: [] as Array<paper.Path>,
                 points: [] as Array<paper.Point>
             },
@@ -383,7 +384,9 @@ export default defineComponent ({
             requestAnimationFrame( this.updateFPS )
         },
         renderLoop() {
-            if (!this.mWorld) {
+            const el = this.$el.querySelector(".scroll-container")
+
+            if (!this.mWorld || !el) {
                 return
             }
             
@@ -393,11 +396,25 @@ export default defineComponent ({
             
             if (catterpillars[0]) {
                 const catterpillar = catterpillars[0]
-                _.each(catterpillar.bodies, (body, i) => {
-                    const path = this.catterPillar.paths[i]
-                    path.position.x = body.position.x
-                    path.position.y = body.position.y                    
-                })
+                if (catterpillar.bodies[0].position.x > el.clientWidth ||
+                    catterpillar.bodies[catterpillar.bodies.length - 1].position.x < 0 ||
+                    catterpillar.bodies[0].position.y > el.clientHeight + 20
+                ) {
+                    this.catterPillar.reset = true
+                    this.removeCatterpillar()
+                    // return
+                    setTimeout(() => {
+                        this.catterPillar.reset = false
+                        this.generateCatterpillar()
+                        this.updateBlocks()
+                    }, 800)
+                } else {   
+                    _.each(catterpillar.bodies, (body, i) => {
+                        const path = this.catterPillar.paths[i]
+                        path.position.x = body.position.x
+                        path.position.y = body.position.y                    
+                    })
+                }
             }
 
             requestAnimationFrame(this.renderLoop)
