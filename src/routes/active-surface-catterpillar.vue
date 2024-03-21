@@ -20,10 +20,10 @@
                             {{ number }}
                         </span>
                     </div>
-                    
-                    <div id="matterCanvas" class="render-canvas" ref="renderCanvas" :style="[{opacity: showMatterJS ? 1 : 0}]" />
-                    <canvas id="paperCanvas" :style="[{opacity: showPaperJS ? 1 : 0}]"></canvas>
                 </div>
+                    
+                <div id="matterCanvas" class="render-canvas" ref="renderCanvas" :style="[{opacity: showMatterJS ? 1 : 0}]" />
+                <canvas id="paperCanvas" :style="[{opacity: showPaperJS ? 1 : 0}]"></canvas>
             </div>
         </section>
 
@@ -342,8 +342,6 @@ export default defineComponent ({
                 this.scrollDown = true
             }
             
-            paperCanvas.style.top = `${container.scrollTop}px`
-            matterCanvas.style.top = `${container.scrollTop}px`
             this.scrollY = container.scrollTop
             
             this.setActiveBlock()
