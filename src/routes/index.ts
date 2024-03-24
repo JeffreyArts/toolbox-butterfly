@@ -4,6 +4,7 @@ import ActiveSurface from "./active-surface.vue"
 import ActiveSurfaceCatterpillar from "./active-surface-catterpillar.vue"
 import PaperBlobSmooth from "./paper-blob-smooth.vue"
 import CatterpillarFalling from "./catterpillar-falling.vue"
+import CatterpillarMoving from "./catterpillar-moving.vue"
 import PhysicsDiv from "./physics-div.vue"
 import PhysicsDivTranslate from "./physics-div-translate.vue"
 import PhysicsCanvas from "./physics-canvas.vue"
@@ -32,6 +33,11 @@ const routes = [
         path: "/catterpillar-falling",
         name: "Catterpillar falling",
         component: CatterpillarFalling,
+    },
+    {
+        path: "/catterpillar-moving",
+        name: "Catterpillar moving",
+        component: CatterpillarMoving,
     },
     {
         path: "/physics-div-position",
