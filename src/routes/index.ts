@@ -10,6 +10,7 @@ import PhysicsDivTranslate from "./physics-div-translate.vue"
 import PhysicsCanvas from "./physics-canvas.vue"
 import PhysicsMatterRender from "./physics-matter-render.vue"
 import PhysicsMatterPaper from "./physics-matter-paper.vue"
+import FlagColors from "./flag-colors.vue"
 import OptionsOverview from "./options-overview/options-overview.vue"
 import svgForeignObject from "./svg-foreign-object.vue"
 
@@ -38,6 +39,11 @@ const routes = [
         path: "/catterpillar-moving",
         name: "Catterpillar moving",
         component: CatterpillarMoving,
+    },
+    {
+        path: "/flag-colors",
+        name: "Flag colors",
+        component: FlagColors,
     },
     {
         path: "/physics-div-position",
