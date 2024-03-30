@@ -130,39 +130,39 @@ export default defineComponent ({
                 {"name":"Hungary",                              code: "HR", "colors":[{"hex":"#CE2939","percent":33.34},{"hex":"#FFFFFF","percent":33.33},{"hex":"#477050","percent":33.33}]},
                 {"name":"Iceland",                              code: "IS", "colors":[{"hex":"#02529C","percent":66},{"hex":"#FFFFFF","percent":16},{"hex":"#DC1E35","percent":18}]},
                 {"name":"India",                                code: "IN", "colors":[{"hex":"#FF671F","percent":34},{"hex":"#FFFFFF","percent":30},{"hex":"#06038D","percent":2},{"hex":"#046A38","percent":34}]},
-                {"name":"Indonesia","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Flag_of_Indonesia.svg/150px-Flag_of_Indonesia.svg.png","colors":[{"hex":"#FFFFFF","percent":50},{"hex":"#CE1126","percent":50}],"code":"ID"},
-                {"name":"Iran",                         code: "IR", "colors":[{"hex":"#239F40","percent":32},{"hex":"#FFFFFF","percent":37},{"hex":"#DA0000","percent":31}]},
-                {"name":"Iraq","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Flag_of_Iraq.svg/150px-Flag_of_Iraq.svg.png","colors":[{"hex":"#000000","percent":33},{"hex":"#DCEDE5","percent":30.53},{"hex":"#14844C","percent":1.85},{"hex":"#E9949D","percent":0.99},{"hex":"#459E71","percent":0.33},{"hex":"#84BFA1","percent":0.3}],"code":"IQ"},
-                {"name":"Ireland","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Flag_of_Ireland.svg/200px-Flag_of_Ireland.svg.png","colors":[{"hex":"#FF883E","percent":33.5},{"hex":"#FFFFFF","percent":33},{"hex":"#169B62","percent":33},{"hex":"#7AC5A5","percent":0.5}],"code":"IE"},
-                {"name":"Israel","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Flag_of_Israel.svg/138px-Flag_of_Israel.svg.png","colors":[{"hex":"#FFFFFF","percent":63.14},{"hex":"#0038B8","percent":33.8},{"hex":"#5F82D2","percent":2.5},{"hex":"#D8E1F4","percent":0.41},{"hex":"#88A2DE","percent":0.14}],"code":"IL"},
-                {"name":"Italy","url":"https://upload.wikimedia.org/wikipedia/en/thumb/0/03/Flag_of_Italy.svg/150px-Flag_of_Italy.svg.png","colors":[{"hex":"#FFFFFF","percent":33.33},{"hex":"#009246","percent":33.33},{"hex":"#CE2B37","percent":33.33}],"code":"IT"},
-                {"name":"Ivory Coast","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Flag_of_C%C3%B4te_d%27Ivoire.svg/150px-Flag_of_C%C3%B4te_d%27Ivoire.svg.png","colors":[{"hex":"#FFFFFF","percent":33.33},{"hex":"#F77F00","percent":33.33},{"hex":"#009E60","percent":33.33}]},
-                {"name":"Jamaica","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Flag_of_Jamaica.svg/200px-Flag_of_Jamaica.svg.png","colors":[{"hex":"#000000","percent":32.8},{"hex":"#009B3A","percent":32.8},{"hex":"#FED100","percent":32.76},{"hex":"#8B7300","percent":0.82},{"hex":"#8AB91A","percent":0.82}],"code":"JM"},
-                {"name":"Japan","url":"https://upload.wikimedia.org/wikipedia/en/thumb/9/9e/Flag_of_Japan.svg/150px-Flag_of_Japan.svg.png","colors":[{"hex":"#FFFFFF","percent":80.82},{"hex":"#BC002D","percent":18.27},{"hex":"#D14F6E","percent":0.58},{"hex":"#EDBBC7","percent":0.22},{"hex":"#DF869B","percent":0.11}],"code":"JP"},
-                {"name":"Jordan","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Flag_of_Jordan.svg/200px-Flag_of_Jordan.svg.png","colors":[{"hex":"#007A3D","percent":27.39},{"hex":"#000000","percent":27.39},{"hex":"#CE1126","percent":24.14},{"hex":"#FFFFFF","percent":18.66},{"hex":"#D84857","percent":0.27},{"hex":"#972D2C","percent":0.17}],"code":"JO"},
-                {"name":"Kazakhstan","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Flag_of_Kazakhstan.svg/200px-Flag_of_Kazakhstan.svg.png","colors":[{"hex":"#00AFCA","percent":87.48},{"hex":"#FAC50F","percent":6.14},{"hex":"#97BC59","percent":3.56},{"hex":"#2BB3AA","percent":2.84}],"code":"KZ"},
-                {"name":"Kenya","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Flag_of_Kenya.svg/150px-Flag_of_Kenya.svg.png","colors":[{"hex":"#000000","percent":30.01},{"hex":"#BB0000","percent":29.39},{"hex":"#006600","percent":28.87},{"hex":"#FFFFFF","percent":9.73},{"hex":"#D56262","percent":0.89},{"hex":"#E6A6A6","percent":0.17}],"code":"KE"},
-                {"name":"Kiribati","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Flag_of_Kiribati.svg/200px-Flag_of_Kiribati.svg.png","colors":[{"hex":"#CE1126","percent":45.71},{"hex":"#FFFEFF","percent":18.84},{"hex":"#FACF15","percent":5.61},{"hex":"#D0DCE9","percent":1.42},{"hex":"#3768A1","percent":1.42},{"hex":"#8FABCA","percent":1.28}],"code":"KI"},
-                {"name":"Kosovo","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Flag_of_Kosovo.svg/140px-Flag_of_Kosovo.svg.png","colors":[{"hex":"#244AA5","percent":87.19},{"hex":"#D0A650","percent":9.8},{"hex":"#FBFCFE","percent":1.33},{"hex":"#A7B7DB","percent":0.46},{"hex":"#748CC6","percent":0.32},{"hex":"#A79064","percent":0.2}]},
-                {"name":"Kuwait","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/a/aa/Flag_of_Kuwait.svg/200px-Flag_of_Kuwait.svg.png","colors":[{"hex":"#007A3D","percent":28.84},{"hex":"#CE1126","percent":28.84},{"hex":"#FFFFFF","percent":24.75},{"hex":"#000000","percent":16.59},{"hex":"#EA9AA3","percent":0.75},{"hex":"#890B19","percent":0.08}],"code":"KW"},
-                {"name":"Kyrgyzstan","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Flag_of_Kyrgyzstan.svg/167px-Flag_of_Kyrgyzstan.svg.png","colors":[{"hex":"#E8112D","percent":90.14},{"hex":"#FFED00","percent":5.26},{"hex":"#F58E14","percent":2.7},{"hex":"#F05A1E","percent":1.89}],"code":"KG"},
-                {"name":"Laos","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Flag_of_Laos.svg/150px-Flag_of_Laos.svg.png","colors":[{"hex":"#CE1126","percent":50},{"hex":"#002868","percent":41.37},{"hex":"#FEFFFF","percent":8.17},{"hex":"#879AB8","percent":0.21},{"hex":"#375788","percent":0.15},{"hex":"#ABB8CD","percent":0.11}]},
-                {"name":"Latvia","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Flag_of_Latvia.svg/200px-Flag_of_Latvia.svg.png","colors":[{"hex":"#9E3039","percent":80},{"hex":"#FFFFFF","percent":20}],"code":"LV"},
-                {"name":"Lebanon","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Flag_of_Lebanon.svg/150px-Flag_of_Lebanon.svg.png","colors":[{"hex":"#ED1C24","percent":50},{"hex":"#FFFFFF","percent":42.07},{"hex":"#01A652","percent":5.9},{"hex":"#8ED8B2","percent":0.85},{"hex":"#42BD7E","percent":0.62},{"hex":"#D7F1E4","percent":0.56}],"code":"LB"},
-                {"name":"Lesotho","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Flag_of_Lesotho.svg/150px-Flag_of_Lesotho.svg.png","colors":[{"hex":"#FFFFFF","percent":35.98},{"hex":"#00209F","percent":30},{"hex":"#009543","percent":30},{"hex":"#020202","percent":2.43},{"hex":"#2E2E2E","percent":0.42},{"hex":"#4E4E4E","percent":0.26}],"code":"LS"},
-                {"name":"Liberia","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Flag_of_Liberia.svg/190px-Flag_of_Liberia.svg.png","colors":[{"hex":"#BF0A30","percent":44.06},{"hex":"#FFFFFF","percent":38.85},{"hex":"#002868","percent":9.36},{"hex":"#EAADBA","percent":3.52},{"hex":"#D96C83","percent":1.93},{"hex":"#CA3453","percent":1.48}],"code":"LR"},
-                {"name":"Libya","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Flag_of_Libya.svg/200px-Flag_of_Libya.svg.png","colors":[{"hex":"#000000","percent":48.47},{"hex":"#E70013","percent":25},{"hex":"#239E46","percent":25},{"hex":"#727272","percent":0.21},{"hex":"#313131","percent":0.2},{"hex":"#505050","percent":0.11}]},
-                {"name":"Liechtenstein","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Flag_of_Liechtenstein.svg/167px-Flag_of_Liechtenstein.svg.png","colors":[{"hex":"#CE1126","percent":50},{"hex":"#002B7F","percent":46.28},{"hex":"#BEA12E","percent":1.09},{"hex":"#F9D33C","percent":0.88},{"hex":"#826E1F","percent":0.74},{"hex":"#524615","percent":0.66}],"code":"LI"},
-                {"name":"Lithuania","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Flag_of_Lithuania.svg/167px-Flag_of_Lithuania.svg.png","colors":[{"hex":"#FDB913","percent":33},{"hex":"#C1272D","percent":33},{"hex":"#006A44","percent":32},{"hex":"#40543D","percent":1},{"hex":"#548533","percent":1}],"code":"LT"},
-                {"name":"Luxembourg","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/Flag_of_Luxembourg.svg/167px-Flag_of_Luxembourg.svg.png","colors":[{"hex":"#00A1DE","percent":33},{"hex":"#ED2939","percent":33},{"hex":"#FFFFFF","percent":32},{"hex":"#F9B8BD","percent":1},{"hex":"#AAE0F4","percent":1}],"code":"LU"},
-                {"name":"Macedonia", code:"MK", "url":"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Flag_of_Macedonia.svg/200px-Flag_of_Macedonia.svg.png","colors":[{"hex":"#D20000","percent":65.35},{"hex":"#FFE600","percent":30.08},{"hex":"#DC3400","percent":2.11},{"hex":"#F4AE00","percent":1.85},{"hex":"#E86F00","percent":0.61}]},
-                {"name":"Madagascar","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Flag_of_Madagascar.svg/150px-Flag_of_Madagascar.svg.png","colors":[{"hex":"#FFFFFF","percent":33.33},{"hex":"#007E3A","percent":33.33},{"hex":"#FC3D32","percent":33.33}],"code":"MG"},
-                {"name":"Malawi","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Flag_of_Malawi.svg/150px-Flag_of_Malawi.svg.png","colors":[{"hex":"#CE1126","percent":36.31},{"hex":"#339E35","percent":33},{"hex":"#000000","percent":25.81},{"hex":"#550710","percent":2.93},{"hex":"#6D3C23","percent":1},{"hex":"#8F0C1A","percent":0.95}],"code":"MW"},
-                {"name":"Malaysia","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Flag_of_Malaysia.svg/200px-Flag_of_Malaysia.svg.png","colors":[{"hex":"#CC0001","percent":34},{"hex":"#FFFFFF","percent":32.5},{"hex":"#010066","percent":23.35},{"hex":"#E26E6F","percent":3},{"hex":"#F1B7B7","percent":2},{"hex":"#D4A911","percent":0.81}],"code":"MY"},
-                {"name":"Maldives","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Flag_of_Maldives.svg/150px-Flag_of_Maldives.svg.png","colors":[{"hex":"#D21034","percent":66.67},{"hex":"#007E3A","percent":31.69},{"hex":"#C9E4D5","percent":0.27},{"hex":"#6FB690","percent":0.15},{"hex":"#379A64","percent":0.06},{"hex":"#29935A","percent":0.06}],"code":"MV"},
-                {"name":"Mali","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Flag_of_Mali.svg/150px-Flag_of_Mali.svg.png","colors":[{"hex":"#14B53A","percent":33.33},{"hex":"#CE1126","percent":33.33},{"hex":"#FCD116","percent":33.33}],"code":"ML"},
-                {"name":"Malta","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/Flag_of_Malta.svg/150px-Flag_of_Malta.svg.png","colors":[{"hex":"#CF142B","percent":50},{"hex":"#FFFFFF","percent":47},{"hex":"#A9A29C","percent":0.96},{"hex":"#F6A9B5","percent":0.49},{"hex":"#D36773","percent":0.07},{"hex":"#6F6E6E","percent":0.01}],"code":"MT"},
-                {"name":"Marshall Islands","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Flag_of_the_Marshall_Islands.svg/190px-Flag_of_the_Marshall_Islands.svg.png","colors":[{"hex":"#003893","percent":73.03},{"hex":"#FEFEFE","percent":12.23},{"hex":"#DD7500","percent":9.99},{"hex":"#CCD7E9","percent":1.31},{"hex":"#2958A4","percent":1.25},{"hex":"#90A8D0","percent":1.09}],"code":"MH"},
+                {"name":"Indonesia",                            code: "ID", "colors":[{"hex":"#FFFFFF","percent":50},{"hex":"#CE1126","percent":50}]},
+                {"name":"Iran",                                 code: "IR", "colors":[{"hex":"#239F40","percent":32},{"hex":"#FFFFFF","percent":37},{"hex":"#DA0000","percent":31}]},
+                {"name":"Iraq",                                 code: "IQ", "colors":[{"hex":"#CE1126","percent":33},{"hex":"#FFFFFF","percent":31},{"hex":"#000000","percent":33},{"hex":"#007A3D","percent":3}]},
+                {"name":"Ireland",                              code: "IE", "colors":[{"hex":"#009A44","percent":33.33},{"hex":"#FFFFFF","percent":33.34},{"hex":"#FF8200","percent":33.33}]},
+                {"name":"Israel",                               code: "IL", "colors":[{"hex":"#FFFFFF","percent":64}, {"hex":"#005EB8","percent":36}]},
+                {"name":"Italy",                                code: "IT", "colors":[{"hex":"#008C45","percent":33.33},{"hex":"#FFFFFF","percent":33.34},{"hex":"#CD212A","percent":33.33}]},
+                {"name":"Ivory Coast",                          code: "CI", "colors":[{"hex":"#FF8200","percent":33.33},{"hex":"#FFFFFF","percent":33.34},{"hex":"#009A44","percent":33.33}]},
+                {"name":"Jamaica",                              code: "JM", "colors":[{"hex":"#009B3A","percent":33.33},{"hex":"#FED100","percent":33.34},{"hex":"#000000","percent":33.33}]},
+                {"name":"Japan",                                code: "JP", "colors":[{"hex":"#FFFFFF","percent":81},{"hex":"#BC002D","percent":19}]},
+                {"name":"Jordan",                               code: "JO", "colors":[{"hex":"#CE1126","percent":25},{"hex":"#000000","percent":27.5},{"hex":"#FFFFFF","percent":20},{"hex":"#007A3D","percent":27.5}]},
+                {"name":"Kazakhstan",                           code: "KZ", "colors":[{"hex":"#FAC50F","percent":10},{"hex":"#00AFCA","percent":90}]},
+                {"name":"Kenya",                                code: "KE", "colors":[{"hex":"#000000","percent":30},{"hex":"#FFFFFF","percent":11},{"hex":"#BB0000","percent":30},{"hex":"#006600","percent":29}]},
+                {"name":"Kiribati",                             code: "KI", "colors":[{"hex":"#EF3340","percent":46},{"hex":"#FFD100","percent":6},{"hex":"#FFFFFF","percent":24},{"hex":"#0032A0","percent":23},{"hex":"#000000","percent":1}]},
+                {"name":"Kosovo",                               code: "KV", "colors":[{"hex":"#244AA5","percent":88},{"hex":"#D0A650","percent":10},{"hex":"#FFFFFF","percent":2}]},
+                {"name":"Kuwait",                               code: "KW", "colors":[{"hex":"#007A3D","percent":29},{"hex":"#CE1126","percent":29},{"hex":"#FFFFFF","percent":25},{"hex":"#000000","percent":17}]},
+                {"name":"Kyrgyzstan",                           code: "KG", "colors":[{"hex":"#FF0000","percent":91},{"hex":"#FFED00","percent":9}]},
+                {"name":"Laos",                                 code: "LA", "colors":[{"hex":"#CE1126","percent":50},{"hex":"#002868","percent":42},{"hex":"#FEFFFF","percent":8},]},
+                {"name":"Latvia",                               code: "LV", "colors":[{"hex":"#A4343A","percent":80},{"hex":"#FFFFFF","percent":20}]},
+                {"name":"Lebanon",                              code: "LB", "colors":[{"hex":"#EE161F","percent":50},{"hex":"#FFFFFF","percent":43},{"hex":"#00A850","percent":7}]},
+                {"name":"Lesotho",                              code: "LS", "colors":[{"hex":"#001489","percent":30},{"hex":"#FFFFFF","percent":37},{"hex":"#000000","percent":30},{"hex":"#009A44","percent":3}]},
+                {"name":"Liberia",                              code: "LR", "colors":[{"hex":"#00205B","percent":10},{"hex":"#FFFFFF","percent":42},{"hex":"#EF3340","percent":48}]},
+                {"name":"Libya",                                code: "LY", "colors":[{"hex":"#E70013","percent":25},{"hex":"#000000","percent":49},{"hex":"#FFFFFF","percent":1},{"hex":"#239E46","percent":25}]},
+                {"name":"Liechtenstein",                        code: "LI", "colors":[{"hex":"#000000","percent":2},{"hex":"#003DA5","percent":46},{"hex":"#E4002B","percent":50},{"hex":"#FFD100","percent":2}]},
+                {"name":"Lithuania",                            code: "LT", "colors":[{"hex":"#FFB81C","percent":33.34},{"hex":"#046A38","percent":33.33},{"hex":"#BE3A34","percent":33.33}]},
+                {"name":"Luxembourg",                           code: "LU", "colors":[{"hex":"#EA141D","percent":33.33},{"hex":"#FFFFFF","percent":33.34},{"hex":"#51ADDA","percent":33}]},
+                {"name":"North Macedonia",                      code: "MK", "colors":[{"hex":"#D82126","percent":68},{"hex":"#F8E92E","percent":32}]},
+                {"name":"Madagascar",                           code: "MG", "colors":[{"hex":"#F9423A","percent":33.33},{"hex":"#FFFFFF","percent":33.34},{"hex":"#00843D","percent":33.33}]},
+                {"name":"Malawi",                               code: "MW", "colors":[{"hex":"#000000","percent":28},{"hex":"#C8102E","percent":38},{"hex":"#007A33","percent":34}]},
+                {"name":"Malaysia",                             code: "MY", "colors":[{"hex":"#CC0000","percent":35},{"hex":"#FFFFFF","percent":35},{"hex":"#0032A0","percent":26},{"hex":"#FFD100","percent":4}]},
+                {"name":"Maldives",                             code: "MV", "colors":[{"hex":"#C8102E","percent":66.5},{"hex":"#00843D","percent":32},{"hex":"#FFFFFF","percent":1.5}]},
+                {"name":"Mali",                                 code: "ML", "colors":[{"hex":"#14B53A","percent":33.33},{"hex":"#FCD116","percent":33.34},{"hex":"#CE1126","percent":33.33}]},
+                {"name":"Malta",                                code: "MT", "colors":[{"hex":"#CF142B","percent":50},{"hex":"#FFFFFF","percent":49},{"hex":"#70707","percent":1}]},
+                {"name":"Marshall Islands",                     code: "MH", "colors":[{"hex":"#003087","percent":75},{"hex":"#FFFFFF","percent":14},{"hex":"#E57200","percent":11}]},
                 {"name":"Mauritania","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Flag_of_Mauritania.svg/150px-Flag_of_Mauritania.svg.png","colors":[{"hex":"#006233","percent":93.78},{"hex":"#FFC400","percent":4.7},{"hex":"#477D25","percent":0.98},{"hex":"#B4A70F","percent":0.54}],"code":"MR"},
                 {"name":"Mauritius","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Flag_of_Mauritius.svg/150px-Flag_of_Mauritius.svg.png","colors":[{"hex":"#FFD500","percent":25},{"hex":"#00A551","percent":25},{"hex":"#EA2839","percent":25},{"hex":"#1A206D","percent":25}],"code":"MU"},
                 {"name":"Mexico","url":"https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Flag_of_Mexico.svg/175px-Flag_of_Mexico.svg.png","colors":[{"hex":"#006847","percent":33.15},{"hex":"#CE1126","percent":33.15},{"hex":"#FFFFFF","percent":26.74},{"hex":"#EFB1B7","percent":1.23},{"hex":"#593520","percent":1.12},{"hex":"#925A2F","percent":0.46}],"code":"MX"},
@@ -281,7 +281,6 @@ export default defineComponent ({
                 // {"name":"Jersey","code":"JE"},
                 // {"name":"Korea, Democratic People'S Republic of","code":"KP"},
                 // {"name":"Korea, Republic of","code":"KR"},
-                // {"name":"Lao People'S Democratic Republic","code":"LA"},
                 // {"name":"Libyan Arab Jamahiriya","code":"LY"},
                 // {"name":"Macao","code":"MO"},
                 // {"name":"Martinique","code":"MQ"},
@@ -337,10 +336,12 @@ export default defineComponent ({
     mounted() {
         this.updateCanvas()
         window.addEventListener("resize", this.updateCanvas)
+
+        // Selected random starter country
+        this.options.selectedCountry = _.shuffle(this.countryList)[0].code
     },
     unmounted() {
         window.removeEventListener("resize", this.updateCanvas)
-        
     },
     methods: {
         updateCanvas() {
@@ -360,11 +361,11 @@ export default defineComponent ({
             // if (this.paper) {
             //     this.paper.remove()
             // }
-            console.log("updateCanvas")
 
             canvas.width = el.clientWidth
             canvas.height = el.clientHeight
             Paper.setup(canvas)
+            this.updateImage()
         },
         loadOptions() {
             let options = this.options
