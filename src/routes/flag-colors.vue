@@ -247,7 +247,7 @@ export default defineComponent ({
                 {"name":"Uruguay",                              code: "UY", "colors":[{"hex":"#001489","percent":36.5},{"hex":"#FFFFFF","percent":59.5},{"hex":"#FFCD00","percent":1.5},{"hex":"#7B3F00","percent":2.5}]},
                 {"name":"Uzbekistan",                           code: "UZ", "colors":[{"hex":"#0072CE","percent":31},{"hex":"#DA291C","percent":4},{"hex":"#FFFFFF","percent":33},{"hex":"#43B02A","percent":32}]},
                 {"name":"Vanuatu",                              code: "VU", "colors":[{"hex":"#C0102E","percent":32},{"hex":"#000000","percent":26.5},{"hex":"#FFCD00","percent":9.5},{"hex":"#009A44","percent":32}]},
-                {"name":"Vatican City",                         code: "", "colors":[{"hex":"#FFE000","percent":51},{"hex":"#FF0000","percent":0.25},{"hex":"#CCCCCC","percent":0.75},{"hex":"#FFFFFF","percent":48}]},
+                {"name":"Vatican City",                         code: "VA", "colors":[{"hex":"#FFE000","percent":51},{"hex":"#FF0000","percent":0.25},{"hex":"#CCCCCC","percent":0.75},{"hex":"#FFFFFF","percent":48}]},
                 {"name":"Venezuela",                            code: "VZ", "colors":[{"hex":"#FCD116","percent":33},{"hex":"#CE1126","percent":33},{"hex":"#003893","percent":32},{"hex":"#FFFFFF","percent":2}]},
                 {"name":"Vietnam",                              code: "VN", "colors":[{"hex":"#C8102E","percent":93},{"hex":"#FFCD00","percent":7}]},
                 {"name":"Western Sahara",                       code: "EH", "colors":[{"hex":"#C4111B","percent":18},{"hex":"#000000","percent":30},{"hex":"#FFFFFF","percent":22},{"hex":"#007A3D","percent":30}]},
@@ -310,7 +310,7 @@ export default defineComponent ({
                 colors: Array<{hex: string, percent?: number}>
             }>,
             options: {
-                selectedCountry: "NL",
+                selectedCountry: "",
                 ballSize: 32,
                 density: 0.001,
                 friction: 0.1,
