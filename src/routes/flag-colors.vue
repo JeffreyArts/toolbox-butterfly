@@ -36,7 +36,7 @@
 
 <script lang="ts">
 import {defineComponent} from "vue"
-import Matter from "matter-js"
+import axios from "axios"
 import _ from "lodash"
 import Paper from "paper"
     
@@ -331,14 +331,25 @@ export default defineComponent ({
     mounted() {
         this.updateCanvas()
         window.addEventListener("resize", this.updateCanvas)
-
-        // Selected random starter country
-        this.options.selectedCountry = _.shuffle(this.countryList)[0].code
+        this.setCountryFromIP()
     },
     unmounted() {
         window.removeEventListener("resize", this.updateCanvas)
     },
     methods: {
+        setCountryFromIP() {
+            axios.get("http://ip-api.com/json/").then(res => {
+                if (res.data.countryCode) {
+                    this.options.selectedCountry = res.data.countryCode
+                } else {
+                    // If it can't be retrieved, just set a random one
+                    this.options.selectedCountry = _.shuffle(this.countryList)[0].code
+                }
+            }).catch(err => {
+                // If it can't be retrieved, just set a random one
+                this.options.selectedCountry = _.shuffle(this.countryList)[0].code
+            })
+        },
         updateCanvas() {
             const canvas = this.$el.querySelector("#paperCanvas")
             const el = this.$el.querySelector(".viewport-content")
@@ -396,12 +407,9 @@ export default defineComponent ({
             const width = canvas.getBoundingClientRect().width
             const height = canvas.getBoundingClientRect().height
             
-            // console.log(selectedCountry.colors[0].hex)
             let prev = null as null | paper.Path
             _.each(selectedCountry.colors, (color, index) => {
                 let posTL = {x: 0, y: 0}
-                let posTR = {x: 0, y: 0}
-                let posBR = {x: 0, y: 0}
                 let posBL = {x: 0, y: 0}
 
                 if (prev) {
@@ -427,29 +435,9 @@ export default defineComponent ({
                 ])
                 path.fillColor = new Paper.Color(color.hex)
                 path.closed = true
-                console.log(path.segments[2].point)
                 prev = path
                 this.painting.push(path) 
             })
-            // // canvas.height
-            // const topLeft = new Paper.Point(0,0)
-            // let topRight = new Paper.Point(100/selectedCountry?.colors.length * width/100, 0) 
-            // if (selectedCountry.colors[0].percent) {
-            //     topRight = new Paper.Point(selectedCountry.colors[0].percent * width/100,0)
-            // } 
-            // const bottomLeft = new Paper.Point(0,height)
-            
-            // let bottomRight = new Paper.Point(100/selectedCountry?.colors.length * width/100, 0) 
-            // if (selectedCountry.colors[0].percent) {
-            //     bottomRight = new Paper.Point(selectedCountry.colors[0].percent * width/100, height)
-            // } 
-            
-            // this.painting.push(new Paper.Path([
-            //     topLeft, topRight, bottomRight, bottomLeft
-            // ]))
-            // this.painting.fillColor = new Paper.Color(selectedCountry.colors[0].hex)
-            // this.painting.closed = true
-            // console.log(topRight, selectedCountry.colors[0].percent * width/100, selectedCountry.colors[0].percent, width)
             
         }
     }
