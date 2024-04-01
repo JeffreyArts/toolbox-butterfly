@@ -9,8 +9,8 @@
         <section class="viewport">
             <div class="viewport-content" ref="matterContainer" ratio="1x1">
                 <div class="scroll-container">
-                    <div class="render-canvas" ref="renderCanvas" :style="[{opacity: showMatterJS ? 1 : 0}]" />
-                    <canvas id="paperCanvas" :style="[{opacity: showPaperJS ? 1 : 0}]"></canvas>
+                    <div class="render-canvas" ref="renderCanvas" :style="[{opacity: options.showMatterJS ? 1 : 0}]" />
+                    <canvas id="paperCanvas" :style="[{opacity: options.showPaperJS ? 1 : 0}]"></canvas>
                 </div>
             </div>
         </section>
@@ -21,13 +21,13 @@
                 <div class="option-group" name="General">
                     <div class="option">
                         <span>
-                            <input type="checkbox" id="displayMatterJS" v-model="showMatterJS">
+                            <input type="checkbox" id="displayMatterJS" v-model="options.showMatterJS">
                             <label for="displayMatterJS">
                                 Show Matter JS
                             </label>
                         </span>
                         <span>
-                            <input type="checkbox" id="displayPaperJS" v-model="showPaperJS">
+                            <input type="checkbox" id="displayPaperJS" v-model="options.showPaperJS">
                             <label for="displayPaperJS">
                                 Show Paper JS
                             </label>
@@ -63,6 +63,13 @@
                             Bodypart stiffness
                         </label>
                         <input type="number" id="bodyPartStiffness" v-model="options.bodyPartStiffness" step="0.01" min="0" max="1">
+                    </div>
+                    
+                    <div class="option">
+                        <label for="bodyStiffness">
+                            Body stiffness
+                        </label>
+                        <input type="number" id="bodyStiffness" v-model="options.bodyStiffness" step="0.01" min="0" max="1">
                     </div>
                     <div class="option">
                         <label for="maxVelocity">
@@ -116,22 +123,33 @@ export default defineComponent ({
             },
             catterPillar: {
                 isMoving: false,
-                reset: false,
                 constraint: null as null | Matter.Constraint,
                 composite: null as null | Matter.Composite,
             },
-            showMatterJS: true,
-            showPaperJS: false,
+            ignoreOptionsUpdate: false,
             options: {
                 maxVelocity: 3,
                 length: 12,
+                bodyStiffness: .8,
                 bodyPartStiffness: .2,
                 size: 12,
                 restitution: 0.8,
+                showMatterJS: true,
+                showPaperJS: false,
             }
         }
     },
     watch: {
+        "options": {
+            handler(){
+                if (this.ignoreOptionsUpdate) {
+                    console.log("ignoreOptionsUpdate")
+                    return
+                }
+                localStorage.setItem("options", JSON.stringify(this.options))
+            },
+            deep: true
+        },
         "options.size": {
             handler() {
                 this.generateCatterpillar()
@@ -144,15 +162,23 @@ export default defineComponent ({
         },
         "options.bodyPartStiffness": {
             handler() {
-                if (!this.mWorld) {
+                if (!this.mWorld || !this.catterPillar.composite) {
                     return
                 }
-
-                _.each(this.mWorld.constraints, constraint => {
-                    if (this.mWorld && constraint.label === "blob") {
+                _.each(this.catterPillar.composite.constraints, constraint => {
+                    if (this.mWorld) {
                         constraint.stiffness = this.options.bodyPartStiffness
                     }
                 })
+                
+            }
+        },
+        "options.bodyStiffness": {
+            handler() {
+                if (!this.catterPillar.constraint) {
+                    return
+                }
+                this.catterPillar.constraint.stiffness = this.options.bodyStiffness
                 
             }
         }
@@ -162,6 +188,7 @@ export default defineComponent ({
         this.initPaperJS()
         const el = this.$el.querySelector(".scroll-container")
         this.displayFPS(el)
+        this.loadOptions()
         this.createGround()
         this.generateCatterpillar()
         window.addEventListener("keydown", this.keyPressEvent)
@@ -185,6 +212,18 @@ export default defineComponent ({
             if (this.mEngine) {
                 Matter.Engine.clear(this.mEngine)
             }
+        },
+        loadOptions() {
+            let options = this.options
+            this.ignoreOptionsUpdate = true
+            const optionsString = localStorage.getItem("options")
+            if (optionsString) {
+                this.options = JSON.parse(optionsString)
+                // console.log(optionsString)
+            }
+            setTimeout(() => {
+                this.ignoreOptionsUpdate = false
+            })
         },
         initPaperJS() {
             const canvas = this.$el.querySelector("#paperCanvas")
@@ -494,7 +533,7 @@ export default defineComponent ({
                 bodyA: this.catterPillar.composite.bodies[0],
                 bodyB: this.catterPillar.composite.bodies[this.catterPillar.composite.bodies.length-1],
                 length: (size*1.5) * this.options.length,
-                stiffness: .1,
+                stiffness: this.options.bodyStiffness,
                 damping: .2,
                 label: "catterpillarConstraint",
                 render: {
@@ -548,12 +587,10 @@ export default defineComponent ({
             (firstBody.position.x <= 0 && lastBody.position.x < 0) ||
             (firstBody.position.y > el.clientHeight + 100 && lastBody.position.y > el.clientHeight + 100)
             ) {
-                this.catterPillar.reset = true
                 this.removeCatterpillar()
                 
                 // Don't create new catterpillar immediately for UX reasons
                 setTimeout(() => {
-                    this.catterPillar.reset = false
                     this.generateCatterpillar()
                 }, 480)
             } 
