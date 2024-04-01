@@ -277,7 +277,8 @@ export default defineComponent ({
             if (direction === "left") {
                 // this.catterPillar.composite.bodies[0].position.x -= 10
                 const bodies = this.catterPillar.composite.bodies
-                
+                const firstBody = bodies[0]
+                const lastBody = bodies[bodies.length-1]
                 // const obj = _.clone(bodies[bodies.length-1].position)
                 // gsap.to(obj, {
                 //     x: obj.x - 50,
@@ -297,39 +298,72 @@ export default defineComponent ({
                 const obj = {
                     t: 0
                 }
-                if (!this.mWorld) {
+                if (!this.mWorld || !this.ground) {
                     return
                 }
-                // Matter.Composite.add(this.mWorld, [
-                //     Matter.Constraint.create({
-                //         bodyA: this.catterPillar.composite.bodies[this.catterPillar.composite.bodies.length-1],
-                //         pointA: { x: 0, y: this.options.size/2 },
-                //         pointB: { x: 0, y: -8 },
-                //         // damping: this.options.damping,
-                //         bodyB: this.ground,
-                //         length: 1,
-                //         stiffness: 1,
-                //         // stiffness: this.options.stiffness,
-                //         label: "bodyPartConnection",
-                //         render: {
-                //             // visible: false
-                //             strokeStyle: "#f09",
-                //             type:"line",
-                //         }
-                //     })])
+                console.log("lastBody.position.x",lastBody.position.x, this.ground.bounds.max.x, lastBody.position.x - this.ground.bounds.max.x/2)
+                const firstBodyConstaint = Matter.Constraint.create({
+                    bodyA: firstBody,
+                    pointA: { x: 0, y: this.options.size/2 },
+                    // pointB: { x: 0, y: -8 },
+                    pointB: { x: firstBody.position.x - this.ground.bounds.max.x/2, y: -8 },
+                    // damping: this.options.damping,
+                    bodyB: this.ground,
+                    length: 0.5,
+                    stiffness: .8,
+                    // stiffness: this.options.stiffness,
+                    label: "bodyPartConnection",
+                    render: {
+                        // visible: false
+                        strokeStyle: "#9f0",
+                        type:"line",
+                    }
+                })
+                const lastBodyConstaint = Matter.Constraint.create({
+                    bodyA: lastBody,
+                    pointA: { x: 0, y: this.options.size/2 },
+                    // pointB: { x: 0, y: -8 },
+                    pointB: { x: lastBody.position.x - this.ground.bounds.max.x/2, y: -8 },
+                    // damping: this.options.damping,
+                    bodyB: this.ground,
+                    length: 1,
+                    stiffness: .8,
+                    // stiffness: this.options.stiffness,
+                    label: "bodyPartConnection",
+                    render: {
+                        // visible: false
+                        strokeStyle: "#9f0",
+                        type:"line",
+                    }
+                })
+                const duration = .6
+
+                Matter.Composite.add(this.mWorld, [firstBodyConstaint, lastBodyConstaint])
+
                 if (this.catterPillar.constraint) {
+                    gsap.to(lastBodyConstaint.pointB, {
+                        x: (lastBody.position.x - this.ground.bounds.max.x/2) - (this.options.length*this.options.size*.8)/2 ,
+                        onComplete:() => {
+                            if (!this.mWorld) {
+                                return
+                            }
+                            Matter.Composite.remove(this.mWorld,firstBodyConstaint)
+                        },
+                        ease: "power2.out",
+                        duration: duration/2,
+                    })
                     gsap.to(this.catterPillar.constraint, {
                         length: this.options.length*this.options.size*.8,
                         onUpdate:() => {
                             if (!this.mEngine) {
                                 return
                             }
-                            
+                            // lastBodyConstaint.pointB.x = lastBody.position.x
                             // bodies[bodies.length-1].setPosition({})
                             // this.catterPillar.composite.bodies[0].position.y = obj.y
                         },
                         ease: "power4.out",
-                        duration: .5,
+                        duration: duration/2,
                         onComplete:() => {
                             if (!this.catterPillar.composite) {
                                 return
@@ -344,21 +378,28 @@ export default defineComponent ({
                                 // bodies[bodies.length-1].setPosition({})
                                 // this.catterPillar.composite.bodies[0].position.y = obj.y
                                 },
+                                onComplete: () => {
+                                    setTimeout(() => {
+                                        if (this.mWorld) {
+                                            Matter.Composite.remove(this.mWorld,lastBodyConstaint)
+                                        }
+                                    }, 200)
+                                },
                                 ease: "power4.in",
-                                duration: .5
+                                duration: duration/2
                             })
                         }
                     })
                 }
                 const centerIndex = Math.floor(bodies.length/2)
-                const maxVelocity  = 6
+                const maxVelocity  = 3
                 _.each(bodies, (body,index) => {
                     
                     
                     if (index != 0 && index !=bodies.length-1) {
                         const velocity = centerIndex === index ? maxVelocity : maxVelocity - maxVelocity / index
                         // console.log(maxVelocity , Math.abs(index-centerIndex))
-                        console.log(index,  velocity,  -velocity * (centerIndex - Math.abs(index - centerIndex))/2)
+                        // console.log(index,  velocity,  -velocity * (centerIndex - Math.abs(index - centerIndex))/2)
                         Matter.Body.setVelocity( body, {
                             x: 0,
                             y: -velocity * (centerIndex - Math.abs(index - centerIndex))/2,
@@ -372,15 +413,6 @@ export default defineComponent ({
                         })
                     }
                 })
-                
-                // Matter.Body.setVelocity( bodies[centerIndex+1], {
-                //     x: 0,
-                //     y:-14
-                // })
-                // Matter.Body.setVelocity( bodies[centerIndex-1], {
-                //     x: 0,
-                //     y: -12
-                // })
 
             } else if (direction === "right") {
                 // const angle = 100 * (Math.PI/180)
