@@ -83,6 +83,13 @@
                         </label>
                         <input type="number" id="restitution" v-model="options.restitution" step="0.05" min="0" max="1.2">
                     </div>
+                    <span>
+                        <button class="button __is" @click="resetOptions">
+                            Reset options
+                        </button>
+                    </span>
+                    <br>
+                    <br>
                 </div>
 
 
@@ -128,6 +135,16 @@ export default defineComponent ({
             },
             ignoreOptionsUpdate: false,
             options: {
+                maxVelocity: 3,
+                length: 12,
+                bodyStiffness: .8,
+                bodyPartStiffness: .2,
+                size: 12,
+                restitution: 0.8,
+                showMatterJS: true,
+                showPaperJS: false,
+            },
+            originalOptions: {
                 maxVelocity: 3,
                 length: 12,
                 bodyStiffness: .8,
@@ -224,6 +241,9 @@ export default defineComponent ({
             setTimeout(() => {
                 this.ignoreOptionsUpdate = false
             })
+        },
+        resetOptions() {
+            this.options = JSON.parse(JSON.stringify(this.originalOptions))
         },
         initPaperJS() {
             const canvas = this.$el.querySelector("#paperCanvas")
@@ -501,7 +521,7 @@ export default defineComponent ({
                 this.removeCatterpillar()
             }
 
-            const center = {x: el.clientWidth/2 + this.options.length, y: el.clientHeight/2}
+            const center = {x: el.clientWidth/2, y: el.clientHeight/2}
             const size = this.options.size
 
             for (let i=0; i < this.options.length; i++) {
@@ -513,8 +533,8 @@ export default defineComponent ({
             const group = Matter.Body.nextGroup(true)
 
             // Helper function for generating catterpillar bodies
-            const catterPillarBodies = Matter.Composites.stack(center.x - (this.options.length) /2, 32, this.options.length, 1, 10, 10, (x:number, y:number) => {
-                return Matter.Bodies.rectangle(x - 20, y, this.options.size*2, this.options.size, { 
+            const catterPillarBodies = Matter.Composites.stack(center.x - (this.options.length*this.options.size*2) / 2, 32, this.options.length, 1, this.options.size, 0, (x:number, y:number) => {
+                return Matter.Bodies.rectangle(x, y, this.options.size*2, this.options.size, { 
                     collisionFilter: { group: group }, 
                     restitution: this.options.restitution,
                     label: "bodyPart"
