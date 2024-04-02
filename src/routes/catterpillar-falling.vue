@@ -212,7 +212,10 @@ export default defineComponent ({
             })
 
             const runner = Matter.Runner.create()
-            const ground = Matter.Bodies.rectangle(el.clientWidth/2, el.clientHeight-16, el.clientWidth, 16, { isStatic: true, label: "ground" })
+            const ground = Matter.Bodies.rectangle(el.clientWidth/2, el.clientHeight-16, el.clientWidth, 16, { 
+                isStatic: true, 
+                label: "ground"
+            })
 
             // add all of the bodies to the world
             Matter.Composite.add(engine.world, [ground])
@@ -292,6 +295,7 @@ export default defineComponent ({
                     restitution: this.options.restitution,
                     density: 0.005,
                     mass: size,
+                    friction: 0.01,
                 })
                 Matter.Composite.add(catterpillar, bodyPart)
 
@@ -310,7 +314,10 @@ export default defineComponent ({
                             bodyB: prev,
                             length: size,
                             stiffness: this.options.stiffness,
-                            label: "bodyPartConnection"
+                            label: "bodyPartConnection",
+                            render: {
+                                type: "line"
+                            }
                         }),
                     ])
                 }
