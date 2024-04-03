@@ -3,6 +3,7 @@ import Home from "./home/home.vue"
 import ActiveSurface from "./active-surface.vue"
 import ActiveSurfaceCatterpillar from "./active-surface-catterpillar.vue"
 import PaperBlobSmooth from "./paper-blob-smooth.vue"
+import CatterpillarBlob from "./catterpillar-blob.vue"
 import CatterpillarFalling from "./catterpillar-falling.vue"
 import CatterpillarMoving from "./catterpillar-moving.vue"
 import CatterpillarMoving2 from "./catterpillar-moving-2.vue"
@@ -36,6 +37,11 @@ const routes = [
         path: "/catterpillar-falling",
         name: "Catterpillar falling",
         component: CatterpillarFalling,
+    },
+    {
+        path: "/catterpillar-blob",
+        name: "Catterpillar blob",
+        component: CatterpillarBlob,
     },
     {
         path: "/catterpillar-moving",
