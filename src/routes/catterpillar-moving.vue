@@ -2,15 +2,15 @@
 
     <div class="options-overview">
         <header class="title">
-            <h1>Catterpillar - Moving Attempt 2</h1>
+            <h1>Catterpillar - Moving Attempt 1</h1>
         </header>
 
         <hr>
         <section class="viewport">
             <div class="viewport-content" ref="matterContainer" ratio="1x1">
                 <div class="scroll-container">
-                    <div class="render-canvas" ref="renderCanvas" :style="[{opacity: options.showMatterJS ? 1 : 0}]" />
-                    <canvas id="paperCanvas" :style="[{opacity: options.showPaperJS ? 1 : 0}]"></canvas>
+                    <div class="render-canvas" ref="renderCanvas" :style="[{opacity: showMatterJS ? 1 : 0}]" />
+                    <canvas id="paperCanvas" :style="[{opacity: showPaperJS ? 1 : 0}]"></canvas>
                 </div>
             </div>
         </section>
@@ -21,13 +21,13 @@
                 <div class="option-group" name="General">
                     <div class="option">
                         <span>
-                            <input type="checkbox" id="displayMatterJS" v-model="options.showMatterJS">
+                            <input type="checkbox" id="displayMatterJS" v-model="showMatterJS">
                             <label for="displayMatterJS">
                                 Show Matter JS
                             </label>
                         </span>
                         <span>
-                            <input type="checkbox" id="displayPaperJS" v-model="options.showPaperJS">
+                            <input type="checkbox" id="displayPaperJS" v-model="showPaperJS">
                             <label for="displayPaperJS">
                                 Show Paper JS
                             </label>
@@ -43,7 +43,7 @@
                 </div>
 
                 <div class="option-group" name="Options">
-                   
+
                     <div class="option">
                         <label for="length">
                             Length
@@ -57,25 +57,18 @@
                         </label>
                         <input type="number" id="size" v-model="options.size" step="1" min="4" max="100">
                     </div>
-                    
+
                     <div class="option">
-                        <label for="bodyPartStiffness">
-                            Bodypart stiffness
+                        <label for="stiffness">
+                            Stiffness
                         </label>
-                        <input type="number" id="bodyPartStiffness" v-model="options.bodyPartStiffness" step="0.01" min="0" max="1">
-                    </div>
-                    
-                    <div class="option">
-                        <label for="bodyStiffness">
-                            Body stiffness
-                        </label>
-                        <input type="number" id="bodyStiffness" v-model="options.bodyStiffness" step="0.01" min="0" max="1">
+                        <input type="number" id="stiffness" v-model="options.stiffness" step="0.01" min="0" max="1">
                     </div>
                     <div class="option">
-                        <label for="maxVelocity">
-                            Max velocity
+                        <label for="damping">
+                            Damping
                         </label>
-                        <input type="number" id="maxVelocity" v-model="options.maxVelocity" step="0.05" min="0" max="10">
+                        <input type="number" id="damping" v-model="options.damping" step="0.05" min="0" max="1">
                     </div>
                     <div class="option">
                         <label for="restitution">
@@ -83,13 +76,6 @@
                         </label>
                         <input type="number" id="restitution" v-model="options.restitution" step="0.05" min="0" max="1.2">
                     </div>
-                    <span>
-                        <button class="button __is" @click="resetOptions">
-                            Reset options
-                        </button>
-                    </span>
-                    <br>
-                    <br>
                 </div>
 
 
@@ -106,14 +92,8 @@ import Matter, { Collision } from "matter-js"
 import _ from "lodash"
 import StatsJS from "stats.js"
 import Paper from "paper"
-import gsap from "gsap"
+import GSAP from "gsap"
     
-function degrees_to_radians(degrees:number)
-{
-    var pi = Math.PI
-    return degrees * (pi/180)
-}
-
 export default defineComponent ({ 
     props: [],
     data() {
@@ -124,49 +104,25 @@ export default defineComponent ({
             mObject: [] as Array<Matter.Body>,
             stats: null as null | Stats,   
             ground: null as null | Matter.Body, 
-            paperJS: {
-                // points: [] as Array<paper.Point>
-                paths: [] as Array<paper.Path>,
-            },
             catterPillar: {
-                isMoving: false,
+                reset: false,
                 constraint: null as null | Matter.Constraint,
                 composite: null as null | Matter.Composite,
+                paths: [] as Array<paper.Path>,
+                points: [] as Array<paper.Point>
             },
-            ignoreOptionsUpdate: false,
+            showMatterJS: true,
+            showPaperJS: false,
             options: {
-                maxVelocity: 3,
+                damping: 0,
                 length: 12,
-                bodyStiffness: .8,
-                bodyPartStiffness: .2,
+                stiffness: .2,
                 size: 12,
                 restitution: 0.8,
-                showMatterJS: true,
-                showPaperJS: false,
-            },
-            originalOptions: {
-                maxVelocity: 3,
-                length: 12,
-                bodyStiffness: .8,
-                bodyPartStiffness: .2,
-                size: 12,
-                restitution: 0.8,
-                showMatterJS: true,
-                showPaperJS: false,
             }
         }
     },
     watch: {
-        "options": {
-            handler(){
-                if (this.ignoreOptionsUpdate) {
-                    console.log("ignoreOptionsUpdate")
-                    return
-                }
-                localStorage.setItem("options", JSON.stringify(this.options))
-            },
-            deep: true
-        },
         "options.size": {
             handler() {
                 this.generateCatterpillar()
@@ -177,25 +133,16 @@ export default defineComponent ({
                 this.generateCatterpillar()
             }
         },
-        "options.bodyPartStiffness": {
+        "options.stiffness": {
             handler() {
-                if (!this.mWorld || !this.catterPillar.composite) {
+                if (!this.mWorld) {
                     return
                 }
-                _.each(this.catterPillar.composite.constraints, constraint => {
-                    if (this.mWorld) {
-                        constraint.stiffness = this.options.bodyPartStiffness
+                _.each(this.mWorld.constraints, constraint => {
+                    if (this.mWorld && constraint.label === "blob") {
+                        constraint.stiffness = this.options.stiffness
                     }
                 })
-                
-            }
-        },
-        "options.bodyStiffness": {
-            handler() {
-                if (!this.catterPillar.constraint) {
-                    return
-                }
-                this.catterPillar.constraint.stiffness = this.options.bodyStiffness
                 
             }
         }
@@ -205,10 +152,8 @@ export default defineComponent ({
         this.initPaperJS()
         const el = this.$el.querySelector(".scroll-container")
         this.displayFPS(el)
-        this.loadOptions()
-        this.createGround()
         this.generateCatterpillar()
-        window.addEventListener("keydown", this.keyPressEvent)
+        this.initCatterpillarMovement()
     },
     unmounted() {
         this.removeMatter()
@@ -225,25 +170,9 @@ export default defineComponent ({
             if (this.mRunner) {
                 Matter.Runner.stop(this.mRunner)
             }
-
             if (this.mEngine) {
                 Matter.Engine.clear(this.mEngine)
             }
-        },
-        loadOptions() {
-            let options = this.options
-            this.ignoreOptionsUpdate = true
-            const optionsString = localStorage.getItem("options")
-            if (optionsString) {
-                this.options = JSON.parse(optionsString)
-                // console.log(optionsString)
-            }
-            setTimeout(() => {
-                this.ignoreOptionsUpdate = false
-            })
-        },
-        resetOptions() {
-            this.options = JSON.parse(JSON.stringify(this.originalOptions))
         },
         initPaperJS() {
             const canvas = this.$el.querySelector("#paperCanvas")
@@ -253,7 +182,6 @@ export default defineComponent ({
                 console.error("Can't find canvas")
                 return
             }
-
             canvas.width = el.clientWidth
             canvas.height = el.clientHeight
             Paper.setup(canvas)
@@ -267,7 +195,6 @@ export default defineComponent ({
             if (!canvasEl) {
                 throw new Error("renderCanvas ref can not be found")
             }
-
             // create an engine
             const engine = Matter.Engine.create({
                 enableSleeping: true,
@@ -276,7 +203,6 @@ export default defineComponent ({
                     y: 1
                 }
             })
-
             // create runner
             const render = Matter.Render.create({
                 element: canvasEl,
@@ -284,30 +210,9 @@ export default defineComponent ({
                 options: {
                     width: canvasEl.clientWidth,
                     height: canvasEl.clientHeight,
-                    showAngleIndicator: true,
                 }
             })
-
             const runner = Matter.Runner.create()
-            
-            this.mWorld = engine.world
-            this.mRunner = runner
-            this.mEngine = engine
-            Matter.Render.run(render)
-
-            // run the engine
-            Matter.Runner.run(this.mRunner, this.mEngine)
-            this.renderLoop()    
-        },
-        createGround() {
-            const el = this.$refs["matterContainer"] as HTMLElement
-            if (!el) {
-                throw new Error("matterContainer ref can not be found")
-            }
-            if (!this.mWorld) {
-                throw new Error("mWorld can't be null")
-            }
-
             this.ground = Matter.Bodies.rectangle(el.clientWidth/2, el.clientHeight-16, el.clientWidth, 16, {
                 isStatic: true,
                 label: "ground",
@@ -317,314 +222,461 @@ export default defineComponent ({
                     mask: 1
                 }
             })
-            
             // add all of the bodies to the world
-            Matter.Composite.add(this.mWorld, [this.ground])
+            Matter.Composite.add(engine.world, [this.ground])
+            
+            this.mWorld = engine.world
+            this.mRunner = runner
+            this.mEngine = engine
+            Matter.Render.run(render)
+            // run the engine
+            Matter.Runner.run(this.mRunner, this.mEngine)
+            this.renderLoop()    
         },
         keyPressEvent(e: KeyboardEvent) {
-            if (!this.mEngine || this.catterPillar.isMoving) {
+            if (!this.mEngine) {
                 return
             }
-
-            if (!this.catterPillar.composite) {
-                console.warn("Missing catterpillar object")
-                return
-            }
-
             let direction = ""
             if (e.key === "ArrowLeft" || e.key.toUpperCase() === "A") {
                 direction = "left"
             } else if (e.key === "ArrowRight" || e.key.toUpperCase() === "D") {
                 direction = "right"
             }
-
-
-            // Check if the catterpillar collides with the ground, and exit when it does not
-            const collision = _.some(_.map(this.catterPillar.composite.bodies, body => {
+            // Create collision events
+            if (!this.catterPillar.composite) {
+                console.warn("Missing catterpillar object")
+                return
+            }
+            const collision = _.map(this.catterPillar.composite.bodies, body => {
                 if (!this.ground) {
                     return false
                 }
                 return Matter.Collision.collides(body, this.ground)
-            }))
-            
-            if (!collision) {
-                return
-            }
-
-            this.catterPillar.isMoving = true
+            })
             
             if (direction === "left") {
-                this.catterPillarMoveLeft(this.catterPillar.composite.bodies)
-
-            } else if (direction === "right") {
-                console.log("should go right")
-                this.catterPillar.isMoving = false
-            }
-        },
-        catterPillarMoveLeft(bodies: Array<Matter.Body>) {
-            if (!bodies) {
-                throw new Error("Provide bodies")
-            }
-            const firstBody = bodies[0]
-            const lastBody = bodies[bodies.length-1]
-            const duration = .6
-            const newLength = (this.options.length * this.options.size)*.8
-
-            if (!this.mWorld || !this.ground) {
-                return
-            }
+                // this.catterPillar.composite.bodies[0].position.x -= 10
+                const bodies = this.catterPillar.composite.bodies
                 
-            // Fix head to ground
-            const firstBodyConstaint = Matter.Constraint.create({
-                bodyA: firstBody,
-                pointA: { x: 0, y: this.options.size/2 },
-                pointB: { x: firstBody.position.x - this.ground.bounds.max.x/2, y: -8 },
-                bodyB: this.ground,
-                length: 0.5,
-                stiffness: .8,
-                label: "bodyPartConnection",
-                render: {
-                    strokeStyle: "#9f0",
-                    type:"line",
+                // const obj = _.clone(bodies[bodies.length-1].position)
+                // GSAP.to(obj, {
+                //     x: obj.x - 50,
+                //     onUpdate:() => {
+                //         console.log(bodies)
+                //         Matter.Body.setPosition(bodies[bodies.length-1], {
+                //             x: obj.x,
+                //             y: bodies[bodies.length-1].position.y
+                //         })
+                //         // bodies[bodies.length-1].setPosition({})
+                //         // this.catterPillar.composite.bodies[0].position.y = obj.y
+                //     },
+                //     ease: "circ.out",
+                //     duration: 1
+                // })
+                const obj = {
+                    t: 0
                 }
-            })
-                
-            // Fix butt to ground
-            const lastBodyConstaint = Matter.Constraint.create({
-                bodyA: lastBody,
-                pointA: { x: 0, y: this.options.size/2 },
-                pointB: { x: lastBody.position.x - this.ground.bounds.max.x/2, y: -8 },
-                bodyB: this.ground,
-                length: 1,
-                stiffness: .8,
-                label: "bodyPartConnection",
-                render: {
-                    strokeStyle: "#9f0",
-                    type:"line",
+                if (!this.mWorld) {
+                    return
                 }
-            })
-
-            Matter.Composite.add(this.mWorld, [firstBodyConstaint, lastBodyConstaint])
-
-            if (this.catterPillar.constraint) {
-                // Slide butt forward ( to the left )
-                gsap.to(lastBodyConstaint.pointB, {
-                    x: (lastBody.position.x - this.ground.bounds.max.x/2) - newLength/2 ,
-                    onComplete:() => {
-                        if (!this.mWorld) {
-                            return
+                // Matter.Composite.add(this.mWorld, [
+                //     Matter.Constraint.create({
+                //         bodyA: this.catterPillar.composite.bodies[this.catterPillar.composite.bodies.length-1],
+                //         pointA: { x: 0, y: this.options.size/2 },
+                //         pointB: { x: 0, y: -8 },
+                //         // damping: this.options.damping,
+                //         bodyB: this.ground,
+                //         length: 1,
+                //         stiffness: 1,
+                //         // stiffness: this.options.stiffness,
+                //         label: "bodyPartConnection",
+                //         render: {
+                //             // visible: false
+                //             strokeStyle: "#f09",
+                //             type:"line",
+                //         }
+                //     })])
+                if (this.catterPillar.constraint) {
+                    GSAP.to(this.catterPillar.constraint, {
+                        length: this.catterPillar.constraint.length/2,
+                        onUpdate:() => {
+                            if (!this.mEngine) {
+                                return
+                            }
+                            
+                            // bodies[bodies.length-1].setPosition({})
+                            // this.catterPillar.composite.bodies[0].position.y = obj.y
+                        },
+                        ease: "power4.out",
+                        duration: .5,
+                        onComplete:() => {
+                            if (!this.catterPillar.composite) {
+                                return
+                            }
+                            GSAP.to(this.catterPillar.constraint, {
+                                length: this.options.size * (this.catterPillar.composite.bodies.length ),
+                                onUpdate:() => {
+                                    if (!this.mEngine) {
+                                        return
+                                    }
+                                
+                                // bodies[bodies.length-1].setPosition({})
+                                // this.catterPillar.composite.bodies[0].position.y = obj.y
+                                },
+                                ease: "power4.in",
+                                duration: .5
+                            })
                         }
-                        Matter.Composite.remove(this.mWorld,firstBodyConstaint)
-                    },
-                    // ease: "power2.out",
-                    ease: "back.out",
-                    duration: duration*.777,
+                    })
+                }
+                const centerIndex = Math.ceil(bodies.length/2)
+                _.each(bodies, (body,index) => {
+                    const maxVelocity = 16 / centerIndex
+                    // console.log(maxVelocity / Math.abs(index-centerIndex*.99))
+                    if (index != 0 && index !=bodies.length-1) {
+                        Matter.Body.setVelocity( body, {
+                            x: 0,
+                            y: maxVelocity / Math.abs(index-centerIndex*.99) * -1
+                        })
+                    } else {
+                        body.mass = 1000
+                        body.friction = 1
+                        Matter.Body.setVelocity( body, {
+                            x: 0,
+                            y: 10
+                        })
+                    }
                 })
-
-                // Animate body
-                gsap.to(this.catterPillar.constraint, {
-                    length: newLength,
+                
+                // Matter.Body.setVelocity( bodies[centerIndex+1], {
+                //     x: 0,
+                //     y:-14
+                // })
+                // Matter.Body.setVelocity( bodies[centerIndex-1], {
+                //     x: 0,
+                //     y: -12
+                // })
+            } else if (direction === "right") {
+                // const angle = 100 * (Math.PI/180)
+                // // console.log(angle)
+                // // Matter.Body.setAngle(this.catterPillar.composite.bodies[0], angle)
+                // // Matter.Body.setAngularVelocity(this.catterPillar.composite.bodies[0], 200)
+                // console.log(Matter.Body.getAngularVelocity(this.catterPillar.composite.bodies[0]))
+                const bodies = this.catterPillar.composite.bodies
+                // bodies[1].friction = 1
+                // bodies[0].friction = 1
+                // bodies[0].mass = 100
+                // bodies[1].mass = 100
+                const obj = {
+                    t: 0
+                }
+                
+                
+                // setTimeout(()=> {
+                //     Matter.Body.setVelocity(bodies[bodies.length-1], { x: 33, y: 0 })
+                // }, 400)
+                GSAP.to(obj, {
+                    t: 100,
                     onUpdate:() => {
                         if (!this.mEngine) {
                             return
                         }
-                    },
-                    ease: "back.out",
-                    duration: duration/2,
-                    onComplete:() => {
-                        if (!this.catterPillar.composite) {
-                            return
+                        const interval = (2 * Math.PI) / bodies.length *.2
+                            
+                        for (var i = 0; i < bodies.length; i++) {
+                            var body = bodies[i]
+                            const velocity = -Math.sin((obj.t * 0.05) + ((i) * interval )) 
+                            let velocityX = 0
+                            if (velocity < 0){
+                                velocityX = 1.5
+                            }
+                            Matter.Body.setVelocity(body, { x: velocityX, y: velocity * 2 })
+                            // Matter.Body.setVelocity(body, { x: -Math.cos((obj.t * 0.1) + (i*.1 )) * 2, y: -Math.sin((obj.t * 0.1) + (i*.8 )) * 2 })
                         }
-                        gsap.to(this.catterPillar.constraint, {
-                            length: (this.options.size*1.5) * this.options.length,
-                            onUpdate:() => {
-                                if (!this.mEngine) {
-                                    return
-                                }
-                            },
-                            onComplete: () => {
-                                setTimeout(() => {
-                                    if (this.mWorld) {
-                                        Matter.Composite.remove(this.mWorld,lastBodyConstaint)
-                                    }
-                                }, 320)
-                                this.catterPillar.isMoving = false
-                            },
-                            ease: "power2.in",
-                            duration: duration/2
-                        })
-                    }
+                        
+                        // bodies[bodies.length-1].setPosition({})
+                        // this.catterPillar.composite.bodies[0].position.y = obj.y
+                    },
+                    ease: "linear",
+                    duration: 2
                 })
+                // const bodies = this.catterPillar.composite.bodies
+                // .setAngularVelocity(.x += 10)
             }
-                
-            // Make body curl
-            const centerIndex = Math.floor(bodies.length/2)
-            const maxVelocity  = this.options.maxVelocity
-                
-            _.each(bodies, (body,index) => {
-                if (index != 0 && index !=bodies.length-1) {
-                    const velocity = centerIndex === index ? maxVelocity : maxVelocity - maxVelocity / index
-                    Matter.Body.setVelocity( body, {
-                        x: 0,
-                        y: -velocity * (centerIndex - Math.abs(index - centerIndex))/2,
-                    })
-                } else {
-                    body.mass = 1000
-                    body.friction = 1
-                    Matter.Body.setVelocity( body, {
-                        x: 0,
-                        y: 10
-                    })
-                }
-            })
+        },
+        initCatterpillarMovement() {
+            window.addEventListener("keydown", this.keyPressEvent)
+            if (!this.mEngine) {
+                return
+            }
+            // Matter.Events.on(this.mEngine, "collisionStart", (event) => {
+            //     _.each(event.pairs, collision => {
+            //         let ground = null
+            //         let body = null
+                    
+            //         if (collision.bodyA.label === "ground") {
+            //             ground = collision.bodyA
+            //             body = collision.bodyB
+            //         } else if (collision.bodyB.label === "ground") {
+            //             ground = collision.bodyB
+            //             body = collision.bodyA
+            //         }
+            //         if (body) {
+            //             this.catterPillar.grounded = true 
+            //             this.catterPillar.groundedTimeout = setTimeout(() => {
+            //                 this.catterPillar.grounded = false
+            //                 console.log("grounded reset", this.catterPillar.grounded)
+                            
+            //             }, 100)
+            //             console.log("grounded", this.catterPillar.grounded)
+            //         } else {
+            //             clearTimeout(this.catterPillar.groundedTimeout)
+            //         }
+            //     })
+            // }) 
         },
         removeCatterpillar() {
             if (!this.mWorld) {
                 return
             }
-
-            // Remove existing catterpillar
-            if (this.catterPillar.composite) {
-                Matter.Composite.remove(this.mWorld, this.catterPillar.composite)
-                this.catterPillar.composite = null
-            } else {
-                console.error("No catterpillar set to be removed")
-                return
-            }
+            // Remove existing blob
+            const bodies = _.clone(this.mWorld.bodies)
+            const composites = _.clone(this.mWorld.composites)
+            _.each(bodies, body => {
+                if (body.label !== "ground" && this.mWorld) {
+                    Matter.Composite.remove(this.mWorld, body)
+                }
+            })
             
-            // Remove all constraints
-            _.each(this.mWorld.constraints, constraint => {
+            _.each(composites, composite => {
+                if (composite.label !== "ground" && this.mWorld) {
+                    Matter.Composite.remove(this.mWorld, composite)
+                }
+            })
+            const constraints = _.clone(this.mWorld.constraints)
+            _.each(constraints, constraint => {
                 if (this.mWorld) {
                     Matter.Composite.remove(this.mWorld, constraint)
                 }
             })
-            
-            // Remove paperJS properties
-            if (this.paperJS.paths.length > 0) {
-                for (let i=0; i < this.paperJS.paths.length; i++) {
-                    this.paperJS.paths[i].remove()
+            if (this.catterPillar) {
+                this.catterPillar.points.length = 0
+                for (let i=0; i < this.catterPillar.paths.length; i++) {
+                    this.catterPillar.paths[i].remove()
                 }
-                this.paperJS.paths.length = 0
+                this.catterPillar.paths.length = 0
+                this.catterPillar.composite = null
             }
         },
-        generatePaperJSCircle(x: number, y: number) {
-            return new Paper.Path.Circle(new Paper.Point(x,y), this.options.size) 
+        generatePaperJSCircle(center: paper.Point) {
+            return new Paper.Path.Circle(center, this.options.size) 
         },
         generateCatterpillar() {
             const el = this.$el.querySelector(".scroll-container")
-
             if (!el || !this.mWorld) {
                 return
             }
-
-            if (this.catterPillar.composite) {
-                this.removeCatterpillar()
-            }
-
+            this.removeCatterpillar()
             const center = {x: el.clientWidth/2, y: el.clientHeight/2}
             const size = this.options.size
-
+            const startX = center.x - size * this.options.length/2
+            const startY =  16
+            const catterpillar = Matter.Composite.create({label:"catterpillar"})
+            let prev = null as null | Matter.Body
             for (let i=0; i < this.options.length; i++) {
-                const newPath = this.generatePaperJSCircle(0,0)
-                newPath.fillColor = new Paper.Color("#58f208")
-                this.paperJS.paths.push(newPath)
-            }
-            
-            const group = Matter.Body.nextGroup(true)
-
-            // Helper function for generating catterpillar bodies
-            const catterPillarBodies = Matter.Composites.stack(center.x - (this.options.length*this.options.size*2) / 2, 32, this.options.length, 1, this.options.size, 0, (x:number, y:number) => {
-                return Matter.Bodies.rectangle(x, y, this.options.size*2, this.options.size, { 
-                    collisionFilter: { group: group }, 
-                    restitution: this.options.restitution,
-                    label: "bodyPart"
-                })
-            })
-
-            // Create catterpillar
-            this.catterPillar.composite = Matter.Composites.chain(catterPillarBodies, this.options.size/100, 0, -this.options.size/100, 0, { 
-                stiffness: this.options.bodyPartStiffness, 
-                length: 0, 
-                label:"catterpillar" 
-            })
-            
-            // Set 1 constraint from head to bud
-            this.catterPillar.constraint = Matter.Constraint.create({
-                bodyA: this.catterPillar.composite.bodies[0],
-                bodyB: this.catterPillar.composite.bodies[this.catterPillar.composite.bodies.length-1],
-                length: (size*1.5) * this.options.length,
-                stiffness: this.options.bodyStiffness,
-                damping: .2,
-                label: "catterpillarConstraint",
-                render: {
-                    visible: true,
-                    strokeStyle: "#4f0944",
-                    type:"spring",
+                // Create body part and add it to `catterpillar` variable & this.catterpillar
+                const x = startX + i * size
+                const y = startY - (Math.abs(i - this.options.length/2)) * 4 + (Math.abs(i - this.options.length/2)) / 2
+                // const radius = size / 2
+                const radius = size / 2
+                const point = new Paper.Point(x,y)
+                let parts = []
+                parts.push(Matter.Bodies.circle(x, y, radius, {
+                    label: "bodyPartCircle",
+                    // frictionAir: 0.05 + (Math.abs(i - this.options.length/2) + (Math.abs(i - this.options.length/2)) / 2) * .001,
+                    // // frictionAir: 0.025,
+                    // restitution: this.options.restitution,
+                    // density: 5,
+                    // mass: size,
+                    // collisionFilter: {
+                    //     category: 1,
+                    //     mask: 2 | 1
+                    // },
+                    isStatic:true
+                })) 
+                if (i!=0) {
+                    parts.push( Matter.Bodies.rectangle(x, y+size/4, size*.9, size/2, {
+                        label: "bodyPartSquare",
+                        isStatic:true
+                        // // frictionAir: 0.025,
+                        // density: 5,
+                    }))
                 }
+                const bodyPart = Matter.Body.create({
+                    parts: parts,
+                    frictionAir: 0.05 + (Math.abs(i - this.options.length/2) + (Math.abs(i - this.options.length/2)) / 2) * .001,
+                    restitution: this.options.restitution,
+                    mass: size,
+                    collisionFilter: {
+                        category: 1,
+                        mask: 2 | 1
+                    },
+                    label: "bodyPart",
+                })
+                Matter.Composite.add(catterpillar, bodyPart)
+                // if ((i)%2 && i !=0) {
+                //     const secondPrev = catterpillar.bodies[catterpillar.bodies.length-2]
+                //     console.log("i",i,secondPrev)
+                //     if (secondPrev) {
+                //         Matter.Composite.add(this.mWorld, [
+                //             Matter.Constraint.create({
+                //                 bodyA: bodyPart,
+                //                 // pointB: { x: size/2, y: 0 },
+                //                 // pointA: { x: size/2, y: 0 },
+                //                 // damping: this.options.damping,
+                //                 bodyB: secondPrev,
+                //                 length: size*1.8,
+                //                 stiffness: .6,
+                //                 label: "bodyPartConnection2"
+                //             }),
+                //         ])
+                //     }
+                // }
+                this.catterPillar.points.push(point)
+                this.catterPillar.paths.push(this.generatePaperJSCircle(point))
+                this.catterPillar.paths[this.catterPillar.paths.length-1].fillColor = new Paper.Color("#58f208")
+                // Create constraint between body parts
+                if (prev) {
+                    Matter.Composite.add(this.mWorld, [
+                        Matter.Constraint.create({
+                            bodyA: bodyPart,
+                            // pointB: { x: 0, y: -size/2 },
+                            // pointA: { x: 0, y: -size/2 },
+                            // damping: this.options.damping,
+                            bodyB: prev,
+                            length: size,
+                            // stiffness: 1,
+                            stiffness: this.options.stiffness,
+                            label: "bodyPartConnection",
+                            render: {
+                                // visible: false
+                                strokeStyle: "#444",
+                                type:"line",
+                            }
+                        }),
+                        // Matter.Constraint.create({
+                        //     bodyA: bodyPart,
+                        //     pointB: { x: 0, y: size/2 },
+                        //     pointA: { x: 0, y: size/2 },
+                        //     // damping: this.options.damping,
+                        //     bodyB: prev,
+                        //     length: size,
+                        //     // stiffness: 1,
+                        //     stiffness: this.options.stiffness,
+                        //     label: "bodyPartConnection",
+                        //     render: {
+                        //         // visible: false
+                        //         strokeStyle: "#444",
+                        //         type:"line",
+                        //     }
+                        // }),
+                        // Matter.Constraint.create({
+                        //     bodyA: bodyPart,
+                        //     pointB: { x: 0, y: size/2 },
+                        //     pointA: { x: 0, y: -size/2 },
+                        //     // damping: this.options.damping,
+                        //     bodyB: prev,
+                        //     length: size,
+                        //     // stiffness: 1,
+                        //     stiffness: this.options.stiffness,
+                        //     label: "bodyPartConnection",
+                        //     render: {
+                        //         // visible: false
+                        //         strokeStyle: "#444",
+                        //         type:"line",
+                        //     }
+                        // }),
+                        // Matter.Constraint.create({
+                        //     bodyA: bodyPart,
+                        //     pointB: { x: 0, y: -size/2 },
+                        //     pointA: { x: 0, y: size/2 },
+                        //     // damping: this.options.damping,
+                        //     bodyB: prev,
+                        //     length: size,
+                        //     // stiffness: 1,
+                        //     stiffness: this.options.stiffness,
+                        //     label: "bodyPartConnection",
+                        //     render: {
+                        //         // visible: false
+                        //         strokeStyle: "#444",
+                        //         type:"line",
+                        //     }
+                        // }),
+                    ])
+                }
+                prev = bodyPart
+            }
+            this.catterPillar.constraint = Matter.Constraint.create({
+                bodyA: catterpillar.bodies[0],
+                bodyB: catterpillar.bodies[catterpillar.bodies.length-1],
+                length: size * catterpillar.bodies.length ,
+                stiffness: .1,
+                damping: .8,
+                label: "catterpillarConstraint"
             })
-
-            Matter.Composite.add(this.mWorld, [
-                this.catterPillar.constraint,
-                this.catterPillar.composite
-            ])
+            Matter.Composite.add(this.mWorld, [this.catterPillar.constraint])
+            this.catterPillar.composite = catterpillar
+            Matter.Composite.add(this.mWorld, catterpillar)
+            // Matter.Events.on(catterpillar, "eventNames", callback)
         },
         displayFPS(targetEl: HTMLElement) {
             this.stats = new StatsJS()
             this.stats.showPanel( 0 ) // 0: fps, 1: ms, 2: mb, 3+: custom
             this.stats.update() // 0: fps, 1: ms, 2: mb, 3+: custom
             targetEl.appendChild( this.stats.dom )
-            requestAnimationFrame( this.updateFPS )      
+            requestAnimationFrame( this.updateFPS )    
+            
         },
         updateFPS () {
             if (!this.stats) {
                 return
             }
-
             this.stats.begin()
             this.stats.end()
-
             requestAnimationFrame( this.updateFPS )
         },
         renderLoop() {
-            // Exit renderLoop component has been unmounted
+            const el = this.$el.querySelector(".scroll-container")
             if (!this.mWorld) {
                 return
             }
             
-            const el = this.$refs.renderCanvas as HTMLElement
-            const catterpillar = this.catterPillar.composite
-
-            if (!el || !catterpillar) {
-                requestAnimationFrame(this.renderLoop)
-                return
-            }
-
-            // Reset catterpillar when it is off screen
-            const firstBody = catterpillar.bodies[0]
-            const lastBody = catterpillar.bodies[catterpillar.bodies.length -1]
-
-            if ((firstBody.position.x > el.clientWidth && lastBody.position.x > el.clientWidth) ||
-            (firstBody.position.x <= 0 && lastBody.position.x < 0) ||
-            (firstBody.position.y > el.clientHeight + 100 && lastBody.position.y > el.clientHeight + 100)
-            ) {
-                this.removeCatterpillar()
-                
-                // Don't create new catterpillar immediately for UX reasons
-                setTimeout(() => {
-                    this.generateCatterpillar()
-                }, 480)
-            } 
-            
-            // Update PaperJS
-            _.each(catterpillar.bodies, (body, i) => {
-                const path = this.paperJS.paths[i]
-                if (!path) {
-                    return
-                }
-                path.position.x = body.position.x
-                path.position.y = body.position.y                    
+            const catterpillars = _.filter(this.mWorld.composites, (composite) => {
+                return composite?.label === "catterpillar"
             })
-
+            
+            if (catterpillars[0]) {
+                const catterpillar = catterpillars[0]
+                if (catterpillar.bodies[0].position.x > el.clientWidth ||
+                    catterpillar.bodies[catterpillar.bodies.length - 1].position.x < 0 ||
+                    catterpillar.bodies[0].position.y > el.clientHeight + 20
+                ) {
+                    this.catterPillar.reset = true
+                    this.removeCatterpillar()
+                    // return
+                    setTimeout(() => {
+                        this.catterPillar.reset = false
+                        this.generateCatterpillar()
+                    }, 800)
+                } else {   
+                    _.each(catterpillar.bodies, (body, i) => {
+                        const path = this.catterPillar.paths[i]
+                        path.position.x = body.position.x
+                        path.position.y = body.position.y                    
+                    })
+                }
+            }
             requestAnimationFrame(this.renderLoop)
         }
     }
@@ -633,7 +685,6 @@ export default defineComponent ({
 
 
 <style lang="scss" scoped>
-
     @import '../assets/scss/variables.scss';
     .ball {
         width: 32px;
@@ -651,7 +702,6 @@ export default defineComponent ({
         width: 100%;
         height: 100%;
     }
-
     #paperCanvas {
         position: fixed;
         top: 0;

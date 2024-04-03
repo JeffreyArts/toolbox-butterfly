@@ -5,6 +5,8 @@ import ActiveSurfaceCatterpillar from "./active-surface-catterpillar.vue"
 import PaperBlobSmooth from "./paper-blob-smooth.vue"
 import CatterpillarFalling from "./catterpillar-falling.vue"
 import CatterpillarMoving from "./catterpillar-moving.vue"
+import CatterpillarMoving2 from "./catterpillar-moving-2.vue"
+import CatterpillarMoving3 from "./catterpillar-moving-3.vue"
 import PhysicsDiv from "./physics-div.vue"
 import PhysicsDivTranslate from "./physics-div-translate.vue"
 import PhysicsCanvas from "./physics-canvas.vue"
@@ -39,6 +41,16 @@ const routes = [
         path: "/catterpillar-moving",
         name: "Catterpillar moving",
         component: CatterpillarMoving,
+    },
+    {
+        path: "/catterpillar-moving - 2",
+        name: "Catterpillar moving 2",
+        component: CatterpillarMoving2,
+    },
+    {
+        path: "/catterpillar-moving-3",
+        name: "Catterpillar moving 3",
+        component: CatterpillarMoving3,
     },
     {
         path: "/flag-colors",
