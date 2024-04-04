@@ -1,25 +1,34 @@
 import _ from "lodash"
 import Matter from "matter-js"
 
-type CatterpillarOptions = {
-    length: 8,
-    size: 8,
-    bodyPartStiffness: .16,
-    bodyStiffness: .8, 
-    bodyDamping: .2, 
-    maxVelocity: 3,
-    restitution: .8
+export type CatterpillarOptions = {
+    length: number,
+    maxVelocity: number,
+    stiffness?: number, 
+    damping?: number, 
+    restitution?: number,
+    bodyPart: CatterpillarBodyPartOptions
 } & { [key: string]: number }
 
+export type CatterpillarBodyPartOptions = {
+    size: number,
+    stiffness?: number,
+    damping?: number,
+    restitution?: number,
+}
 const catterpillar = {
     create: (x:number,y:number, options: CatterpillarOptions) => {
         const defaultOptions = {
             length: 8,
-            size: 8,
-            bodyPartStiffness: .16,
-            bodyStiffness: .8, 
+            stiffness: .8, 
             maxVelocity: 3,
-            restitution: .8
+            restitution: .8,
+            bodyPart: {
+                size: 8,
+                stiffness: .16,
+                damping: .2,
+                restitution: .8
+            }
         } as CatterpillarOptions
 
         if (!options) {
@@ -38,15 +47,17 @@ const catterpillar = {
         
         return { composite, constraint }
     },
-    _createBodyParts: (options: CatterpillarOptions) => {
+    _createBodyPart: (x:number, y:number, options: CatterpillarBodyPartOptions) => {
         const group = Matter.Body.nextGroup(true)
-
-        const bodyParts = Matter.Composites.stack(0, 32, options.length, 1, options.size, 0, (x:number, y:number) => {
-            return Matter.Bodies.rectangle(x, y, options.size, options.size * .5, { 
-                collisionFilter: { group: group }, 
-                restitution: options.restitution,
-                label: "partBody"
-            })
+        return Matter.Bodies.rectangle(x, y, options.size, options.size * .5, { 
+            collisionFilter: { group: group }, 
+            restitution: options.restitution,
+            label: "partBody"
+        })
+    },
+    _createBodyParts: (options: CatterpillarOptions) => {
+        const bodyParts = Matter.Composites.stack(0, 32, options.length, 1, options.bodyPart.size, 0, (x:number, y:number) => {
+            return catterpillar._createBodyPart(x,y, options.bodyPart)
         })
         // Matter
         const composite = Matter.Composite.create({
@@ -62,11 +73,11 @@ const catterpillar = {
                     Matter.Constraint.create({
                         bodyA: bodyPart,
                         bodyB: prev,
-                        pointA: {x: -options.size*.5, y:0},
-                        pointB: {x: options.size*.5, y:0},
+                        pointA: {x: -options.bodyPart.size*.5, y:0},
+                        pointB: {x: options.bodyPart.size*.5, y:0},
                         length: 0,
                         // length: options.size*.5,
-                        stiffness: options.bodyPartStiffness,
+                        stiffness: options.bodyPart.stiffness,
                         label: "bodyPartConnection",
                         render: {
                             strokeStyle: "#444",
@@ -88,9 +99,9 @@ const catterpillar = {
         return Matter.Constraint.create({
             bodyA: head,
             bodyB: butt,
-            length: (options.size*1.5) * options.length,
-            stiffness: options.bodyStiffness,
-            damping: options.bodyDamping,
+            length: (options.bodyPart.size*1.5) * options.length,
+            stiffness: options.stiffness,
+            damping: options.damping,
             label: "catterpillarConstraint",
             render: {
                 visible: true,

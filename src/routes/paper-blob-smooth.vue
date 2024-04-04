@@ -94,6 +94,7 @@ import Matter from "matter-js"
 import _ from "lodash"
 import StatsJS from "stats.js"
 import Paper from "paper"
+import mousePosition from "@/services/mouse-position"
     
 export default defineComponent ({ 
     props: [],
@@ -197,12 +198,13 @@ export default defineComponent ({
         },
         mouseMoveEvent(e: MouseEvent) {
             const pointer = this.mWorld?.bodies.find(body => body.label == "mousePointer")
+            const target = e.currentTarget as HTMLElement
+            const mousePos = mousePosition.xy(e)
             
             if (this.mEngine) {
-                this.mEngine.gravity.x = (e.layerX / e.currentTarget.clientWidth) * 2 - 1
-                this.mEngine.gravity.y = (e.layerY / e.currentTarget.clientHeight) * 2 - 1
+                this.mEngine.gravity.x = (mousePos.x / target.clientWidth) * 2 - 1
+                this.mEngine.gravity.y = (mousePos.y / target.clientHeight) * 2 - 1
             }
-            
         },
         initPaperJS() {
             const canvas = this.$el.querySelector("#paperCanvas")

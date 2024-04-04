@@ -444,7 +444,7 @@ export default defineComponent ({
             }
 
             
-            this.$el.querySelectorAll(".ball").forEach((ball, index) => {
+            this.$el.querySelectorAll(".ball").forEach((ball: HTMLElement, index: number) => {
                 const ballEl = ball as HTMLElement
                 const ballBody = balls[index]
                 // console.log(index, "ball length", balls.length)

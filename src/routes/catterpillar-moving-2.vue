@@ -9,7 +9,7 @@
         <section class="viewport">
             <div class="viewport-content" ref="matterContainer" ratio="1x1">
                 <div class="scroll-container">
-                    <div class="render-canvas" ref="renderCanvas" :style="[{opacity: options.showMatterJS ? 1 : 0}]" />
+                    <div class="render-canvas" ref="renderCanvas" :style="{opacity: options.showMatterJS ? 1 : 0}" />
                     <canvas id="paperCanvas" :style="[{opacity: options.showPaperJS ? 1 : 0}]"></canvas>
                 </div>
             </div>

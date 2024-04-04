@@ -221,5 +221,10 @@ export default defineComponent ({
         width: 32px;
         opacity: 1;
     }
+    @media all and (max-width: 560px) {
+        width: 32px !important;
+        opacity: 1 !important;
+
+    }
 }
 </style>

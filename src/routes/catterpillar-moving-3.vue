@@ -55,21 +55,21 @@
                         <label for="size">
                             Size
                         </label>
-                        <input type="number" id="size" v-model="options.size" step="1" min="4" max="100">
+                        <input type="number" id="size" v-model="options.bodyPart.size" step="1" min="4" max="100">
                     </div>
                     
                     <div class="option">
-                        <label for="bodyPartStiffness">
+                        <label for="bodyPart.stiffness">
                             Bodypart stiffness
                         </label>
-                        <input type="number" id="bodyPartStiffness" v-model="options.bodyPartStiffness" step="0.01" min="0" max="1">
+                        <input type="number" id="bodyPart.stiffness" v-model="options.bodyPart.stiffness" step="0.01" min="0" max="1">
                     </div>
                     
                     <div class="option">
                         <label for="bodyStiffness">
                             Body stiffness
                         </label>
-                        <input type="number" id="bodyStiffness" v-model="options.bodyStiffness" step="0.01" min="0" max="1">
+                        <input type="number" id="bodyStiffness" v-model="options.bodyPart.stiffness" step="0.01" min="0" max="1">
                     </div>
                     <div class="option">
                         <label for="maxVelocity">
@@ -107,7 +107,7 @@ import _ from "lodash"
 import StatsJS from "stats.js"
 import Paper from "paper"
 import gsap from "gsap"
-import Catterpillar, {CatterpillarOptions} from "./../services/catterpillar"
+import Catterpillar, {CatterpillarOptions, CatterpillarBodyPartOptions} from "./../services/catterpillar"
     
 function degrees_to_radians(degrees:number)
 {
@@ -138,23 +138,28 @@ export default defineComponent ({
             options: {
                 maxVelocity: 3,
                 length: 12,
-                bodyStiffness: .8,
-                bodyPartStiffness: .2,
-                size: 12,
+                stiffness: .8,
                 restitution: 0.8,
                 showMatterJS: true,
                 showPaperJS: false,
-            } as CatterpillarOptions,
+                bodyPart: {
+                    size: 12,
+                    stiffness: .2,
+                    restitution: 0.8,
+                } as CatterpillarBodyPartOptions
+            },
             originalOptions: {
                 maxVelocity: 3,
                 length: 12,
                 bodyStiffness: .8,
-                bodyPartStiffness: .2,
                 size: 12,
                 restitution: 0.8,
                 showMatterJS: true,
                 showPaperJS: false,
-            } as CatterpillarOptions
+                bodyPart: {
+                    stiffness: .2,
+                }
+            }
         }
     },
     watch: {
@@ -168,7 +173,7 @@ export default defineComponent ({
             },
             deep: true
         },
-        "options.size": {
+        "options.bodyPart.size": {
             handler() {
                 this.generateCatterpillar()
             }
@@ -178,25 +183,25 @@ export default defineComponent ({
                 this.generateCatterpillar()
             }
         },
-        "options.bodyPartStiffness": {
+        "options.bodyPart.stiffness": {
             handler() {
                 if (!this.mWorld || !this.catterPillar.composite) {
                     return
                 }
                 _.each(this.catterPillar.composite.constraints, constraint => {
-                    if (this.mWorld) {
-                        constraint.stiffness = this.options.bodyPartStiffness
+                    if (this.mWorld && this.options.bodyPart.stiffness) {
+                        constraint.stiffness = this.options.bodyPart.stiffness
                     }
                 })
                 
             }
         },
-        "options.bodyStiffness": {
+        "options.stiffness": {
             handler() {
-                if (!this.catterPillar.constraint) {
+                if (!this.catterPillar.constraint || !this.options.stiffness) {
                     return
                 }
-                this.catterPillar.constraint.stiffness = this.options.bodyStiffness
+                this.catterPillar.constraint.stiffness = this.options.stiffness
                 
             }
         }
@@ -370,7 +375,7 @@ export default defineComponent ({
             const firstBody = bodies[0]
             const lastBody = bodies[bodies.length-1]
             const duration = .6
-            const newLength = (this.options.length * this.options.size)*.8
+            const newLength = (this.options.length * this.options.bodyPart.size)*.8
 
             if (!this.mWorld || !this.ground) {
                 return
@@ -379,7 +384,7 @@ export default defineComponent ({
             // Fix head to ground
             const firstBodyConstaint = Matter.Constraint.create({
                 bodyA: firstBody,
-                pointA: { x: 0, y: this.options.size/2 },
+                pointA: { x: 0, y: this.options.bodyPart.size/2 },
                 pointB: { x: firstBody.position.x - this.ground.bounds.max.x/2, y: -8 },
                 bodyB: this.ground,
                 length: 0.5,
@@ -394,7 +399,7 @@ export default defineComponent ({
             // Fix butt to ground
             const lastBodyConstaint = Matter.Constraint.create({
                 bodyA: lastBody,
-                pointA: { x: 0, y: this.options.size/2 },
+                pointA: { x: 0, y: this.options.bodyPart.size/2 },
                 pointB: { x: lastBody.position.x - this.ground.bounds.max.x/2, y: -8 },
                 bodyB: this.ground,
                 length: 1,
@@ -438,7 +443,7 @@ export default defineComponent ({
                             return
                         }
                         gsap.to(this.catterPillar.constraint, {
-                            length: (this.options.size*1.5) * this.options.length,
+                            length: (this.options.bodyPart.size*1.5) * this.options.length,
                             onUpdate:() => {
                                 if (!this.mEngine) {
                                     return
@@ -511,7 +516,7 @@ export default defineComponent ({
             }
         },
         generatePaperJSCircle(x: number, y: number) {
-            return new Paper.Path.Circle(new Paper.Point(x,y), this.options.size) 
+            return new Paper.Path.Circle(new Paper.Point(x,y), this.options.bodyPart.size) 
         },
         generateCatterpillar() {
             const el = this.$el.querySelector(".scroll-container")
@@ -524,7 +529,20 @@ export default defineComponent ({
                 this.removeCatterpillar()
             }
 
-            const res = Catterpillar.create(el.clientWidth/2, 0, this.options)
+            const options = {
+                length:         this.options.length,
+                maxVelocity:    this.options.maxVelocity,
+                stiffness:      this.options.stiffness, 
+                restitution:    this.options.restitution,
+                // damping: this.options.damping, 
+                bodyPart: {
+                    size:       this.options.bodyPart.size,
+                    stiffness:  this.options.bodyPart.stiffness,
+                    damping:    this.options.bodyPart.damping,
+                    restitution:this.options.bodyPart.restitution,
+                }
+            } as CatterpillarOptions
+            const res = this._createCatterpillar(el.clientWidth/2, 0, options)
 
             this.catterPillar.composite = res.composite
             this.catterPillar.constraint = res.constraint
@@ -537,7 +555,7 @@ export default defineComponent ({
             // Center catterpillar
             _.each(this.catterPillar.composite.bodies, (body,i) => {
                 body.isStatic = true
-                const x =  body.position.x + (el.clientWidth) / 2 - (this.options.length*this.options.size*2)/2
+                const x =  body.position.x + (el.clientWidth) / 2 - (this.options.length*this.options.bodyPart.size*2)/2
                 const y =  0.05 + (Math.abs(i - this.options.length/2) + (Math.abs(i - this.options.length/2)) / 2) * .001
                 Matter.Body.setPosition(body, {x, y})
                 body.isStatic = false
@@ -551,12 +569,104 @@ export default defineComponent ({
                         stops: ["#58f208", "#000"]
                     },
                     origin: new Paper.Point(0,0),
-                    destination: new Paper.Point(0,this.options.size)
+                    destination: new Paper.Point(0,this.options.bodyPart.size)
                 })
                 this.paperJS.paths.push(newPath)
             }
 
             console.log(this.catterPillar.composite)
+        },
+        _createCatterpillar(x:number,y:number, options: CatterpillarOptions) {
+            const defaultOptions = {
+                length:         8,
+                maxVelocity:    3,
+                stiffness:      .2, 
+                restitution:    .8,
+                // damping: 8 
+                bodyPart: {
+                    size:       8,
+                    stiffness:  .8,
+                    damping:    .2,
+                    restitution:.8,
+                }
+            } as CatterpillarOptions
+
+            if (!options) {
+                options = _.clone(defaultOptions)
+            }
+
+            _.forOwn(defaultOptions, (value: number, key) => {
+                if (!options[key]) {
+                    options[key] = value
+                }
+            })
+
+            // All options set, now call the helper functions to create the catterpillar
+            const composite = this._createBodyParts(options)
+            const constraint = this._createBodyConstraint(composite, options)
+            
+            return { composite, constraint }
+        },
+        _createBodyParts(options: CatterpillarOptions) {
+            const group = Matter.Body.nextGroup(true)
+
+            const bodyParts = Matter.Composites.stack(0, 32, options.length, 1, options.bodyPart.size, 0, (x:number, y:number) => {
+                return Matter.Bodies.rectangle(x, y, options.bodyPart.size, options.bodyPart.size * .5, { 
+                    collisionFilter: { group: group }, 
+                    restitution: options.restitution,
+                    label: "partBody"
+                })
+            })
+            // Matter
+            const composite = Matter.Composite.create({
+                bodies: bodyParts.bodies,
+                label:"catterpillar",
+            })
+            // Matter.Composite.add(composite, bodyParts)
+
+            let prev = null as null | Matter.Body
+            _.each(composite.bodies, bodyPart => {
+                if (prev) {
+                    Matter.Composite.add(composite, [
+                        Matter.Constraint.create({
+                            bodyA: bodyPart,
+                            bodyB: prev,
+                            pointA: {x: -options.bodyPart.size*.5, y:0},
+                            pointB: {x: options.bodyPart.size*.5, y:0},
+                            length: 0,
+                            // length: options.bodyPart.size*.5,
+                            stiffness: options.bodyPart.stiffness,
+                            label: "bodyPartConnection",
+                            render: {
+                                strokeStyle: "#444",
+                                type:"line",
+                            }
+                        }),
+                    ])
+                }
+                
+                prev = bodyPart
+            })
+
+            composite.label = "catterpillar"
+            return composite
+        },
+        _createBodyConstraint: (catterpillarBody: Matter.Composite, options: CatterpillarOptions) => {
+            const head = catterpillarBody.bodies[0]
+            const butt = catterpillarBody.bodies[catterpillarBody.bodies.length-1]
+            return Matter.Constraint.create({
+                bodyA: head,
+                bodyB: butt,
+                length: (options.bodyPart.size*1.5) * options.length,
+                stiffness: options.bodyPart.stiffness,
+                damping: options.bodyDamping,
+                label: "catterpillarConstraint",
+                render: {
+                    visible: true,
+                    strokeStyle: "#4f0944",
+                    type: "spring",
+                }
+            })
         },
         displayFPS(targetEl: HTMLElement) {
             this.stats = new StatsJS()
