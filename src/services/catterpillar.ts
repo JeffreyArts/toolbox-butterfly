@@ -62,11 +62,11 @@ const catterpillar = {
         //     slop: options.size/3,
         //     label: "partBody"
         // })
-        return Matter.Bodies.rectangle(x, y, options.size, options.size * .5, { 
-            collisionFilter: { group: group }, 
-            restitution: options.restitution,
-            label: "partBody"
-        })
+        // return Matter.Bodies.rectangle(x, y, options.size, options.size * .5, { 
+        //     collisionFilter: { group: group }, 
+        //     restitution: options.restitution,
+        //     label: "partBody"
+        // })
     },
     _createBodyParts: (options: CatterpillarOptions) => {
         const bodyParts = Matter.Composites.stack(0, 32, options.length, 1, options.bodyPart.size*1.2, 0, (x:number, y:number) => {
