@@ -14,6 +14,7 @@ export type CatterpillarBodyPartOptions = {
     size: number,
     stiffness?: number,
     damping?: number,
+    points?: number,
     restitution?: number,
 }
 const catterpillar = {
@@ -47,8 +48,20 @@ const catterpillar = {
         
         return { composite, constraint }
     },
-    _createBodyPart: (x:number, y:number, options: CatterpillarBodyPartOptions) => {
-        const group = Matter.Body.nextGroup(true)
+    _createBodyPart: (x:number, y:number, options: CatterpillarBodyPartOptions) : Matter.Body => {
+        
+        return Matter.Bodies.circle(x, y, options.size/2, { 
+            collisionFilter: { group: 1 }, 
+            restitution: options.restitution,
+            slop: options.size/5,
+            label: "partBody"
+        })
+        // return Matter.Bodies.circle(x, y, options.size, { 
+        //     collisionFilter: { group: group }, 
+        //     restitution: options.restitution,
+        //     slop: options.size/3,
+        //     label: "partBody"
+        // })
         return Matter.Bodies.rectangle(x, y, options.size, options.size * .5, { 
             collisionFilter: { group: group }, 
             restitution: options.restitution,
@@ -56,14 +69,16 @@ const catterpillar = {
         })
     },
     _createBodyParts: (options: CatterpillarOptions) => {
-        const bodyParts = Matter.Composites.stack(0, 32, options.length, 1, options.bodyPart.size, 0, (x:number, y:number) => {
+        const bodyParts = Matter.Composites.stack(0, 32, options.length, 1, options.bodyPart.size*1.2, 0, (x:number, y:number) => {
             return catterpillar._createBodyPart(x,y, options.bodyPart)
         })
+        
         // Matter
         const composite = Matter.Composite.create({
             bodies: bodyParts.bodies,
             label:"catterpillar",
         })
+        _.each(bodyParts)
         // Matter.Composite.add(composite, bodyParts)
 
         let prev = null as null | Matter.Body
@@ -73,9 +88,11 @@ const catterpillar = {
                     Matter.Constraint.create({
                         bodyA: bodyPart,
                         bodyB: prev,
-                        pointA: {x: -options.bodyPart.size*.5, y:0},
-                        pointB: {x: options.bodyPart.size*.5, y:0},
-                        length: 0,
+                        pointA: {x: 0, y:0},
+                        pointB: {x: 0, y:0},
+                        // pointA: {x: -options.bodyPart.size*.5, y:0},
+                        // pointB: {x: options.bodyPart.size*.5, y:0},
+                        length: options.bodyPart.size,
                         // length: options.size*.5,
                         stiffness: options.bodyPart.stiffness,
                         label: "bodyPartConnection",
@@ -99,7 +116,7 @@ const catterpillar = {
         return Matter.Constraint.create({
             bodyA: head,
             bodyB: butt,
-            length: (options.bodyPart.size*1.5) * options.length,
+            length: (options.bodyPart.size) * options.length,
             stiffness: options.stiffness,
             damping: options.damping,
             label: "catterpillarConstraint",

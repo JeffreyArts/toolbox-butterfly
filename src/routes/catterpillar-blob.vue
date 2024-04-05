@@ -247,7 +247,11 @@ export default defineComponent ({
             })
 
             const runner = Matter.Runner.create()
-            const ground = Matter.Bodies.rectangle(el.clientWidth/2, el.clientHeight-16, el.clientWidth, 16, { isStatic: true, label: "ground" })
+            const ground = Matter.Bodies.rectangle(el.clientWidth/2, el.clientHeight+160, el.clientWidth, 348, {
+                isStatic: true,
+                label: "ground",
+                friction: 1,
+            })
 
             // add all of the bodies to the world
             Matter.Composite.add(engine.world, [ground])

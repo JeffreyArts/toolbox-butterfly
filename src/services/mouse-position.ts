@@ -8,9 +8,9 @@ export default {
             throw new Error("Missing currentTarget property")
         }
         const target = e.currentTarget as HTMLElement
-
-        x = e.clientX - target.offsetLeft
-        y = e.clientY - target.offsetTop
+        const rect = target.getBoundingClientRect()
+        x = e.clientX - rect.x
+        y = e.clientY - rect.y
 
         return {x,y}
     },
@@ -21,8 +21,8 @@ export default {
             throw new Error("Missing currentTarget property")
         }
         const target = e.currentTarget as HTMLElement
-
-        x = e.clientX - target.offsetLeft
+        const rect = target.getBoundingClientRect()
+        x = e.clientX - rect.x
 
         return x
     },
@@ -33,8 +33,8 @@ export default {
             throw new Error("Missing currentTarget property")
         }
         const target = e.currentTarget as HTMLElement
-
-        y = e.clientY - target.offsetTop
+        const rect = target.getBoundingClientRect()
+        y = e.clientY - rect.y
 
         return y
     },
