@@ -8,7 +8,7 @@
         <hr>
         <section class="viewport">
             <div class="viewport-content" ref="matterContainer" ratio="1x1">
-                <div class="scroll-container" @mousedown="mouseDownEvent" @click="mouseClickEvent" @mousemove="mouseMoveEvent">
+                <div class="scroll-container" @mousedown="mouseDownEvent" @touchstart="mouseDownEvent" @touchend="releaseCatterpiller"  @click="mouseClickEvent" @mousemove="mouseMoveEvent" @touchmove="mouseMoveEvent">
                     <div class="render-canvas" ref="renderCanvas" :style="[{opacity: options.showMatterJS ? 1 : 0}]" />
                     <canvas id="paperCanvas" :style="[{opacity: options.showPaperJS ? 1 : 0}]"></canvas>
                 </div>
@@ -267,11 +267,15 @@ export default defineComponent ({
                 Matter.Body.setAngularVelocity(body, 0)
             })
         },
+        releaseCatterpiller(e: TouchEvent) {
+            this.mouseDown = false
+            this.mouseTarget = null
+        },
         mouseClickEvent(e: MouseEvent) {
             if (!this.mWorld || !this.catterPillar.composite ) {
                 return
             }
-            console.log(e, this.mouseDown)
+            
             this.mousePos = mousePosition.xy(e)
             const head = this.catterPillar.composite.bodies[0]
             const butt = this.catterPillar.composite.bodies[this.catterPillar.composite.bodies.length-1]
@@ -281,7 +285,7 @@ export default defineComponent ({
             }
             this.catterPillarMove(this.catterPillar.composite.bodies, this.mousePos.x < head.position.x ? "left" : "right")
         },
-        mouseDownEvent(e:MouseEvent) {
+        mouseDownEvent(e:MouseEvent | TouchEvent) {
             if (!this.mWorld || !this.catterPillar.composite) {
                 return
             }
@@ -296,7 +300,7 @@ export default defineComponent ({
                 }
             })
         },
-        mouseMoveEvent(e:MouseEvent) {
+        mouseMoveEvent(e:MouseEvent | TouchEvent) {
             if (!this.mouseDown) {
                 return
             }
@@ -802,6 +806,7 @@ export default defineComponent ({
         position: absolute;
     }
     .scroll-container {
+        touch-action: none;
         overflow: hidden;
     }
     .render-canvas {
