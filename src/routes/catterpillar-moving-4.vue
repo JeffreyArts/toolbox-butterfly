@@ -123,12 +123,6 @@ import gsap from "gsap"
 import Catterpillar, {CatterpillarOptions, CatterpillarBodyPartOptions} from "./../services/catterpillar"
 import mousePosition from "@/services/mouse-position"
     
-function degrees_to_radians(degrees:number)
-{
-    var pi = Math.PI
-    return degrees * (pi/180)
-}
-
 export default defineComponent ({ 
     props: [],
     data() {
@@ -235,6 +229,7 @@ export default defineComponent ({
         this.generateCatterpillar()
         window.addEventListener("keydown", this.keyPressEvent)
         window.addEventListener("mouseup", this.cancelMouseDown)
+        window.addEventListener("resize", this.resetView)
     },
     unmounted() {
         this.removeMatter()
@@ -243,8 +238,19 @@ export default defineComponent ({
         if (!el) {
             return
         }
+        window.removeEventListener("keydown", this.keyPressEvent)
+        window.removeEventListener("mouseup", this.cancelMouseDown)
+        window.removeEventListener("resize", this.resetView)
     },
     methods: {
+        resetView() {
+            this.removeMatter()
+            setTimeout(() =>{
+                this.initMatterJS()
+                this.createGround()
+                this.generateCatterpillar()
+            })
+        },
         removeMatter() {
             this.mWorld = null
             
@@ -255,6 +261,11 @@ export default defineComponent ({
             if (this.mEngine) {
                 Matter.Engine.clear(this.mEngine)
             }
+
+            const el = this.$refs["matterContainer"] as HTMLElement
+            const canvasses = el.querySelectorAll("canvas")
+            _.each(canvasses, c=> c.remove())
+
         },
         cancelMouseDown() {
             // setTimeout(() => {
@@ -289,13 +300,14 @@ export default defineComponent ({
             if (!this.mWorld || !this.catterPillar.composite) {
                 return
             }
+            let range = 4
             this.mouseDown = true
             this.mousePos = mousePosition.xy(e)
             _.each(this.catterPillar.composite.bodies, body => {
-                if ((this.mousePos.x > body.position.x - this.options.bodyPart.size/2) &&
-                    (this.mousePos.x < body.position.x + this.options.bodyPart.size/2) &&
-                    (this.mousePos.y > body.position.y - this.options.bodyPart.size/2) &&
-                    (this.mousePos.y < body.position.y + this.options.bodyPart.size/2)) {
+                if ((this.mousePos.x > (body.position.x - range) - this.options.bodyPart.size/2) &&
+                    (this.mousePos.x < (body.position.x + range) + this.options.bodyPart.size/2) &&
+                    (this.mousePos.y > (body.position.y - range) - this.options.bodyPart.size/2) &&
+                    (this.mousePos.y < (body.position.y + range) + this.options.bodyPart.size/2)) {
                     this.mouseTarget = body
                 }
             })
@@ -496,7 +508,7 @@ export default defineComponent ({
                 
                 // Kick head to opposite side
                 Matter.Body.setVelocity( head, {
-                    x: newPosX,
+                    x: 0.16,
                     y: (this.options.length * this.options.bodyPart.size),
                 })
                 

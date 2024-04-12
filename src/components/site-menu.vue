@@ -63,9 +63,6 @@ export default defineComponent ({
                 this.isOpen = false
                 this.showToggle = false
                 this.bodyElement.className = this.bodyElement.className.replace(" __menuOpen", "")
-                setTimeout(()=> {
-                    window.dispatchEvent(new Event("resize"))
-                },160)
             } else {
                 this.isOpen = true
                 this.bodyElement.className += " __menuOpen"
@@ -73,11 +70,12 @@ export default defineComponent ({
                 setTimeout(() => {
                     this.showToggle = false
                 }, 0)
-                setTimeout(()=> {
-                    window.dispatchEvent(new Event("resize"))
-                },160)
             }
             localStorage.setItem("siteMenuOpen", this.isOpen ? "1" : "0")
+
+            setTimeout(()=> {
+                window.dispatchEvent(new Event("resize"))
+            },320)
         },
         displayToggle(event: MouseEvent) :void {
             var width = this.$el.querySelector(".site-menu").clientWidth
