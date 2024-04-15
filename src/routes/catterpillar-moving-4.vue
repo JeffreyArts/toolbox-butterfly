@@ -263,14 +263,15 @@ export default defineComponent ({
             }
 
             const el = this.$refs["matterContainer"] as HTMLElement
-            const canvasses = el.querySelectorAll("canvas")
-            _.each(canvasses, c=> c.remove())
+            const canvasses = el.querySelectorAll("canvas:not(#paperCanvas, #fpsCanvas > canvas)")
+            // _.each(canvasses, c=> c.remove())
 
         },
         cancelMouseDown() {
             // setTimeout(() => {
             this.mouseDown = false
             this.mouseTarget = null
+            this.catterPillar.isMoving = false
             // })
 
             _.each(this.catterPillar.composite?.bodies, body => {
@@ -286,15 +287,19 @@ export default defineComponent ({
             if (!this.mWorld || !this.catterPillar.composite ) {
                 return
             }
-            
             this.mousePos = mousePosition.xy(e)
-            const head = this.catterPillar.composite.bodies[0]
-            const butt = this.catterPillar.composite.bodies[this.catterPillar.composite.bodies.length-1]
-
-            if (this.mousePos.x > head.position.x && this.mousePos.x < butt.position.x) {
+            if (this.catterPillar.isMoving) {
                 return
             }
-            this.catterPillarMove(this.catterPillar.composite.bodies, this.mousePos.x < head.position.x ? "left" : "right")
+            
+            const head = this.catterPillar.composite.bodies[0]
+            const butt = this.catterPillar.composite.bodies[this.catterPillar.composite.bodies.length-1]
+            
+            if (this.mousePos.x > head.position.x && this.mousePos.x < butt.position.x) {
+                this.catterPillar.isMoving = false
+                return
+            }
+            this.catterPillarMove(this.catterPillar.composite.bodies, this.mousePos.x < head.position.x ? "left" : "right", true)
         },
         mouseDownEvent(e:MouseEvent | TouchEvent) {
             if (!this.mWorld || !this.catterPillar.composite) {
@@ -309,6 +314,7 @@ export default defineComponent ({
                     (this.mousePos.y > (body.position.y - range) - this.options.bodyPart.size/2) &&
                     (this.mousePos.y < (body.position.y + range) + this.options.bodyPart.size/2)) {
                     this.mouseTarget = body
+                    this.catterPillar.isMoving = false
                 }
             })
         },
@@ -432,69 +438,44 @@ export default defineComponent ({
                 this.catterPillarMove(this.catterPillar.composite.bodies, direction)
             }
         },
-        catterPillarMove(bodies: Array<Matter.Body>, direction : "left" | "right") {
-            if (!bodies) {
-                throw new Error("Provide bodies")
-            }
-
-            if (!this.mWorld || !this.ground || !this.catterPillar.composite) {
-                return
-            }
-            
-
-            // Check if the catterpillar collides with the ground, and exit when it does not
-            const collision = _.some(_.map(this.catterPillar.composite.bodies, body => {
-                if (!this.ground) {
-                    this.catterPillar.isMoving = false  
-                    return false
+        catterPillarMove(bodies: Array<Matter.Body>, direction : "left" | "right", recursive?: boolean) {
+            const promise = new Promise((resolve, reject) => {
+                if (!bodies) {
+                    return reject(new Error("Provide bodies"))
                 }
-                return Matter.Collision.collides(body, this.ground)
-            }))
-
             
-            if (!collision) {
-                return
-            }
-
-            const head = bodies[0]
-            const butt = bodies[bodies.length-1]
-            const belly = bodies[Math.floor((bodies.length-1)/2)]
-            const duration = .8
-            const newLength = (this.options.length * this.options.bodyPart.size)*.8
-            let headConstaint = null as null | Matter.Constraint
-            const yOffset = (this.ground.bounds.max.y - this.ground.bounds.min.y) / 2
-
-            // Fix butt to ground
-            const buttConstaint = Matter.Constraint.create({
-                bodyA: butt,
-                pointA: { x: 0, y: this.options.bodyPart.size/2 },
-                pointB: { x: butt.position.x - this.ground.bounds.max.x/2, y: -yOffset },
-                bodyB: this.ground,
-                length: 1,
-                stiffness: .8,
-                label: "bodyPartConnection",
-                render: {
-                    strokeStyle: "#9f0",
-                    type:"line",
+                if (!this.mWorld || !this.ground || !this.catterPillar.composite) {
+                    return reject(new Error("Missing required variables mWorld | ground | catterPillar.composite"))
                 }
-            })
-            Matter.Composite.add(this.mWorld, buttConstaint)
-            
-            
-            if ((direction == "left" && head.position.x > butt.position.x) ||
-            (direction == "right" && head.position.x < butt.position.x)) {
+                
+                // Check if the catterpillar collides with the ground, and exit when it does not
+                const collision = _.some(_.map(this.catterPillar.composite.bodies, body => {
+                    if (!this.ground) {
+                        this.catterPillar.isMoving = false  
+                        return false
+                    }
+                    return Matter.Collision.collides(body, this.ground)
+                }))
                 
                 
-                let newPosX = (this.options.length * this.options.bodyPart.size)*1.2
-                if (direction === "right") {
-                    newPosX = -(this.options.length * this.options.bodyPart.size)*1.2
+                if (!collision) {
+                    return reject(new Error("No active collision"))
                 }
+                
+                const head = bodies[0]
+                const butt = bodies[bodies.length-1]
+                const belly = bodies[Math.floor((bodies.length-1)/2)]
+                const duration = .8
+                const newLength = (this.options.length * this.options.bodyPart.size)*.8
+                let headConstaint = null as null | Matter.Constraint
+                const yOffset = (this.ground.bounds.max.y - this.ground.bounds.min.y) / 2
+                this.catterPillar.isMoving = true
 
-                // Fix belly to ground
-                const bellyConstaint = Matter.Constraint.create({
-                    bodyA: belly,
+                // Fix butt to ground
+                const buttConstaint = Matter.Constraint.create({
+                    bodyA: butt,
                     pointA: { x: 0, y: this.options.bodyPart.size/2 },
-                    pointB: { x: belly.position.x - this.ground.bounds.max.x/2, y: -yOffset },
+                    pointB: { x: butt.position.x - this.ground.bounds.max.x/2, y: -yOffset },
                     bodyB: this.ground,
                     length: 1,
                     stiffness: .8,
@@ -504,142 +485,179 @@ export default defineComponent ({
                         type:"line",
                     }
                 })
-                Matter.Composite.add(this.mWorld, bellyConstaint)
-                
-                // Kick head to opposite side
-                Matter.Body.setVelocity( head, {
-                    x: 0.16,
-                    y: (this.options.length * this.options.bodyPart.size),
-                })
-                
-                setTimeout(() => {
-                    if (this.mWorld) {
-                        Matter.Composite.remove(this.mWorld,[bellyConstaint])
-                    }
-                }, 100)
+                Matter.Composite.add(this.mWorld, buttConstaint)
+            
+            
+                if ((direction == "left" && head.position.x > butt.position.x) ||
+                    (direction == "right" && head.position.x < butt.position.x)) {
 
-                gsap.to(this.catterPillar.constraint, {
-                    length: (this.options.length * this.options.bodyPart.size) * .6,
-                    onComplete: () => {
-                        gsap.to(this.catterPillar.constraint, {
-                            length: (this.options.length * this.options.bodyPart.size),
-                            onComplete: () => {
-                                setTimeout(() => {
-                                    if (this.mWorld) {
-                                        Matter.Composite.remove(this.mWorld,[buttConstaint])
-                                        this.catterPillar.isMoving = false
-                                    }
-                                }, 320)
-                            },
-                            ease: "back.out",
-                            duration: duration/2
-                        })
-                    },
-                    ease: "back.out",
-                    duration: duration/2
-                })
+                    // Fix belly to ground
+                    const bellyConstaint = Matter.Constraint.create({
+                        bodyA: belly,
+                        pointA: { x: 0, y: this.options.bodyPart.size/2 },
+                        pointB: { x: belly.position.x - this.ground.bounds.max.x/2, y: -yOffset },
+                        bodyB: this.ground,
+                        length: 1,
+                        stiffness: .8,
+                        label: "bodyPartConnection",
+                        render: {
+                            strokeStyle: "#9f0",
+                            type:"line",
+                        }
+                    })
+                    Matter.Composite.add(this.mWorld, bellyConstaint)
+                
+                    // Kick head to opposite side
+                    Matter.Body.setVelocity( head, {
+                        x: 0.16, // .16 should be defined differently, but haven't figured out yet into what
+                        y: (this.options.length * this.options.bodyPart.size),
+                    })
+                
+                    setTimeout(() => {
+                        if (this.mWorld) {
+                            Matter.Composite.remove(this.mWorld,[bellyConstaint])
+                        }
+                    }, 100)
 
-                return 
-            } else {
+                    gsap.to(this.catterPillar.constraint, {
+                        length: (this.options.length * this.options.bodyPart.size) * .6,
+                        onComplete: () => {
+                            gsap.to(this.catterPillar.constraint, {
+                                length: (this.options.length * this.options.bodyPart.size),
+                                onComplete: () => {
+                                    setTimeout(() => {
+                                        if (this.mWorld) {
+                                            Matter.Composite.remove(this.mWorld,[buttConstaint])
+                                            resolve(true)
+                                        }
+                                    }, 320)
+                                },
+                                ease: "back.out",
+                                duration: duration/2
+                            })
+                        },
+                        ease: "back.out",
+                        duration: duration/2
+                    })
+
+                } else {
                 // Fix head to ground
-                headConstaint = Matter.Constraint.create({
-                    bodyA: head,
-                    pointA: { x: 0, y: this.options.bodyPart.size/2 },
-                    pointB: { x: head.position.x - this.ground.bounds.max.x/2, y: -yOffset },
-                    bodyB: this.ground,
-                    length: 0.5,
-                    stiffness: .8,
-                    label: "bodyPartConnection",
-                    render: {
-                        strokeStyle: "#9f0",
-                        type:"line",
-                    }
-                })
-                Matter.Composite.add(this.mWorld, headConstaint)
-            }
+                    headConstaint = Matter.Constraint.create({
+                        bodyA: head,
+                        pointA: { x: 0, y: this.options.bodyPart.size/2 },
+                        pointB: { x: head.position.x - this.ground.bounds.max.x/2, y: -yOffset },
+                        bodyB: this.ground,
+                        length: 0.5,
+                        stiffness: .8,
+                        label: "bodyPartConnection",
+                        render: {
+                            strokeStyle: "#9f0",
+                            type:"line",
+                        }
+                    })
+                    Matter.Composite.add(this.mWorld, headConstaint)
 
-
-            // Actually move, when head is pointing in the right direction
-            if (this.catterPillar.constraint) {
-                // Slide butt forward ( to the left )
-                let newPosX = 0
-                if (direction === "left") {
-                    newPosX = (butt.position.x - this.ground.bounds.max.x/2) - newLength/2
-                } else if (direction === "right") {
-                    newPosX = (butt.position.x - this.ground.bounds.max.x/2) + newLength/2
-                }
+                    // Actually move, when head is pointing in the right direction
+                    if (this.catterPillar.constraint) {
+                        // Slide butt forward ( to the left )
+                        let newPosX = 0
+                        if (direction === "left") {
+                            newPosX = (butt.position.x - this.ground.bounds.max.x/2) - newLength/2
+                        } else if (direction === "right") {
+                            newPosX = (butt.position.x - this.ground.bounds.max.x/2) + newLength/2
+                        }
                 
-                gsap.to(buttConstaint.pointB, {
-                    x: newPosX,
-                    onComplete:() => {
-                        if (!this.mWorld) {
-                            return
-                        }
-                        if (headConstaint) {
-                            Matter.Composite.remove(this.mWorld, headConstaint)
-                        }
-                    },
-                    // ease: "power2.out",
-                    ease: "back.out",
-                    duration: duration*.777,
-                })
+                        gsap.to(buttConstaint.pointB, {
+                            x: newPosX,
+                            onComplete:() => {
+                                if (!this.mWorld) {
+                                    return
+                                }
+                                if (headConstaint) {
+                                    Matter.Composite.remove(this.mWorld, headConstaint)
+                                }
+                            },
+                            // ease: "power2.out",
+                            ease: "back.out",
+                            duration: duration*.777,
+                        })
 
-                // Animate body
-                gsap.to(this.catterPillar.constraint, {
-                    length: newLength,
-                    onUpdate:() => {
-                        if (!this.mEngine) {
-                            return
-                        }
-                    },
-                    ease: "back.out",
-                    duration: duration/2,
-                    onComplete:() => {
-                        if (!this.catterPillar.composite) {
-                            return
-                        }
+                        // Animate body
                         gsap.to(this.catterPillar.constraint, {
-                            length: (this.options.bodyPart.size) * this.options.length,
+                            length: newLength,
                             onUpdate:() => {
                                 if (!this.mEngine) {
                                     return
                                 }
                             },
-                            onComplete: () => {
-                                setTimeout(() => {
-                                    if (this.mWorld) {
-                                        Matter.Composite.remove(this.mWorld,buttConstaint)
-                                    }
-                                }, 320)
-                                this.catterPillar.isMoving = false
-                            },
-                            ease: "power2.in",
-                            duration: duration/2
+                            ease: "back.out",
+                            duration: duration/2,
+                            onComplete:() => {
+                                if (!this.catterPillar.composite) {
+                                    return
+                                }
+                                gsap.to(this.catterPillar.constraint, {
+                                    length: (this.options.bodyPart.size) * this.options.length,
+                                    onUpdate:() => {
+                                        if (!this.mEngine) {
+                                            return
+                                        }
+                                    },
+                                    onComplete: () => {
+                                        setTimeout(() => {
+                                            if (this.mWorld) {
+                                                Matter.Composite.remove(this.mWorld,buttConstaint)
+                                                resolve(true)
+                                            }
+                                        }, 320)
+                                    },
+                                    ease: "power2.in",
+                                    duration: duration/2
+                                })
+                            }
                         })
                     }
-                })
-            }
 
 
-            // Make body curl
-            const centerIndex = Math.floor(bodies.length/2)
-            const maxVelocity  = this.options.maxVelocity
+                    // Make body curl
+                    const centerIndex = Math.floor(bodies.length/2)
+                    const maxVelocity  = this.options.maxVelocity
                 
-            _.each(bodies, (body,index) => {
-                if (index != 0 && index !=bodies.length-1) {
-                    const velocity = centerIndex === index ? maxVelocity : maxVelocity - maxVelocity / index
-                    Matter.Body.setVelocity( body, {
-                        x: 0,
-                        y: -velocity * (centerIndex - Math.abs(index - centerIndex))/2,
+                    _.each(bodies, (body,index) => {
+                        if (index != 0 && index !=bodies.length-1) {
+                            const velocity = centerIndex === index ? maxVelocity : maxVelocity - maxVelocity / index
+                            Matter.Body.setVelocity( body, {
+                                x: 0,
+                                y: -velocity * (centerIndex - Math.abs(index - centerIndex))/2,
+                            })
+                        } else {
+                            body.mass = 1000
+                            body.friction = 1
+                            Matter.Body.setVelocity( body, {
+                                x: 0,
+                                y: 10
+                            })
+                        }
                     })
-                } else {
-                    body.mass = 1000
-                    body.friction = 1
-                    Matter.Body.setVelocity( body, {
-                        x: 0,
-                        y: 10
-                    })
+
                 }
+
+            })
+            promise.then(() => {
+                if (recursive) {
+                    const head = bodies[0]
+                    if (!this.catterPillar.composite) {
+                        return
+                    }
+                    if ((direction == "left" && head.position.x > this.mousePos.x) ||
+                    direction == "right" && head.position.x < this.mousePos.x) {
+                        this.catterPillarMove(bodies, direction, recursive)
+                    } 
+                } else {
+                    this.catterPillar.isMoving = false
+                }
+            }).catch(() => {
+                this.catterPillar.isMoving = false
             })
         },
         removeCatterpillar() {
@@ -734,6 +752,7 @@ export default defineComponent ({
             this.stats = new StatsJS()
             this.stats.showPanel( 0 ) // 0: fps, 1: ms, 2: mb, 3+: custom
             this.stats.update() // 0: fps, 1: ms, 2: mb, 3+: custom
+            this.stats.dom.id = "fpsCanvas"
             targetEl.appendChild( this.stats.dom )
             requestAnimationFrame( this.updateFPS )      
         },
