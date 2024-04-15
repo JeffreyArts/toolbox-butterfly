@@ -8,7 +8,13 @@
         <hr>
         <section class="viewport">
             <div class="viewport-content" ref="matterContainer" ratio="1x1">
-                <div class="scroll-container" @mousedown="mouseDownEvent" @touchstart="mouseDownEvent" @touchend="releaseCatterpiller"  @click="mouseClickEvent" @mousemove="mouseMoveEvent" @touchmove="mouseMoveEvent">
+                <div class="scroll-container"
+                    @mousedown="mouseDownEvent"
+                    @touchstart="mouseDownEvent"
+                    @touchend="releaseCatterpiller"
+                    @click="mouseClickEvent"
+                    @mousemove="mouseMoveEvent"
+                    @touchmove="mouseMoveEvent">
                     <div class="render-canvas" ref="renderCanvas" :style="[{opacity: options.showMatterJS ? 1 : 0}]" />
                     <canvas id="paperCanvas" :style="[{opacity: options.showPaperJS ? 1 : 0}]"></canvas>
                 </div>
@@ -115,7 +121,7 @@
 
 <script lang="ts">
 import {defineComponent} from "vue"
-import Matter, { Collision } from "matter-js"
+import Matter, { Collision, Mouse } from "matter-js"
 import _ from "lodash"
 import StatsJS from "stats.js"
 import Paper from "paper"
@@ -269,6 +275,10 @@ export default defineComponent ({
         },
         cancelMouseDown() {
             // setTimeout(() => {
+
+            if (this.catterPillar.isMoving && !this.mouseTarget) {
+                return
+            }
             this.mouseDown = false
             this.mouseTarget = null
             this.catterPillar.isMoving = false
@@ -299,13 +309,18 @@ export default defineComponent ({
                 this.catterPillar.isMoving = false
                 return
             }
-            this.catterPillarMove(this.catterPillar.composite.bodies, this.mousePos.x < head.position.x ? "left" : "right", true)
+
+            if (!this.catterPillar.isMoving) {
+                this.catterPillar.isMoving = true
+                this.catterPillarMove(this.catterPillar.composite.bodies, this.mousePos.x < head.position.x ? "left" : "right", true)
+            }
         },
         mouseDownEvent(e:MouseEvent | TouchEvent) {
+            e.stopPropagation() 
             if (!this.mWorld || !this.catterPillar.composite) {
                 return
             }
-            let range = 4
+            let range = this.options.bodyPart.size
             this.mouseDown = true
             this.mousePos = mousePosition.xy(e)
             _.each(this.catterPillar.composite.bodies, body => {
@@ -314,9 +329,13 @@ export default defineComponent ({
                     (this.mousePos.y > (body.position.y - range) - this.options.bodyPart.size/2) &&
                     (this.mousePos.y < (body.position.y + range) + this.options.bodyPart.size/2)) {
                     this.mouseTarget = body
-                    this.catterPillar.isMoving = false
                 }
             })
+            
+            if (this.mouseTarget) {
+                this.catterPillar.isMoving = false
+                e.preventDefault()
+            }
         },
         mouseMoveEvent(e:MouseEvent | TouchEvent) {
             if (!this.mouseDown) {
@@ -467,8 +486,8 @@ export default defineComponent ({
                 const belly = bodies[Math.floor((bodies.length-1)/2)]
                 const duration = .8
                 const newLength = (this.options.length * this.options.bodyPart.size)*.8
-                let headConstaint = null as null | Matter.Constraint
                 const yOffset = (this.ground.bounds.max.y - this.ground.bounds.min.y) / 2
+                let headConstaint = null as null | Matter.Constraint
                 this.catterPillar.isMoving = true
 
                 // Fix butt to ground
@@ -491,6 +510,12 @@ export default defineComponent ({
                 if ((direction == "left" && head.position.x > butt.position.x) ||
                     (direction == "right" && head.position.x < butt.position.x)) {
 
+                
+                    // Kick head to opposite side
+                    Matter.Body.setVelocity( head, {
+                        x: 0,
+                        y: (this.options.length * this.options.bodyPart.size),
+                    })
                     // Fix belly to ground
                     const bellyConstaint = Matter.Constraint.create({
                         bodyA: belly,
@@ -506,12 +531,6 @@ export default defineComponent ({
                         }
                     })
                     Matter.Composite.add(this.mWorld, bellyConstaint)
-                
-                    // Kick head to opposite side
-                    Matter.Body.setVelocity( head, {
-                        x: 0.16, // .16 should be defined differently, but haven't figured out yet into what
-                        y: (this.options.length * this.options.bodyPart.size),
-                    })
                 
                     setTimeout(() => {
                         if (this.mWorld) {
@@ -647,16 +666,20 @@ export default defineComponent ({
                 if (recursive) {
                     const head = bodies[0]
                     if (!this.catterPillar.composite) {
+                        this.catterPillar.isMoving = false
                         return
                     }
                     if ((direction == "left" && head.position.x > this.mousePos.x) ||
-                    direction == "right" && head.position.x < this.mousePos.x) {
+                        direction == "right" && head.position.x < this.mousePos.x) {
                         this.catterPillarMove(bodies, direction, recursive)
-                    } 
+                    } else {
+                        this.catterPillar.isMoving = false
+                        this.mousePos = {x:0, y:0}
+                    }
                 } else {
                     this.catterPillar.isMoving = false
                 }
-            }).catch(() => {
+            }).catch(e => {
                 this.catterPillar.isMoving = false
             })
         },
@@ -837,8 +860,12 @@ export default defineComponent ({
         position: absolute;
     }
     .scroll-container {
-        touch-action: none;
+        // touch-action: none;
         overflow: hidden;
+        
+        &.__disableTouch {
+            touch-action: none;
+        }
     }
     .render-canvas {
         width: 100%;
