@@ -268,21 +268,15 @@ export default defineComponent ({
                 Matter.Engine.clear(this.mEngine)
             }
 
-            const el = this.$refs["matterContainer"] as HTMLElement
-            const canvasses = el.querySelectorAll("canvas:not(#paperCanvas, #fpsCanvas > canvas)")
-            // _.each(canvasses, c=> c.remove())
-
         },
         cancelMouseDown() {
-            // setTimeout(() => {
-
             if (this.catterPillar.isMoving && !this.mouseTarget) {
                 return
             }
+            
             this.mouseDown = false
             this.mouseTarget = null
             this.catterPillar.isMoving = false
-            // })
 
             _.each(this.catterPillar.composite?.bodies, body => {
                 Matter.Body.setAngularSpeed(body, 0)
@@ -373,11 +367,18 @@ export default defineComponent ({
         initMatterJS() {
             const el = this.$refs["matterContainer"] as HTMLElement
             const canvasEl = this.$refs["renderCanvas"] as HTMLCanvasElement
+
             if (!el) {
                 throw new Error("matterContainer ref can not be found")
             }
             if (!canvasEl) {
                 throw new Error("renderCanvas ref can not be found")
+            }
+
+            if (canvasEl.children.length > 0) {
+                for (let i=0; i < canvasEl.children.length; i++) {
+                    canvasEl.children[i].remove()
+                }
             }
 
             // create an engine
@@ -664,18 +665,20 @@ export default defineComponent ({
             })
             promise.then(() => {
                 if (recursive) {
-                    const head = bodies[0]
-                    if (!this.catterPillar.composite) {
-                        this.catterPillar.isMoving = false
-                        return
-                    }
-                    if ((direction == "left" && head.position.x > this.mousePos.x) ||
+                    setTimeout(() => {
+                        const head = bodies[0]
+                        if (!this.catterPillar.composite) {
+                            this.catterPillar.isMoving = false
+                            return
+                        }
+                        if ((direction == "left" && head.position.x > this.mousePos.x) ||
                         direction == "right" && head.position.x < this.mousePos.x) {
-                        this.catterPillarMove(bodies, direction, recursive)
-                    } else {
-                        this.catterPillar.isMoving = false
-                        this.mousePos = {x:0, y:0}
-                    }
+                            this.catterPillarMove(bodies, direction, recursive)
+                        } else {
+                            this.catterPillar.isMoving = false
+                            this.mousePos = {x:0, y:0}
+                        }
+                    }, 240)
                 } else {
                     this.catterPillar.isMoving = false
                 }
