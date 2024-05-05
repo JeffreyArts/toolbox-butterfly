@@ -14,6 +14,7 @@ import PhysicsDivTranslate from "./physics-div-translate.vue"
 import PhysicsCanvas from "./physics-canvas.vue"
 import PhysicsMatterRender from "./physics-matter-render.vue"
 import PhysicsMatterPaper from "./physics-matter-paper.vue"
+import Screenshot from "./screenshot.vue"
 import FlagColors from "./flag-colors.vue"
 import OptionsOverview from "./options-overview/options-overview.vue"
 import svgForeignObject from "./svg-foreign-object.vue"
@@ -103,6 +104,11 @@ const routes = [
         path: "/svg-foreign-object",
         name: "SVG Foreign Object",
         component: svgForeignObject,
+    },
+    {
+        path: "/screenshot",
+        name: "Screenshot",
+        component: Screenshot,
     },
     {
         path: "/options-overview",
