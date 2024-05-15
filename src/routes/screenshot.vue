@@ -24,9 +24,6 @@
                         </span>
                     </div>
                 </div>
-
-                    
-
             </div>
         </aside>
     </div>
@@ -35,9 +32,6 @@
 
 <script lang="ts">
 import {defineComponent} from "vue"
-import axios from "axios"
-import _ from "lodash"
-import Paper from "paper"
 import domtoimage from "dom-to-image"
     
 export default defineComponent ({ 

@@ -104,12 +104,12 @@
 
 <script lang="ts">
 import {defineComponent} from "vue"
-import Matter, { Collision, Mouse } from "matter-js"
+import Matter from "matter-js"
 import _ from "lodash"
 import StatsJS from "stats.js"
 import Paper from "paper"
 import gsap from "gsap"
-import Catterpillar, {CatterpillarOptions, CatterpillarBodyPartOptions} from "./../services/catterpillar"
+import Catterpillar, {CatterpillarOptions} from "./../services/catterpillar"
 import mousePosition from "@/services/mouse-position"
     
 export default defineComponent ({ 
