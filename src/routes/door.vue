@@ -6,7 +6,8 @@
 
         <hr>
         <section class="viewport">
-           
+           <canvas ref="sourceCanvas"></canvas>
+            <strong>Hidden canvas</strong>
         </section>
 
         <aside class="sidebar">
@@ -21,6 +22,9 @@
                         
                         <input type="radio" value="masked-dot" id="masked-dot" v-model="clickType">
                         <label for="masked-dot"> Masked dot </label>
+                        
+                        <input type="radio" value="animated-doorway" id="animated-doorway" v-model="clickType">
+                        <label for="animated-doorway"> Animated Doorway </label>
                     </div>
                 </div>
 
@@ -40,14 +44,17 @@ type customTouchEvent = TouchEvent & {
 import {defineComponent} from "vue"
 import _ from "lodash"
 import domtoimage from "dom-to-image"
+import gsap from "gsap"
 
 export default defineComponent ({ 
     props: [],
     data() {
         return {
-            clickType: "dot" as "dot" | "masked-dot",
+            clickType: "dot" as "dot" | "masked-dot" | "animated-doorway",
             mousePos: {x:-1, y:0},
             defaultClick: false,
+            animation: true,
+            clearDrawing: false,
             defaultClickEvent: null as null | customMouseEvent | customTouchEvent,
         }
     },
@@ -69,42 +76,72 @@ export default defineComponent ({
         }
     },
     mounted() {
-        this.updateOverlay()
-        this.createScreenshot()
+        this.draw()
+        // this.createScreenshot()
         window.addEventListener("click", this.clickEvent)
         window.addEventListener("resize", this.updateOverlay)
     },
     unmounted() {
+        this.animation = false
         window.removeEventListener("click", this.clickEvent)
         window.removeEventListener("resize", this.updateOverlay)
         let img = document.querySelector(".overlay") as HTMLImageElement
         img.remove()
     },
     methods: {
+        draw() {
+            if (!this.animation) {
+                return
+            }
+            // console.log("✍️")
+            const sourceCanvas = this.$refs.sourceCanvas as HTMLCanvasElement
+            const sourceContext = sourceCanvas.getContext("2d")
+            const overlayCanvas =  document.querySelector(".overlay") as HTMLCanvasElement
+            
+            // Error checks
+            if (!overlayCanvas) {
+                this.updateOverlay()
+                requestAnimationFrame(this.draw)
+                return
+            }
+            const overlayContext = overlayCanvas.getContext("2d")
+            if (!overlayContext) {
+                return console.error("Missing overlayContext")
+            }
+            if (!sourceCanvas || !sourceContext) {
+                return console.error("Missing sourceCanvas")
+            }
+            // First clear canvas
+            overlayContext.clearRect(0,0,overlayCanvas.width,overlayCanvas.height)
+            
+            // Update overlay canvas
+            overlayContext.drawImage(sourceCanvas, this.mousePos.x - sourceCanvas.width/2, this.mousePos.y - sourceCanvas.height/2)
+
+            requestAnimationFrame(this.draw)
+        },
         updateOverlay() {
-            let img = document.querySelector(".overlay") as HTMLImageElement
-            if (!img) {
-                img = document.createElement("img")
-                img.className = "overlay"
-                document.body.appendChild(img)
+            let overlayCanvas = document.querySelector(".overlay") as HTMLCanvasElement
+            if (!overlayCanvas) {
+                overlayCanvas = document.createElement("canvas")
+                overlayCanvas.width = window.innerWidth
+                overlayCanvas.height = window.innerHeight
+                overlayCanvas.className = "overlay"
+                document.body.appendChild(overlayCanvas)
             }
             this.clickEvent()
         },
         createScreenshot() {
-            let img = document.querySelector(".overlay") as HTMLImageElement
-            if (!img) {
-                return new Error("no overlay found")
-            }
-
-            return new Promise<HTMLImageElement>((resolve, reject) => {
+            return new Promise<string>((resolve, reject) => {
+                let img = document.querySelector(".overlay") as HTMLCanvasElement
+                if (!img) {
+                    return reject("no overlay found")
+                }
                 const domElement = document.querySelector("#app")
                 if (!domElement) {
                     return reject("domElement missing")
                 }
                 domtoimage.toPng(domElement).then( (dataUrl) => {
-                    img.src = dataUrl
-                    // })
-                    resolve(img)
+                    resolve(dataUrl)
                 }).catch((err)=> {
                     console.error(err)
                     reject(err)
@@ -113,35 +150,30 @@ export default defineComponent ({
         },
         clickEvent(e?: MouseEvent | TouchEvent | customMouseEvent | customTouchEvent) {
             if (e) {
-                
                 this.updateMousePos(e)
-                if (!this.defaultClickEvent || !this.defaultClickEvent.custom) {
-                    e.preventDefault()
-                    if (e instanceof MouseEvent) {
-                        this.defaultClickEvent = e as customMouseEvent
-                    } else {
-                        this.defaultClickEvent = e as customTouchEvent
-                    }
-                }
             }
-            
+
             if (this.mousePos.x != -1) {
                 switch (this.clickType) {
                 case "dot":
                     this.addDot()
                     break
                         
+                case "masked-dot":
+                    this.addMaskedDot()
+                    break
+                        
+                case "animated-doorway":
+                    this.addAnimatedDoorway()
+                    break
+                        
                 default:
-                    this.createScreenshot()
+                    console.log("!!!! No default action !!!!!")
+                    // this.createScreenshot()
                     break
                 }
-                // console.log("Trigger opnieuw click event")
-                this.defaultClick = false
-                if (this.defaultClickEvent && !this.defaultClickEvent.custom) {
-                    this.defaultClickEvent.custom = true
-                    this.clickEvent(this.defaultClickEvent)
-                }
             }
+            this.clearDrawing = true
         },
         updateMousePos(e: MouseEvent | TouchEvent) {
 
@@ -159,88 +191,220 @@ export default defineComponent ({
             
         },
         addDot() {
-            const overlayCanvas = this.loadOverlay()
+            const size = 40
+            const sourceCanvas = this.$refs.sourceCanvas as HTMLCanvasElement
             
-            if (!overlayCanvas || !overlayCanvas.width) {
+            if (!sourceCanvas) {
+                console.error("Missing target canvas")
                 return
             }
-            const ctx = overlayCanvas.getContext("2d")
+            
+            sourceCanvas.width = size
+            sourceCanvas.height = size
+
+            const ctx = sourceCanvas.getContext("2d")
             if (!ctx) {
                 return
             }
 
 
             ctx.beginPath()
-            ctx.arc(this.mousePos.x, this.mousePos.y, 40, 0, 2 * Math.PI)
+            ctx.arc(size/2,size/2, size/2, 0, 2 * Math.PI)
             ctx.fillStyle = "red"
             ctx.fill()
-            // ctx.strokeStyle = "red"
-            // ctx.stroke()
-            
-            
-
-            const overlay = document.querySelector(".overlay") as HTMLImageElement
-            if (!overlay) {
-                console.error("No overlay found")
-                return 
-            }
-            overlay.src = overlayCanvas.toDataURL()
+            ctx.closePath()
         },
         addMaskedDot() {
-            const overlayCanvas = this.loadOverlay()
+            const size = 40
+            const sourceCanvas = this.$refs.sourceCanvas as HTMLCanvasElement
             
-            if (!overlayCanvas || !overlayCanvas.width) {
-                return
-            }
-            const ctx = overlayCanvas.getContext("2d")
+            sourceCanvas.width = size
+            sourceCanvas.height = size
+
+            const ctx = sourceCanvas.getContext("2d")
             if (!ctx) {
                 return
             }
-
-
-            ctx.beginPath()
-            ctx.arc(this.mousePos.x, this.mousePos.y, 40, 0, 2 * Math.PI)
-            ctx.fillStyle = "red"
-            ctx.fill()
-            ctx.stroke()
-            
-            
 
             const overlay = document.querySelector(".overlay") as HTMLImageElement
             if (!overlay) {
                 console.error("No overlay found")
                 return 
             }
-            const tmpCanvas = document.createElement("canvas") as HTMLCanvasElement
-            tmpCanvas.width = overlay.width
-            tmpCanvas.height = overlay.height
-            const tmpCtx = tmpCanvas.getContext("2d")
-            if (!tmpCtx) {
+
+            this.createScreenshot().then((imgData) => {
+                const source = {
+                    x: this.mousePos.x - size/2,
+                    y: this.mousePos.y - size/2,
+                    width: size,
+                    height: size,
+                }
+                    
+                const imgElement = new Image()
+                imgElement.onload = function() {
+                    /// draw the shape we want to use for clipping
+                    ctx.beginPath()
+                    ctx.arc(size/2,size/2, size/2, 0, 2 * Math.PI)
+                    ctx.fillStyle = "black"
+                    ctx.fill()
+                    
+                    /// change composite mode to use that shape
+                    ctx.globalCompositeOperation = "source-in"
+                        
+                    /// draw the image to be clipped
+                    ctx.drawImage(imgElement, source.x, source.y, source.width, source.height, 0,0, size, size)
+
+                    // Set back to default
+                    ctx.globalCompositeOperation = "source-over"
+
+                    /// draw the shape we want to use for clipping
+                    ctx.beginPath()
+                    ctx.arc(size/2,size/2, size/2, 0, 2 * Math.PI)
+                    ctx.strokeStyle = "black"
+                    ctx.stroke()
+                }
+                imgElement.src = imgData
+            })
+        },
+        addAnimatedDoorway() {
+            const size = 320
+            const sourceCanvas = this.$refs.sourceCanvas as HTMLCanvasElement
+            
+            sourceCanvas.width = size
+            sourceCanvas.height = size
+
+            const ctx = sourceCanvas.getContext("2d")
+            if (!ctx) {
                 return
             }
-            /// draw the shape we want to use for clipping
-            tmpCtx.drawImage(overlayCanvas, 0, 0)
 
-            /// change composite mode to use that shape
-            tmpCtx.globalCompositeOperation = "source-in"
+            const overlay = document.querySelector(".overlay") as HTMLImageElement
+            if (!overlay) {
+                console.error("No overlay found")
+                return 
+            }
 
-            /// draw the image to be clipped
-            tmpCtx.drawImage(overlay, 0, 0)
+            const source = {
+                x: this.mousePos.x - size/2,
+                y: this.mousePos.y - size/2,
+                width: size,
+                height: size,
+            }
 
-            overlay.src = overlayCanvas.toDataURL()
+            const door = {
+                width: 64,
+                height: 128,
+                x1: 0,
+                x2: 0,
+                y1: 0,
+                y2: 0
+            }
+
+            door.x1 = source.width/2 - door.width/2
+            door.x2 = source.width/2 + door.width/2
+            door.y1 = source.height/2
+            door.y2 = source.height/2
+
+            const lineLeft = {
+                x: door.x1,
+                y: door.y1,
+            }
+
+            const backgroundDrawn = new Promise((resolve, reject) => {
+                this.createScreenshot().then((imgData) => {
+                    const imgElement = new Image()
+                    imgElement.onload = function() {
+                        ctx.drawImage(imgElement, source.x, source.y, source.width, source.height, 0,0, size, size)
+                        resolve(true)
+                    }
+                    imgElement.src = imgData
+                })
+            })
+
+            backgroundDrawn.then(() => {
+                ctx.beginPath()
+                ctx.strokeStyle = "rgba(255,255,255,.2)"
+                ctx.moveTo(lineLeft.x, lineLeft.y)
+                const tl = gsap.timeline()
+                gsap.timeline()
+                tl.to(lineLeft, {
+                    y: source.height/2 - door.height,
+                    duration: .6,
+                    ease: "ease",
+                    onUpdate: () => {
+                        ctx.beginPath()
+                        ctx.strokeStyle = "rgba(128,128,128,1)"
+                        ctx.moveTo(door.x1, door.y1)
+                        ctx.lineTo(door.x1, lineLeft.y)
+                        ctx.stroke()
+                        ctx.closePath()
+                        
+                        ctx.strokeStyle = "rgba(128,128,128,1)"
+                        ctx.moveTo(door.x2, door.y1)
+                        ctx.lineTo(door.x2, lineLeft.y)
+                        ctx.stroke()
+                        ctx.closePath()
+                    },
+                })
+
+                // Draw top part
+                tl.to(door, {
+                    x1: source.width/2 + door.width/4,
+                    duration: .2,
+                    ease: "power2.in",
+                    onUpdate: () => {
+                        ctx.beginPath()
+                        ctx.strokeStyle = "rgba(128,128,128,1)"
+                        ctx.moveTo(source.width/2 - door.width/2, lineLeft.y)
+                        ctx.lineTo(door.x1, lineLeft.y)
+                        ctx.stroke()
+                        ctx.closePath()
+                    },
+                })
+                tl.to(door, {
+                    x2: source.width/2 - door.width/4,
+                    duration: .2,
+                    delay: -.2,
+                    ease: "power2.in",
+                    onUpdate: () => {
+                        ctx.beginPath()
+                        ctx.strokeStyle = "rgba(128,128,128,1)"
+                        ctx.moveTo(source.width/2 + door.width/2, lineLeft.y)
+                        ctx.lineTo(door.x2, lineLeft.y)
+                        ctx.stroke()
+                        ctx.closePath()
+                    },
+                })
+
+                // Draw door handle
+                const handle = {
+                    x: source.width/2 + door.width/2 - 20,
+                    y: source.height/2 - door.height*.56
+                }
+                tl.to(handle, {
+                    x: handle.x + 12,
+                    duration: .4,
+                    delay: -.64,
+                    ease: "power2.in",
+                    onUpdate: () => {
+                        ctx.beginPath()
+                        ctx.strokeStyle = "rgba(180,180,180,1)"
+                        ctx.moveTo(source.width/2 + door.width/2 - 20, handle.y)
+                        ctx.lineTo(handle.x, handle.y)
+                        ctx.stroke()
+                        ctx.closePath()
+                    },
+                })
+            })
         },
         loadOverlay() {
-            let img = document.querySelector(".overlay") as HTMLImageElement
-            if (!img) {
+            let overlayCanvas = document.querySelector(".overlay") as HTMLCanvasElement
+            if (!overlayCanvas) {
                 console.error(new Error("No overlay found"))
                 return 
             }
-            const canvas = document.createElement("canvas") as HTMLCanvasElement
-            const ctx = canvas.getContext("2d")
-            canvas.width = img.width
-            canvas.height = img.height
-            // ctx?.drawImage(img, 0,0,canvas.width, canvas.height)
-            return canvas
+            
+            return overlayCanvas
         }
     }
 })
@@ -255,6 +419,12 @@ export default defineComponent ({
     top: 0;
     bottom: 0;
     pointer-events: none;
+}
+.viewport {
+    flex-flow: column;
+    display: flex;
+    gap: 16px;
+    align-items: center;
 }
 #door-title {
     h1 {
