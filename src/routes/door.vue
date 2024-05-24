@@ -5,7 +5,7 @@
         </header>
 
         <hr>
-        <section class="viewport">
+        <section class="viewport" :class="[showHiddenCanvas ? '' : '__isHidden']">
            <canvas ref="sourceCanvas"></canvas>
             <strong>Hidden canvas</strong>
         </section>
@@ -25,6 +25,14 @@
                         
                         <input type="radio" value="animated-doorway" id="animated-doorway" v-model="clickType">
                         <label for="animated-doorway"> Animated Doorway </label>
+                    </div>
+                    <div class="option">
+                        <span>
+                            <input type="checkbox" id="showHiddenCanvas" v-model="showHiddenCanvas">
+                            <label for="showHiddenCanvas">
+                                Show hidden canvas
+                            </label>
+                        </span>
                     </div>
                 </div>
 
@@ -55,6 +63,7 @@ export default defineComponent ({
             defaultClick: false,
             animation: true,
             clearDrawing: false,
+            showHiddenCanvas: true,
             defaultClickEvent: null as null | customMouseEvent | customTouchEvent,
         }
     },
@@ -425,6 +434,10 @@ export default defineComponent ({
     display: flex;
     gap: 16px;
     align-items: center;
+    &.__isHidden {
+        opacity: 0;
+        pointer-events: none;
+    }
 }
 #door-title {
     h1 {
