@@ -276,11 +276,14 @@ export default defineComponent ({
             })
         },
         addAnimatedDoorway() {
-            const size = 320
+            const size = {
+                width: 80   ,
+                height: 320
+            }
             const sourceCanvas = this.$refs.sourceCanvas as HTMLCanvasElement
             
-            sourceCanvas.width = size
-            sourceCanvas.height = size
+            sourceCanvas.width = size.width
+            sourceCanvas.height = size.height
 
             const ctx = sourceCanvas.getContext("2d")
             if (!ctx) {
@@ -294,10 +297,10 @@ export default defineComponent ({
             }
 
             const source = {
-                x: this.mousePos.x - size/2,
-                y: this.mousePos.y - size/2,
-                width: size,
-                height: size,
+                x: this.mousePos.x - size.width/2,
+                y: this.mousePos.y - size.height/2,
+                width: size.width,
+                height: size.height,
             }
 
             const door = {
@@ -319,11 +322,41 @@ export default defineComponent ({
                 y: door.y1,
             }
 
+            const openDoor = (img: ImageData, context: CanvasRenderingContext2D, skew: number) => {
+                const height = img.height
+                const width = img.width
+                const offsetY = source.height/2 - door.height
+                const offsetX = (source.width / 2 - door.width) / 4 -2
+                // const canvas = document.createElement("canvas")
+                // console.log(source, door)
+                // ctx.clearRect(door.x1, door.y1-door.height, door.width, door.height)
+                // ctx.restore()
+                // ctx.beginPath()
+                // ctx.fillStyle = "#fff"
+                // ctx.rect(door.x1, door.y1-door.height, door.width, door.height)
+                // ctx.fill()
+                // ctx.closePath()
+                // ctx.save()
+                createImageBitmap(img).then(image => {
+                    for (var i = 0; i <= height / 2; ++i) {
+                        // Top part
+                        context.setTransform(1 - skew, -skew * i / height, 0, 1, 0, offsetY)
+                        context.drawImage(image, offsetX, height / 2 - i, width, 1, 0, height / 2 - i, width, 2)
+                        // Bottom part
+                        context.setTransform(1 - skew, skew * i / height, 0, 1, 0, offsetY)
+                        context.drawImage(image, offsetX, height / 2 + i, width, 2, 0, height / 2 + i, width, 2)
+                    }
+                })
+            }
+
+
             const backgroundDrawn = new Promise((resolve, reject) => {
                 this.createScreenshot().then((imgData) => {
                     const imgElement = new Image()
                     imgElement.onload = function() {
-                        ctx.drawImage(imgElement, source.x, source.y, source.width, source.height, 0,0, size, size)
+                        ctx.drawImage(imgElement, source.x + size.width /2 - door.width/2, source.y + size.height / 2 - door.height, door.width, door.height, door.x1 ,door.y1-door.height, door.width, door.height)
+                        // ctx.drawImage(imgElement, source.x, source.y, source.width, source.height, 0,0, size, size)
+                        // ctx.drawImage(imgElement, source.x, source.y, source.width, source.height, door.x1, door.y1 - door.height, door.width, size)
                         resolve(true)
                     }
                     imgElement.src = imgData
@@ -331,6 +364,7 @@ export default defineComponent ({
             })
 
             backgroundDrawn.then(() => {
+                const doorFront = ctx.getImageData(door.x1, door.y1-door.height, door.width, door.height)
                 ctx.beginPath()
                 ctx.strokeStyle = "rgba(255,255,255,.2)"
                 ctx.moveTo(lineLeft.x, lineLeft.y)
@@ -343,8 +377,8 @@ export default defineComponent ({
                     onUpdate: () => {
                         ctx.beginPath()
                         ctx.strokeStyle = "rgba(128,128,128,1)"
-                        ctx.moveTo(door.x1, door.y1)
-                        ctx.lineTo(door.x1, lineLeft.y)
+                        ctx.moveTo(door.x1 , door.y1)
+                        ctx.lineTo(door.x1 , lineLeft.y)
                         ctx.stroke()
                         ctx.closePath()
                         
@@ -384,26 +418,90 @@ export default defineComponent ({
                         ctx.closePath()
                     },
                 })
-
-                // Draw door handle
-                const handle = {
-                    x: source.width/2 + door.width/2 - 20,
-                    y: source.height/2 - door.height*.56
+                let test = {
+                    angle: -.02
                 }
-                tl.to(handle, {
-                    x: handle.x + 12,
-                    duration: .4,
-                    delay: -.64,
-                    ease: "power2.in",
+                tl.to(test, {
+                    angle: .32,
+                    duration: 2.4,
+                    delay: 0.6,
+                    ease: "sine.in",
                     onUpdate: () => {
+                        ctx.restore()
+                        ctx.clearRect(source.width/2 - door.width/2,0, source.width, source.height)
+                        ctx.save()
+
                         ctx.beginPath()
-                        ctx.strokeStyle = "rgba(180,180,180,1)"
-                        ctx.moveTo(source.width/2 + door.width/2 - 20, handle.y)
-                        ctx.lineTo(handle.x, handle.y)
-                        ctx.stroke()
+                        ctx.fillStyle = "#ffffff"
+                        ctx.rect(source.width/2 - door.width/2, source.height/2 - door.height, door.width, door.height)
+                        ctx.fill()
                         ctx.closePath()
+
+                        const floorGradient = ctx.createRadialGradient(source.width/2, source.height/2 , 1, source.width/2, source.height/2 + 40, 50)
+                        floorGradient.addColorStop(0, `rgba(255,255,255,${test.angle*2})`)
+                        floorGradient.addColorStop(1, "transparent")
+
+
+                        ctx.beginPath()
+                        ctx.fillStyle = floorGradient
+                        ctx.rect(source.width/2 - door.width*1.5, source.height/2, door.width * 2, 80)
+                        ctx.fill()
+                        ctx.closePath()
+
+                        openDoor(doorFront, ctx, test.angle)
+                        // Draw door
+                        // ctx.beginPath()
+                        // ctx.strokeStyle = "rgba(128,128,128,1)"
+                        // ctx.moveTo(door.x1, door.y1)
+                        // ctx.lineTo(door.x1, door.y1 - door.height)
+                        // ctx.lineTo(door.x1 + door.width, door.y1 - door.height)
+                        // ctx.lineTo(door.x1 + door.width, door.y1)
+                        // ctx.stroke()
+                        // ctx.closePath()
                     },
                 })
+
+                
+                // openDoor(doorFront, ctx, .2)
+                console.log("doorFront", doorFront)
+                // // Draw door handle
+                // const handle = {
+                //     x1: source.width/2 + door.width/2 - 20,
+                //     x2: source.width/2 + door.width/2 - 20,
+                //     y1: source.height/2 - door.height*.56,
+                //     y2: source.height/2 - door.height*.56
+                // }
+                // tl.to(handle, {
+                //     x1: handle.x1 + 12,
+                //     duration: .4,
+                //     delay: -.64,
+                //     ease: "power2.in",
+                //     onUpdate: () => {
+                //         ctx.beginPath()
+                //         ctx.strokeStyle = "rgba(180,180,180,1)"
+                //         ctx.moveTo(handle.x1, handle.y1)
+                //         ctx.lineTo(handle.x2, handle.y2)
+                //         ctx.stroke()
+                //         ctx.closePath()
+                //     },
+                // })
+                // tl.to(handle, {
+                //     y1: handle.y1 + 6,
+                //     x1: handle.x1 + 6,
+                //     duration: .2,
+                //     delay: 0,
+                //     ease: "power2.in",
+                //     onUpdate: () => {
+
+                //         ctx.clearRect( source.width/2 + door.width/2 - 20 ,source.height/2 - door.height*.56 -1,18,16)
+                //         ctx.beginPath()
+                //         ctx.strokeStyle = "rgba(180,180,180,1)"
+                //         ctx.moveTo(handle.x1, handle.y1)
+                //         ctx.lineTo(handle.x2, handle.y2)
+                //         ctx.stroke()
+                //         ctx.closePath()
+                //     },
+                // })
             })
         },
         loadOverlay() {
