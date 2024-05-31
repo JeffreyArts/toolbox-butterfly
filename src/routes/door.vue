@@ -38,6 +38,8 @@
 
             </div>
         </aside>
+
+        <footer class="random-background-pattern"></footer>
     </div>
 </template>
 
@@ -58,11 +60,12 @@ export default defineComponent ({
     props: [],
     data() {
         return {
-            clickType: "dot" as "dot" | "masked-dot" | "animated-doorway",
+            clickType: "animated-doorway" as "dot" | "masked-dot" | "animated-doorway",
             mousePos: {x:-1, y:0},
             defaultClick: false,
             animation: true,
             clearDrawing: false,
+            updateDrawing: true,
             showHiddenCanvas: true,
             defaultClickEvent: null as null | customMouseEvent | customTouchEvent,
         }
@@ -120,11 +123,14 @@ export default defineComponent ({
             if (!sourceCanvas || !sourceContext) {
                 return console.error("Missing sourceCanvas")
             }
-            // First clear canvas
-            overlayContext.clearRect(0,0,overlayCanvas.width,overlayCanvas.height)
+            if (this.updateDrawing) {
+                // First clear canvas
+                overlayContext.clearRect(0,0,overlayCanvas.width,overlayCanvas.height)
             
-            // Update overlay canvas
-            overlayContext.drawImage(sourceCanvas, this.mousePos.x - sourceCanvas.width/2, this.mousePos.y - sourceCanvas.height/2)
+                // Update overlay canvas
+                overlayContext.drawImage(sourceCanvas, this.mousePos.x - sourceCanvas.width/2, this.mousePos.y - sourceCanvas.height/2)
+                this.updateDrawing = false
+            }
 
             requestAnimationFrame(this.draw)
         },
@@ -202,7 +208,6 @@ export default defineComponent ({
         addDot() {
             const size = 40
             const sourceCanvas = this.$refs.sourceCanvas as HTMLCanvasElement
-            
             if (!sourceCanvas) {
                 console.error("Missing target canvas")
                 return
@@ -210,13 +215,14 @@ export default defineComponent ({
             
             sourceCanvas.width = size
             sourceCanvas.height = size
-
+            
             const ctx = sourceCanvas.getContext("2d")
             if (!ctx) {
                 return
             }
-
-
+            
+            
+            this.updateDrawing = true
             ctx.beginPath()
             ctx.arc(size/2,size/2, size/2, 0, 2 * Math.PI)
             ctx.fillStyle = "red"
@@ -250,7 +256,8 @@ export default defineComponent ({
                 }
                     
                 const imgElement = new Image()
-                imgElement.onload = function() {
+                imgElement.onload = () => {
+                    this.updateDrawing = true
                     /// draw the shape we want to use for clipping
                     ctx.beginPath()
                     ctx.arc(size/2,size/2, size/2, 0, 2 * Math.PI)
@@ -277,7 +284,7 @@ export default defineComponent ({
         },
         addAnimatedDoorway() {
             const size = {
-                width: 80   ,
+                width: 80,
                 height: 320
             }
             const sourceCanvas = this.$refs.sourceCanvas as HTMLCanvasElement
@@ -306,6 +313,7 @@ export default defineComponent ({
             const door = {
                 width: 64,
                 height: 128,
+                angle: 0,
                 x1: 0,
                 x2: 0,
                 y1: 0,
@@ -324,29 +332,45 @@ export default defineComponent ({
 
             const openDoor = (img: ImageData, context: CanvasRenderingContext2D, skew: number) => {
                 const height = img.height
-                const width = img.width
+                const width = img.width + 8
                 const offsetY = source.height/2 - door.height
-                const offsetX = (source.width / 2 - door.width) / 4 -2
-                // const canvas = document.createElement("canvas")
-                // console.log(source, door)
-                // ctx.clearRect(door.x1, door.y1-door.height, door.width, door.height)
-                // ctx.restore()
-                // ctx.beginPath()
-                // ctx.fillStyle = "#fff"
-                // ctx.rect(door.x1, door.y1-door.height, door.width, door.height)
-                // ctx.fill()
-                // ctx.closePath()
-                // ctx.save()
-                createImageBitmap(img).then(image => {
-                    for (var i = 0; i <= height / 2; ++i) {
-                        // Top part
-                        context.setTransform(1 - skew, -skew * i / height, 0, 1, 0, offsetY)
-                        context.drawImage(image, offsetX, height / 2 - i, width, 1, 0, height / 2 - i, width, 2)
-                        // Bottom part
-                        context.setTransform(1 - skew, skew * i / height, 0, 1, 0, offsetY)
-                        context.drawImage(image, offsetX, height / 2 + i, width, 2, 0, height / 2 + i, width, 2)
-                    }
-                })
+                const offsetX = (source.width / 2 - door.width) / 4 - 2
+                
+                const canvas = document.createElement("canvas")
+                canvas.height = height
+                canvas.width = width
+                const ctx = canvas.getContext("2d")
+                if (!ctx) {
+                    return
+                }
+                ctx.putImageData(img, 0,0)
+                
+                // Draw borders
+                ctx.beginPath()
+                ctx.strokeStyle = "rgba(128,128,128,1)"
+                ctx.moveTo(0 , 1)
+                ctx.lineTo(img.width - 1, 1)
+                ctx.lineTo(img.width - 1, img.height - 1)
+                ctx.lineTo(0 , img.height - 1)
+                ctx.lineTo(0 , 1)
+                ctx.stroke()
+                ctx.closePath()
+
+                // Draw door shadow
+                const shadowDoor = ctx.createLinearGradient(0,0, img.width,0)
+                shadowDoor.addColorStop(0, `rgba(0,0,0,${skew * .48})`)
+                shadowDoor.addColorStop(1, "transparent")
+                ctx.fillStyle = shadowDoor
+                ctx.fillRect(0, 0, img.width, img.height)
+
+                for (var i = 0; i <= height / 2; ++i) {
+                    // Top part
+                    context.setTransform(1 - skew, -skew * i / height, 0, 1, 0, offsetY)
+                    context.drawImage(canvas, offsetX, height / 2 - i, width, 1, 0, height / 2 - i, width, 2)
+                    // Bottom part
+                    context.setTransform(1 - skew, skew * i / height, 0, 1, 0, offsetY)
+                    context.drawImage(canvas, offsetX, height / 2 + i, width, 2, 0, height / 2 + i, width, 2)
+                }
             }
 
 
@@ -364,6 +388,7 @@ export default defineComponent ({
             })
 
             backgroundDrawn.then(() => {
+                this.updateDrawing = true
                 const doorFront = ctx.getImageData(door.x1, door.y1-door.height, door.width, door.height)
                 ctx.beginPath()
                 ctx.strokeStyle = "rgba(255,255,255,.2)"
@@ -375,6 +400,7 @@ export default defineComponent ({
                     duration: .6,
                     ease: "ease",
                     onUpdate: () => {
+                        this.updateDrawing = true
                         ctx.beginPath()
                         ctx.strokeStyle = "rgba(128,128,128,1)"
                         ctx.moveTo(door.x1 , door.y1)
@@ -396,6 +422,7 @@ export default defineComponent ({
                     duration: .2,
                     ease: "power2.in",
                     onUpdate: () => {
+                        this.updateDrawing = true
                         ctx.beginPath()
                         ctx.strokeStyle = "rgba(128,128,128,1)"
                         ctx.moveTo(source.width/2 - door.width/2, lineLeft.y)
@@ -410,6 +437,7 @@ export default defineComponent ({
                     delay: -.2,
                     ease: "power2.in",
                     onUpdate: () => {
+                        this.updateDrawing = true
                         ctx.beginPath()
                         ctx.strokeStyle = "rgba(128,128,128,1)"
                         ctx.moveTo(source.width/2 + door.width/2, lineLeft.y)
@@ -418,37 +446,35 @@ export default defineComponent ({
                         ctx.closePath()
                     },
                 })
-                let test = {
-                    angle: -.02
-                }
-                tl.to(test, {
-                    angle: .32,
-                    duration: 2.4,
+                
+                tl.to(door, {
+                    angle: 0.48,
+                    duration: 1.6,
                     delay: 0.6,
-                    ease: "sine.in",
+                    ease: "back.out",
                     onUpdate: () => {
+                        this.updateDrawing = true
                         ctx.restore()
                         ctx.clearRect(source.width/2 - door.width/2,0, source.width, source.height)
                         ctx.save()
-
                         ctx.beginPath()
                         ctx.fillStyle = "#ffffff"
                         ctx.rect(source.width/2 - door.width/2, source.height/2 - door.height, door.width, door.height)
                         ctx.fill()
                         ctx.closePath()
 
-                        const floorGradient = ctx.createRadialGradient(source.width/2, source.height/2 , 1, source.width/2, source.height/2 + 40, 50)
-                        floorGradient.addColorStop(0, `rgba(255,255,255,${test.angle*2})`)
-                        floorGradient.addColorStop(1, "transparent")
+                        // const floorGradient = ctx.createRadialGradient(source.width/2, source.height/2 , 1, source.width/2, source.height/2 + 40, 50)
+                        // floorGradient.addColorStop(0, `rgba(255,255,255,${door.angle*2})`)
+                        // floorGradient.addColorStop(1, "transparent")
 
+                        // ctx.beginPath()
+                        // ctx.fillStyle = floorGradient
+                        // ctx.rect(source.width/2 - door.width*1.5, source.height/2, door.width * 2, 80)
+                        // ctx.fill()
+                        // ctx.closePath()
 
-                        ctx.beginPath()
-                        ctx.fillStyle = floorGradient
-                        ctx.rect(source.width/2 - door.width*1.5, source.height/2, door.width * 2, 80)
-                        ctx.fill()
-                        ctx.closePath()
-
-                        openDoor(doorFront, ctx, test.angle)
+                        
+                        openDoor(doorFront, ctx, door.angle)
                         // Draw door
                         // ctx.beginPath()
                         // ctx.strokeStyle = "rgba(128,128,128,1)"
@@ -541,5 +567,15 @@ export default defineComponent ({
     h1 {
         margin: 0;
     }
+}
+.random-background-pattern {
+    position: fixed;
+    bottom: 0;
+    height: 256px;
+    left: 0;
+    right: 0;
+    background-size: 64px;
+    background-image: url("/shroomies-bg.png");
+    background-repeat: repeat;
 }
 </style>
