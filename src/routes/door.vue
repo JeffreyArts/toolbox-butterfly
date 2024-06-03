@@ -311,8 +311,8 @@ export default defineComponent ({
             }
 
             const door = {
-                width: 64,
-                height: 128,
+                width: 32,
+                height: 80,
                 angle: 0,
                 x1: 0,
                 x2: 0,
@@ -332,9 +332,9 @@ export default defineComponent ({
 
             const openDoor = (img: ImageData, context: CanvasRenderingContext2D, skew: number) => {
                 const height = img.height
-                const width = img.width + 8
-                const offsetY = source.height/2 - door.height
-                const offsetX = (source.width / 2 - door.width) / 4 - 2
+                const width = img.width
+                const offsetY = source.height/ 2 - door.height
+                const offsetX = source.width / 2 - door.width/2
                 
                 const canvas = document.createElement("canvas")
                 canvas.height = height
@@ -348,11 +348,11 @@ export default defineComponent ({
                 // Draw borders
                 ctx.beginPath()
                 ctx.strokeStyle = "rgba(128,128,128,1)"
-                ctx.moveTo(0 , 1)
-                ctx.lineTo(img.width - 1, 1)
-                ctx.lineTo(img.width - 1, img.height - 1)
-                ctx.lineTo(0 , img.height - 1)
-                ctx.lineTo(0 , 1)
+                ctx.moveTo(0 , 0)
+                ctx.lineTo(img.width, 0)
+                ctx.lineTo(img.width, img.height)
+                ctx.lineTo(0 , img.height)
+                ctx.lineTo(0 , 0)
                 ctx.stroke()
                 ctx.closePath()
 
@@ -365,11 +365,15 @@ export default defineComponent ({
 
                 for (var i = 0; i <= height / 2; ++i) {
                     // Top part
-                    context.setTransform(1 - skew, -skew * i / height, 0, 1, 0, offsetY)
-                    context.drawImage(canvas, offsetX, height / 2 - i, width, 1, 0, height / 2 - i, width, 2)
+                    context.setTransform(1 - skew, -skew * i / height, 0, 1, offsetX, offsetY)
+                    context.drawImage(canvas, 
+                        0, height / 2 - i, width, 1, 
+                        0, height / 2 - i, width, 2)
                     // Bottom part
-                    context.setTransform(1 - skew, skew * i / height, 0, 1, 0, offsetY)
-                    context.drawImage(canvas, offsetX, height / 2 + i, width, 2, 0, height / 2 + i, width, 2)
+                    context.setTransform(1 - skew, skew * i / height, 0, 1, offsetX, offsetY)
+                    context.drawImage(canvas, 
+                        0, height / 2 + i, width, 2, 
+                        0, height / 2 + i, width, 2)
                 }
             }
 
@@ -455,7 +459,7 @@ export default defineComponent ({
                     onUpdate: () => {
                         this.updateDrawing = true
                         ctx.restore()
-                        ctx.clearRect(source.width/2 - door.width/2,0, source.width, source.height)
+                        ctx.clearRect(0, 0, source.width, source.height)
                         ctx.save()
                         ctx.beginPath()
                         ctx.fillStyle = "#ffffff"
@@ -463,16 +467,93 @@ export default defineComponent ({
                         ctx.fill()
                         ctx.closePath()
 
-                        // const floorGradient = ctx.createRadialGradient(source.width/2, source.height/2 , 1, source.width/2, source.height/2 + 40, 50)
-                        // floorGradient.addColorStop(0, `rgba(255,255,255,${door.angle*2})`)
-                        // floorGradient.addColorStop(1, "transparent")
+                        // Draw shadow top right
+                        const shadowProp = {
+                            topRight: {
+                                x1: source.width/2 + door.width/2,
+                                x2: source.width/2 + door.width/2,
+                                y1: source.height/2 - door.height,
+                                y2: source.height/2 - door.height,
+                                radius: 20
+                            },
+                            bottomRight: {
+                                x1: source.width/2 + door.width/2,
+                                x2: source.width/2 + door.width/2,
+                                y1: source.height/2,
+                                y2: source.height/2,
+                                radius: 20
+                            },
+                        }
+                        const shadowDepth = door.width * .64
+                        // Define shadow gradients
+                        const shadow = {
+                            right:       ctx.createLinearGradient(source.width/2 + door.width/2, 0, source.width/2 + door.width/2 +shadowDepth, 0),
+                            bottom:      ctx.createLinearGradient(0, source.height/2, 0, source.height/2 +shadowDepth),
+                            top:         ctx.createLinearGradient(0, source.height/2 - door.height, 0, source.height/2  - door.height -shadowDepth),
+                            topRight:    ctx.createRadialGradient(source.width/2 + door.width/2, source.height/2 - door.height, 0, source.width/2 + door.width/2, source.height/2 - door.height ,shadowDepth),
+                            topLeft:     ctx.createRadialGradient(source.width/2 - door.width/2, source.height/2 - door.height, 0, source.width/2 - door.width/2, source.height/2 - door.height,shadowDepth),
+                            bottomLeft:  ctx.createRadialGradient(source.width/2 - door.width/2, source.height/2, 0, source.width/2 - door.width/2, source.height/2 , shadowDepth),
+                            bottomRight: ctx.createRadialGradient(source.width/2 + door.width/2, source.height/2              , 0, source.width/2 + door.width/2, source.height/2             ,shadowDepth)
+                        }
+                        
+                        // Top right
+                        shadow.topRight.addColorStop(0, `rgba(255,255,255,${door.angle * .72})`)
+                        shadow.topRight.addColorStop(1, "transparent")
+                        ctx.fillStyle = shadow.topRight
+                        ctx.fillRect(source.width/2 + door.width/2, source.height/2 - door.height - 40 ,shadowDepth*2, 40)
+                        
+                        // Top left
+                        shadow.topLeft.addColorStop(0, `rgba(255,255,255,${door.angle * .72})`)
+                        shadow.topLeft.addColorStop(1, "transparent")
+                        ctx.fillStyle = shadow.topLeft
+                        ctx.beginPath()
+                        ctx.moveTo(source.width/2 - door.width/2, source.height/2 - door.height)
+                        ctx.lineTo(source.width/2 - door.width/2, source.height/2 - door.height -shadowDepth)
+                        ctx.lineTo(source.width/2 - door.width/2 -shadowDepth*door.angle, source.height/2 - door.height -shadowDepth)
+                        ctx.lineTo(source.width/2 - door.width/2 -shadowDepth*door.angle, source.height/2 - door.height -shadowDepth +shadowDepth*door.angle)
+                        ctx.closePath()
+                        ctx.fill()
+                        
+                        // ctx.fillRect(source.width/2 - door.width/2 -shadowDepth*2, source.height/2 - door.height - 40 ,shadowDepth*2, 40)
+                        
+                        // Bottom right
+                        shadow.bottomRight.addColorStop(0, `rgba(255,255,255,${door.angle * .72})`)
+                        shadow.bottomRight.addColorStop(1, "transparent")
+                        ctx.fillStyle = shadow.bottomRight
+                        ctx.fillRect(source.width/2 + door.width/2, source.height/2 ,shadowDepth*2, 40)
+                        
+                        // Bottom left
+                        shadow.bottomLeft.addColorStop(0, `rgba(255,255,255,${door.angle * .72})`)
+                        shadow.bottomLeft.addColorStop(1, "transparent")
+                        ctx.fillStyle = "red"
+                        ctx.fillStyle = shadow.bottomLeft
+                        ctx.beginPath()
+                        ctx.moveTo(source.width/2 - door.width/2, source.height/2)
+                        ctx.lineTo(source.width/2 - door.width/2, source.height/2 + shadowDepth)
+                        ctx.lineTo(source.width/2 - door.width/2 - shadowDepth*door.angle, source.height/2 + shadowDepth)
+                        ctx.lineTo(source.width/2 - door.width/2 -shadowDepth*door.angle, source.height/2 + shadowDepth -shadowDepth*door.angle)
+                        // ctx.lineTo(source.width/2 - door.width/2 -shadowDepth*door.angle, source.height/2 - door.height -shadowDepth)
+                        // ctx.lineTo(source.width/2 - door.width/2 -shadowDepth*door.angle, source.height/2 - door.height -shadowDepth +shadowDepth*door.angle)
+                        ctx.closePath()
+                        ctx.fill()
 
-                        // ctx.beginPath()
-                        // ctx.fillStyle = floorGradient
-                        // ctx.rect(source.width/2 - door.width*1.5, source.height/2, door.width * 2, 80)
-                        // ctx.fill()
-                        // ctx.closePath()
-
+                        // Right
+                        shadow.right.addColorStop(0, `rgba(255,255,255,${door.angle * .72})`)
+                        shadow.right.addColorStop(1, "transparent")
+                        ctx.fillStyle = shadow.right
+                        ctx.fillRect(source.width/2 + door.width/2, source.height/2 - door.height ,shadowDepth*2, door.height)
+                        
+                        // Bottom
+                        shadow.bottom.addColorStop(0, `rgba(255,255,255,${door.angle * .64})`)
+                        shadow.bottom.addColorStop(1, "transparent")
+                        ctx.fillStyle = shadow.bottom
+                        ctx.fillRect(source.width/2 - door.width/2, source.height/2, door.width, door.width*.72*2)
+                        
+                        // Top
+                        shadow.top.addColorStop(0, `rgba(255,255,255,${door.angle * .72})`)
+                        shadow.top.addColorStop(1, "transparent")
+                        ctx.fillStyle = shadow.top
+                        ctx.fillRect(source.width/2 - door.width/2, source.height/2 - door.height -shadowDepth*2, door.width,shadowDepth*2)
                         
                         openDoor(doorFront, ctx, door.angle)
                         // Draw door
