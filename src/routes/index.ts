@@ -10,6 +10,7 @@ import CatterpillarMoving2 from "./catterpillar-moving-2.vue"
 import CatterpillarMoving3 from "./catterpillar-moving-3.vue"
 import CatterpillarMoving4 from "./catterpillar-moving-4.vue"
 import CatterpillarEyes from "./catterpillar-eyes.vue"
+import CatterpillarMouth from "./catterpillar-mouth.vue"
 import Door from "./door.vue"
 import PhysicsDiv from "./physics-div.vue"
 import PhysicsDivTranslate from "./physics-div-translate.vue"
@@ -71,6 +72,11 @@ const routes = [
         path: "/catterpillar-eyes",
         name: "Catterpillar eyes",
         component: CatterpillarEyes,
+    },
+    {
+        path: "/catterpillar-mouth",
+        name: "Catterpillar mouth",
+        component: CatterpillarMouth,
     },
     {
         path: "/door",
