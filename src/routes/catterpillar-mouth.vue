@@ -109,7 +109,7 @@ import _ from "lodash"
 import StatsJS from "stats.js"
 import Paper from "paper"
 import gsap from "gsap"
-import Catterpillar, {CatterpillarOptions} from "./../services/catterpillar"
+import Catterpillar, { CatterpillarOptions } from "@/models/catterpillar"
 import mousePosition from "@/services/mouse-position"
     
 export default defineComponent ({ 
@@ -130,25 +130,10 @@ export default defineComponent ({
             blinkInterval: true,
             blinkTimeout: 0,
             paperJS: {
-                // points: [] as Array<paper.Point>
                 paths: [] as Array<paper.Path>,
-                // leftEye: {
-                //     pupil: null as null | paper.Path,
-                //     lid: null as null | paper.Path,
-                //     bg: null as null | paper.Path,
-                // },
-                // rightEye: {
-                //     pupil: null as null | paper.Path,
-                //     lid: null as null | paper.Path,
-                //     bg: null as null | paper.Path,
-                // },
                 mouth: null as null | paper.Path,
             },
-            catterPillar: {
-                isMoving: false,
-                constraint: null as null | Matter.Constraint,
-                composite: null as null | Matter.Composite,
-            },
+            catterPillar: null as null | Catterpillar,
             pageOptions: {
                 showMatterJS: true,
                 showMouth: true
@@ -172,6 +157,7 @@ export default defineComponent ({
         window.addEventListener("resize", this.resetView)
     },
     unmounted() {
+        this.removeCatterpillar()
         this.removeMatter()
         this.stats = null
         const el = this.$refs["matterContainer"] as HTMLElement
@@ -218,7 +204,7 @@ export default defineComponent ({
             } as CatterpillarOptions
         },
         cancelMouseDown() {
-            if (this.catterPillar.isMoving && !this.mouseTarget) {
+            if (!this.catterPillar || this.catterPillar.isMoving && !this.mouseTarget) {
                 return
             }
             
@@ -236,7 +222,7 @@ export default defineComponent ({
             this.mouseTarget = null
         },
         mouseClickEvent(e: MouseEvent) {
-            if (!this.mWorld || !this.catterPillar.composite ) {
+            if (!this.mWorld || !this.catterPillar?.composite ) {
                 return
             }
             this.mousePos = mousePosition.xy(e)
@@ -259,17 +245,28 @@ export default defineComponent ({
         },
         mouseDownEvent(e:MouseEvent | TouchEvent) {
             e.stopPropagation() 
-            if (!this.mWorld || !this.catterPillar.composite) {
+            if (!this.mWorld || !this.catterPillar?.composite) {
                 return
             }
+            if (!this.options.bodyPart) {
+                console.error("Missing bodypart")
+                return
+            }
+            
             let range = this.options.bodyPart.size
+
+            if (!range) {
+                console.error("Missing bodypart.size")
+                return
+            }
+
             this.mouseDown = true
             this.mousePos = mousePosition.xy(e)
             _.each(this.catterPillar.composite.bodies, body => {
-                if ((this.mousePos.x > (body.position.x - range) - this.options.bodyPart.size/2) &&
-                    (this.mousePos.x < (body.position.x + range) + this.options.bodyPart.size/2) &&
-                    (this.mousePos.y > (body.position.y - range) - this.options.bodyPart.size/2) &&
-                    (this.mousePos.y < (body.position.y + range) + this.options.bodyPart.size/2)) {
+                if ((this.mousePos.x > (body.position.x - range) - range / 2) &&
+                    (this.mousePos.x < (body.position.x + range) + range / 2) &&
+                    (this.mousePos.y > (body.position.y - range) - range / 2) &&
+                    (this.mousePos.y < (body.position.y + range) + range / 2)) {
                     this.mouseTarget = body
                 }
             })
@@ -375,7 +372,7 @@ export default defineComponent ({
             Matter.Composite.add(this.mWorld, [this.ground])
         },
         keyPressEvent(e: KeyboardEvent) {
-            if (!this.mEngine || this.catterPillar.isMoving) {
+            if (!this.catterPillar || !this.mEngine || this.catterPillar.isMoving) {
                 return
             }
             
@@ -403,12 +400,16 @@ export default defineComponent ({
                     return reject(new Error("Provide bodies"))
                 }
             
-                if (!this.mWorld || !this.ground || !this.catterPillar.composite) {
+                if (!this.mWorld || !this.ground || !this.catterPillar?.composite) {
                     return reject(new Error("Missing required variables mWorld | ground | catterPillar.composite"))
                 }
                 
                 // Check if the catterpillar collides with the ground, and exit when it does not
                 const collision = _.some(_.map(this.catterPillar.composite.bodies, body => {
+                    if (!this.catterPillar) {
+                        return
+                    }
+
                     if (!this.ground) {
                         this.catterPillar.isMoving = false  
                         return false
@@ -481,6 +482,10 @@ export default defineComponent ({
                     gsap.to(this.catterPillar.constraint, {
                         length: (this.options.length * this.options.bodyPart.size) * .6,
                         onComplete: () => {
+                            if (!this.catterPillar) {
+                                return
+                            }
+                            
                             gsap.to(this.catterPillar.constraint, {
                                 length: (this.options.length * this.options.bodyPart.size),
                                 onComplete: () => {
@@ -552,7 +557,7 @@ export default defineComponent ({
                             ease: "back.out",
                             duration: duration/2,
                             onComplete:() => {
-                                if (!this.catterPillar.composite) {
+                                if (!this.catterPillar) {
                                     return
                                 }
                                 gsap.to(this.catterPillar.constraint, {
@@ -603,10 +608,14 @@ export default defineComponent ({
 
             })
             promise.then(() => {
+                if (!this.catterPillar) {
+                    throw new Error("this.catterPillar == null")
+                }
+                
                 if (recursive) {
                     setTimeout(() => {
                         const head = bodies[0]
-                        if (!this.catterPillar.composite) {
+                        if (this.catterPillar) {
                             this.catterPillar.isMoving = false
                             return
                         }
@@ -622,6 +631,9 @@ export default defineComponent ({
                     this.catterPillar.isMoving = false
                 }
             }).catch(e => {
+                if (!this.catterPillar) {
+                    return
+                }
                 this.catterPillar.isMoving = false
             })
         },
@@ -631,10 +643,9 @@ export default defineComponent ({
             }
 
             // Remove existing catterpillar
-            if (this.catterPillar.composite) {
+            if (this.catterPillar) {
                 Matter.Composite.remove(this.mWorld, this.catterPillar.composite)
-                this.catterPillar.composite = null
-                this.catterPillar.isMoving = false
+                this.catterPillar.remove()
             } else {
                 console.error("No catterpillar set to be removed")
                 return
@@ -646,30 +657,14 @@ export default defineComponent ({
                     Matter.Composite.remove(this.mWorld, constraint)
                 }
             })
+            
+            // Remove all bodyPart composites
             _.each(this.mWorld.composites, composite => {
-                if (this.mWorld && composite.label === "bodyBlob") {
+                if (this.mWorld && composite.label === "bodyPart") {
                     Matter.Composite.remove(this.mWorld, composite)
                 }
             })
             
-            // Remove paperJS properties
-            if (this.paperJS.paths.length > 0) {
-                for (let i=0; i < this.paperJS.paths.length; i++) {
-                    this.paperJS.paths[i].remove()
-                }
-                this.paperJS.paths.length = 0
-            }
-            // this.paperJS.leftEye.lid?.remove()
-            // this.paperJS.rightEye.lid?.remove()
-            // this.paperJS.leftEye.pupil?.remove()
-            // this.paperJS.rightEye.pupil?.remove()
-            // this.paperJS.leftEye.bg?.remove()
-            // this.paperJS.rightEye.bg?.remove()
-            this.paperJS.mouth?.remove()
-            
-        },
-        generatePaperJSCircle(x: number, y: number) {
-            return new Paper.Path.Circle(new Paper.Point(x,y), this.options.bodyPart.size) 
         },
         generateCatterpillar() {
             const el = this.$el.querySelector(".scroll-container")
@@ -678,94 +673,31 @@ export default defineComponent ({
                 return
             }
 
-            if (this.catterPillar.composite) {
+            if (this.catterPillar) {
                 this.removeCatterpillar()
             }
     
             const options = this.options
-
+            const x = el.clientWidth/2 - (options.length * options.bodyPart.size) / 2
             
-            const res = new Catterpillar(el.clientWidth/2 - (options.length * options.bodyPart.size) / 2, 0, options)
-            console.log(res)
-
-            this.catterPillar.composite = res.composite
-            this.catterPillar.constraint = res.constraint
-
+            this.catterPillar = new Catterpillar({x, y: 8, ...options})
+            
             Matter.Composite.add(this.mWorld, [
                 this.catterPillar.constraint,
                 this.catterPillar.composite
             ])
             
-            // Center catterpillar
-            // _.each(this.catterPillar.composite.bodies, (body,i) => {
-            //     body.isStatic = true
-            //     const x =  body.position.x + (el.clientWidth) / 2 - (this.options.length*this.options.bodyPart.size*2)/2
-            //     const y =  0.05 + (Math.abs(i - this.options.length/2) + (Math.abs(i - this.options.length/2)) / 2) * .001
-            //     Matter.Body.setPosition(body, {x, y})
-            //     body.isStatic = false
-            // })
-                
-            // Update paperJS paths
-            for (let i=0; i < this.options.length; i++) {
-                const newPath = this.generatePaperJSCircle(0,0)
-                newPath.fillColor = new Paper.Color("#58f208")
-                newPath.strokeColor = new Paper.Color("#17381d")
-                newPath.strokeColor.alpha = .2
-                this.paperJS.paths.unshift(newPath)
-            }
-
-            // // Create eyes
-            // const eyeWidth = 8
-            // const eyeHeight = 10
-
-            // //// Define eye lids
-            // this.paperJS.rightEye.lid = new Paper.Path([
-            //     new Paper.Point(eyeWidth * 0,   eyeHeight * 0.5),
-            //     new Paper.Point(eyeWidth * 0.5, eyeHeight * 0),
-            //     new Paper.Point(eyeWidth * 1,   eyeHeight * 0.5),
-            //     new Paper.Point(eyeWidth * 0.5, eyeHeight * 1),
+            // // Create mouth
+            // this.paperJS.mouth = new Paper.Path([
+            //     new Paper.Point(this.options.bodyPart.size * 0,   this.options.bodyPart.size * .5),
+            //     new Paper.Point(this.options.bodyPart.size * 0.5, this.options.bodyPart.size * .6),
+            //     new Paper.Point(this.options.bodyPart.size * 1,   this.options.bodyPart.size * .5),
+            //     new Paper.Point(this.options.bodyPart.size * .5,  this.options.bodyPart.size * .9),
             // ])
-            // this.paperJS.rightEye.lid.closePath()
-            // this.paperJS.rightEye.lid.smooth({ type: "continuous"})
-            // this.paperJS.leftEye.lid = this.paperJS.rightEye.lid.clone()
-            // this.paperJS.rightEye.bg = this.paperJS.rightEye.lid.clone()
-            // this.paperJS.leftEye.bg = this.paperJS.rightEye.lid.clone()
-                
-            // //// Define pupils
-            // this.paperJS.rightEye.pupil = new Paper.Path.Ellipse({x: 0, y:0, width: 4, height: 4})
-            // this.paperJS.leftEye.pupil = new Paper.Path.Ellipse({x: 0, y:0, width: 4, height: 4})
-            
-            // //// Set colors
-            // this.paperJS.leftEye.pupil.fillColor    = new Paper.Color("#222")
-            // this.paperJS.leftEye.bg.fillColor      = new Paper.Color("#fff")
-            // this.paperJS.leftEye.bg.strokeColor    = new Paper.Color("#222")
-            
-            // this.paperJS.rightEye.pupil.fillColor   = new Paper.Color("#222")
-            // this.paperJS.rightEye.bg.fillColor     = new Paper.Color("#fff")
-            // this.paperJS.rightEye.bg.strokeColor   = new Paper.Color("#222")
-            
-            // //// Create masks from eye lids
-            // const leftEyeGroup = new Paper.Group([this.paperJS.leftEye.lid, this.paperJS.leftEye.pupil])
-            // // this.paperJS.leftEye.pupil.insertAbove(this.paperJS.leftEye.lid)
-            // leftEyeGroup.clipped = true
-            
-            // const rightEyeLid = this.paperJS.rightEye.lid.clone()
-            // // rightEyeLid.segments[1] = this.paperJS.rightEye.lid.segments[1]
-            // const rightEyeGroup = new Paper.Group([this.paperJS.rightEye.lid, this.paperJS.rightEye.pupil])
-            // // this.paperJS.rightEye.pupil.insertAbove(this.paperJS.rightEye.lid)
-            // rightEyeGroup.clipped = true
+            // this.paperJS.mouth.fillColor = new Paper.Color("#222")
 
-            // Create mouth
-            this.paperJS.mouth = new Paper.Path([
-                new Paper.Point(this.options.bodyPart.size * 0,   this.options.bodyPart.size * .5),
-                new Paper.Point(this.options.bodyPart.size * 0.5, this.options.bodyPart.size * .6),
-                new Paper.Point(this.options.bodyPart.size * 1,   this.options.bodyPart.size * .5),
-                new Paper.Point(this.options.bodyPart.size * .5,  this.options.bodyPart.size * .9),
-            ])
-            this.paperJS.mouth.fillColor = new Paper.Color("#222")
-
-            this.paperJS.mouth.closePath()
-            this.paperJS.mouth.smooth({ type: "continuous"})
+            // this.paperJS.mouth.closePath()
+            // this.paperJS.mouth.smooth({ type: "continuous"})
         },
         generateNewCatterpillar() {
             this.generateOptions()
@@ -779,130 +711,12 @@ export default defineComponent ({
             targetEl.appendChild( this.stats.dom )
             requestAnimationFrame( this.updateFPS )      
         },
-        // setBlinkInterval() {
-        //     if (!this.blinkInterval) {
-        //         clearTimeout(this.blinkTimeout)
-        //         return
-        //     }
-        //     this.blinkTimeout = setTimeout(() => {
-        //         this.blink()
-        //         setTimeout(() => {
-        //             if (this.blinks % 3 == 0) {
-        //                 this.blink()
-        //             }
-        //         }, 580)
-        //         this.setBlinkInterval()
-        //     }, 3200 + Math.random() * 3200)
-        // },
-        // blink() {
-        //     if (this.isBlinking) {
-        //         return
-        //     }
-        //     this.isBlinking = true
-        //     this.blinks ++
-        //     if (this.paperJS.rightEye.lid && this.paperJS.leftEye.lid) {
-        //         const start = {
-        //             perc: 0
-        //         }
-        //         const startPos = this.paperJS.rightEye.lid.position.y
-        //         const startPosTop = this.paperJS.rightEye.lid.segments[1].point.y
-        //         const startPosBottom = this.paperJS.rightEye.lid.segments[3].point.y
-                
-        //         gsap.to(start, {
-        //             perc: 1,
-        //             duration: .24,
-        //             ease: "power3.in",
-        //             onUpdate: () => {
-        //                 // Update Right eye
-        //                 if (this.paperJS.rightEye.lid) {
-        //                     this.paperJS.rightEye.lid.segments[1].point.y = this.paperJS.rightEye.lid.position.y - (5 - start.perc * 5)
-        //                     this.paperJS.rightEye.lid.segments[3].point.y = this.paperJS.rightEye.lid.position.y + (5 - start.perc * 5)
-        //                     this.paperJS.rightEye.lid.smooth({ type: "continuous"})
-        //                     if (this.paperJS.rightEye.bg) {
-        //                         this.paperJS.rightEye.bg.segments[1].point.y = this.paperJS.rightEye.lid.segments[1].point.y 
-        //                         this.paperJS.rightEye.bg.segments[3].point.y = this.paperJS.rightEye.lid.segments[3].point.y 
-        //                         this.paperJS.rightEye.bg.smooth({ type: "continuous"})
-        //                     }
-        //                 }
-                        
-        //                 // Update Left eye
-        //                 if (this.paperJS.leftEye.lid) {
-        //                     this.paperJS.leftEye.lid.segments[1].point.y = this.paperJS.leftEye.lid.position.y - (5 - start.perc * 5)
-        //                     this.paperJS.leftEye.lid.segments[3].point.y = this.paperJS.leftEye.lid.position.y + (5 - start.perc * 5)
-        //                     this.paperJS.leftEye.lid.smooth({ type: "continuous"})
-        //                     if (this.paperJS.leftEye.bg) {
-        //                         this.paperJS.leftEye.bg.segments[1].point.y = this.paperJS.leftEye.lid.segments[1].point.y 
-        //                         this.paperJS.leftEye.bg.segments[3].point.y = this.paperJS.leftEye.lid.segments[3].point.y 
-        //                         this.paperJS.leftEye.bg.smooth({ type: "continuous"})
-        //                     }
-        //                 }
-        //             },
-        //             onComplete: () => {
-        //                 if (!this.paperJS.rightEye.lid || !this.paperJS.leftEye.lid) {
-        //                     return
-        //                 }
-        //                 const end = {
-        //                     perc: 0
-        //                 }
-
-        //                 gsap.to(end, {
-        //                     perc: 1,
-        //                     duration: .32,
-        //                     ease: "power3.out",
-        //                     onUpdate: () => {
-        //                         // Update Right eye
-        //                         if (this.paperJS.rightEye.lid) {
-        //                             this.paperJS.rightEye.lid.segments[1].point.y = this.paperJS.rightEye.lid.position.y - (end.perc * 5)
-        //                             this.paperJS.rightEye.lid.segments[3].point.y = this.paperJS.rightEye.lid.position.y + (end.perc * 5)
-        //                             this.paperJS.rightEye.lid.smooth({ type: "continuous"})
-        //                             if (this.paperJS.rightEye.bg) {
-        //                                 this.paperJS.rightEye.bg.segments[1].point.y = this.paperJS.rightEye.lid.segments[1].point.y 
-        //                                 this.paperJS.rightEye.bg.segments[3].point.y = this.paperJS.rightEye.lid.segments[3].point.y 
-        //                                 this.paperJS.rightEye.bg.smooth({ type: "continuous"})
-        //                             }
-        //                         }
-
-        //                         // Update Left eye
-        //                         if (this.paperJS.leftEye.lid) {
-        //                             this.paperJS.leftEye.lid.segments[1].point.y = this.paperJS.leftEye.lid.position.y - (end.perc * 5)
-        //                             this.paperJS.leftEye.lid.segments[3].point.y = this.paperJS.leftEye.lid.position.y + (end.perc * 5)
-        //                             this.paperJS.leftEye.lid.smooth({ type: "continuous"})
-        //                             if (this.paperJS.leftEye.bg) {
-        //                                 this.paperJS.leftEye.bg.segments[1].point.y = this.paperJS.leftEye.lid.segments[1].point.y 
-        //                                 this.paperJS.leftEye.bg.segments[3].point.y = this.paperJS.leftEye.lid.segments[3].point.y 
-        //                                 this.paperJS.leftEye.bg.smooth({ type: "continuous"})
-        //                             }
-        //                         }
-        //                     },
-        //                     onComplete: () => {
-        //                         if (this.paperJS.rightEye.lid && this.paperJS.leftEye.lid) {
-        //                             this.paperJS.rightEye.lid.segments[0].point.y = startPos
-        //                             this.paperJS.rightEye.lid.segments[1].point.y = startPosTop
-        //                             this.paperJS.rightEye.lid.segments[2].point.y = startPos
-        //                             this.paperJS.rightEye.lid.segments[3].point.y = startPosBottom
-                                    
-        //                             this.paperJS.leftEye.lid.segments[0].point.y = startPos
-        //                             this.paperJS.leftEye.lid.segments[1].point.y = startPosTop
-        //                             this.paperJS.leftEye.lid.segments[2].point.y = startPos
-        //                             this.paperJS.leftEye.lid.segments[3].point.y = startPosBottom
-
-        //                             _.each(this.paperJS.rightEye.lid.segments, (v,i) => {
-        //                                 if (!this.paperJS.rightEye.bg || !this.paperJS.rightEye.lid || !this.paperJS.leftEye.bg || !this.paperJS.leftEye.lid) {
-        //                                     return
-        //                                 }
-        //                                 this.paperJS.rightEye.bg.segments[i].point.y = this.paperJS.rightEye.lid.segments[i].point.y  
-        //                                 this.paperJS.leftEye.bg.segments[i].point.y = this.paperJS.leftEye.lid.segments[i].point.y  
-        //                                 this.paperJS.rightEye.bg.smooth({ type: "continuous"})
-        //                                 this.paperJS.leftEye.bg.smooth({ type: "continuous"})
-        //                             })
-        //                         }
-        //                         this.isBlinking = false
-        //                     },
-        //                 })
-        //             },
-        //         })
-        //     }
-        // },
+        blink() {
+            if (!this.catterPillar) {
+                return
+            }
+            this.catterPillar.blink()
+        },
         updateFPS () {
             if (!this.stats) {
                 return
@@ -920,94 +734,44 @@ export default defineComponent ({
             }
             
             const el = this.$refs.renderCanvas as HTMLElement
-            const catterpillar = this.catterPillar.composite
-
-            if (!el || !catterpillar) {
+            
+            if (!el || !this.catterPillar || this.catterPillar.bodyLength < 0) {
                 requestAnimationFrame(this.renderLoop)
                 return
             }
 
+            const catterpillar = this.catterPillar.composite
             // Reset catterpillar when it is off screen
-            const head = catterpillar.bodies[0]
-            const butt = catterpillar.bodies[catterpillar.bodies.length -1]
-
+            const head = this.catterPillar.head
+            const butt = this.catterPillar.butt
+            
             if ((head.position.x > el.clientWidth && butt.position.x > el.clientWidth) ||
             (head.position.x <= 0 && butt.position.x < 0) ||
             (head.position.y > el.clientHeight + 100 && butt.position.y > el.clientHeight + 100)
             ) {
+                console.log("catterpillar", this.catterPillar.bodyLength)
                 this.removeCatterpillar()
-                
+            
                 // Don't create new catterpillar immediately for UX reasons
                 setTimeout(() => {
                     this.generateCatterpillar()
                 }, 480)
             } 
-
+        
             if (this.mouseDown && this.mouseTarget) {
                 Matter.Body.setVelocity( this.mouseTarget, {
                     x: this.mousePos.x - this.mouseTarget.position.x,
                     y: this.mousePos.y - this.mouseTarget.position.y,
                 })
-                // this.mouseTarget.position.x = this.mousePos.x
-                // this.mouseTarget.position.y = this.mousePos.y
             }
 
-            
-            // Update PaperJS
-            _.each(catterpillar.bodies, (body, i) => {
-                const path = this.paperJS.paths[i]
-                if (!path) {
-                    return
-                }
-                
-                path.position.x = body.position.x
-                path.position.y = body.position.y                    
-
-
-                if (i == 0) {
-                    const maxOffset = 12
-                    const offsetPerc = (head.position.x - butt.position.x + catterpillar.bodies.length * this.options.bodyPart.size)/(catterpillar.bodies.length * this.options.bodyPart.size*2)
-
-                    // if (this.paperJS.leftEye.lid) {
-                    //     this.paperJS.leftEye.lid.position.x = path.position.x - 4 - maxOffset/2 + maxOffset * offsetPerc
-                    //     this.paperJS.leftEye.lid.position.y = path.position.y - 4
-                    //     if (this.paperJS.leftEye.pupil) {
-                    //         this.paperJS.leftEye.pupil.position.x = this.paperJS.leftEye.lid.position.x + offsetPerc * 4 - 2
-                    //         this.paperJS.leftEye.pupil.position.y = this.paperJS.leftEye.lid.position.y
-                    //     }
-                    //     if (this.paperJS.leftEye.bg) {
-                    //         this.paperJS.leftEye.bg.position.x = this.paperJS.leftEye.lid.position.x + offsetPerc * 4 - 2
-                    //         this.paperJS.leftEye.bg.position.y = this.paperJS.leftEye.lid.position.y
-                    //     }
-                    // }
-
-                    // if (this.paperJS.rightEye.lid) {
-                    //     this.paperJS.rightEye.lid.position.x = path.position.x + 4 - maxOffset/2  + maxOffset * offsetPerc
-                    //     this.paperJS.rightEye.lid.position.y = path.position.y - 4
-                    //     if (this.paperJS.rightEye.pupil) {
-                    //         this.paperJS.rightEye.pupil.position.x = this.paperJS.rightEye.lid.position.x + offsetPerc * 4 - 2
-                    //         this.paperJS.rightEye.pupil.position.y = this.paperJS.rightEye.lid.position.y
-                    //     }
-                    //     if (this.paperJS.rightEye.bg) {
-                    //         this.paperJS.rightEye.bg.position.x = this.paperJS.rightEye.lid.position.x + offsetPerc * 4 - 2
-                    //         this.paperJS.rightEye.bg.position.y = this.paperJS.rightEye.lid.position.y
-                    //     }
-                    // }
-
-                    if (this.paperJS.mouth) {
-                        if (this.pageOptions.showMouth) {
-                            this.paperJS.mouth.opacity = 1    
-                        } else {
-                            this.paperJS.mouth.opacity = 0
-                        }
-
-                        this.paperJS.mouth.position.x = path.position.x - maxOffset/2  + maxOffset * offsetPerc
-                        this.paperJS.mouth.position.y = path.position.y + this.options.bodyPart.size * .4
-
-                    }
-                }
-            })
-
+            // Position eyes
+            const maxOffset = 12
+            const offsetPerc = (head.position.x - butt.position.x + catterpillar.bodies.length * this.options.bodyPart.size)/(catterpillar.bodies.length * this.options.bodyPart.size*2)
+        
+            this.catterPillar.eye.left.offset.x = maxOffset/2 + maxOffset * offsetPerc - maxOffset
+            this.catterPillar.eye.right.offset.x = maxOffset/2 + maxOffset * offsetPerc - maxOffset
+           
             requestAnimationFrame(this.renderLoop)
         }
     }
