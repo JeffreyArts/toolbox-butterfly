@@ -450,20 +450,25 @@ class Catterpillar  {
         this.isMoving = false
         this.x              = options.x             ? options.x : 0
         this.y              = options.y             ? options.y : 0
-        this.autoBlink      = options.autoBlink     ? options.autoBlink : true
         this.bodyLength     = options.length        ? options.length : 8
         this.stiffness      = options.stiffness     ? options.stiffness : .8
         this.maxVelocity    = options.maxVelocity   ? options.maxVelocity : 3
         this.floppiness     = options.floppiness    ? options.floppiness : .5
         this.damping        = options.damping       ? options.damping : .8
         this.restitution    = options.restitution   ? options.restitution : .8
-
+        
         this.bodyPart.size          = options.bodyPart?.size ? options.bodyPart?.size : 8
         this.bodyPart.slop          = options.bodyPart?.slop
         this.bodyPart.stiffness     = options.bodyPart?.stiffness
         this.bodyPart.damping       = options.bodyPart?.damping
         this.bodyPart.restitution   = options.bodyPart?.restitution
-        
+
+        if (typeof options.autoBlink === "boolean") {
+            this.autoBlink = options.autoBlink
+        } else {
+            this.autoBlink = true
+        }
+
         // All options set, now call the helper functions to create the catterpillar
         const t = this.#createBodyParts()
         this.composite = t.composite
@@ -482,7 +487,7 @@ class Catterpillar  {
             y: this.y,
             width: 8,
             height: 8,
-            autoBlink: true
+            autoBlink: this.autoBlink
         }
         
         this.eye = {

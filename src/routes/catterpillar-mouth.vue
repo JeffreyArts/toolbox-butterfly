@@ -116,7 +116,7 @@ export default defineComponent ({
     props: [],
     data() {
         return {
-            mWorld: null as null | Matter.Composite,
+            mWorld: null as null | Matter.World,
             mEngine: null as null | Matter.Engine,
             mRunner: null as null | Matter.Runner,
             mObject: [] as Array<Matter.Body>,
@@ -466,27 +466,19 @@ export default defineComponent ({
                 this.removeCatterpillar()
             }
     
+            if (!this.options.length || !this.options.bodyPart?.size) {
+                return
+            }
+
             const options = this.options
-            const x = el.clientWidth/2 - (options.length * options.bodyPart.size) / 2
+            const x = el.clientWidth/2 - (this.options.length * this.options.bodyPart.size) / 2
             
-            this.catterPillar = new Catterpillar(this.mWorld, {x, y: 8, ...options})
+            this.catterPillar = new Catterpillar(this.mWorld, {x, y: 8, ...options, autoBlink: true})
             // this.catterPillar.draw()
             Matter.Composite.add(this.mWorld, [
                 this.catterPillar.constraint,
                 this.catterPillar.composite
             ])
-            
-            // // Create mouth
-            // this.paperJS.mouth = new Paper.Path([
-            //     new Paper.Point(this.options.bodyPart.size * 0,   this.options.bodyPart.size * .5),
-            //     new Paper.Point(this.options.bodyPart.size * 0.5, this.options.bodyPart.size * .6),
-            //     new Paper.Point(this.options.bodyPart.size * 1,   this.options.bodyPart.size * .5),
-            //     new Paper.Point(this.options.bodyPart.size * .5,  this.options.bodyPart.size * .9),
-            // ])
-            // this.paperJS.mouth.fillColor = new Paper.Color("#222")
-
-            // this.paperJS.mouth.closePath()
-            // this.paperJS.mouth.smooth({ type: "continuous"})
         },
         generateNewCatterpillar() {
             this.generateOptions()

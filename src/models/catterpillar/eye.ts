@@ -52,6 +52,18 @@ class Eye  {
             this.#updateBlinkInterval()
         }, this.blinkInterval)
     }
+    #blinkUpdate(progress: {perc: number}) {
+
+        if (this.lid && this.sclera) {
+            this.lid.segments[1].point.y = this.lid.position.y - (5 - progress.perc * 5)
+            this.lid.segments[3].point.y = this.lid.position.y + (5 - progress.perc * 5)
+            this.lid.smooth({ type: "continuous"})
+            
+            this.sclera.segments[1].point.y = this.lid.segments[1].point.y 
+            this.sclera.segments[3].point.y = this.lid.segments[3].point.y 
+            this.sclera.smooth({ type: "continuous"})
+        }
+    }
     
     constructor (
         options: EyeOptions
@@ -142,23 +154,12 @@ class Eye  {
         const startPos = this.lid.position.y
         const startPosTop = this.lid.segments[1].point.y
         const startPosBottom = this.lid.segments[3].point.y
-        
+        const topLidOffset = this.lid.segments[1].point.y - startPos
         gsap.to(start, {
             perc: 1,
             duration: .24,
             ease: "power3.in",
-            onUpdate: () => {
-                // Update Right eye
-                if (this.lid && this.sclera) {
-                    this.lid.segments[1].point.y = this.lid.position.y - (5 - start.perc * 5)
-                    this.lid.segments[3].point.y = this.lid.position.y + (5 - start.perc * 5)
-                    this.lid.smooth({ type: "continuous"})
-                    
-                    this.sclera.segments[1].point.y = this.lid.segments[1].point.y 
-                    this.sclera.segments[3].point.y = this.lid.segments[3].point.y 
-                    this.sclera.smooth({ type: "continuous"})
-                }
-            },
+            onUpdate: () => { this.blinkClosing(start) },
             onComplete: () => {
                 if (!this.lid ) {
                     return console.error("Lid is not defined")
@@ -171,24 +172,13 @@ class Eye  {
                     perc: 1,
                     duration: .32,
                     ease: "power3.out",
-                    onUpdate: () => {
-                        // Update Right eye
-                        if (this.lid && this.sclera) {
-                            this.lid.segments[1].point.y = this.lid.position.y - (end.perc * 5)
-                            this.lid.segments[3].point.y = this.lid.position.y + (end.perc * 5)
-                            this.lid.smooth({ type: "continuous"})
-
-                            this.sclera.segments[1].point.y = this.lid.segments[1].point.y 
-                            this.sclera.segments[3].point.y = this.lid.segments[3].point.y 
-                            this.sclera.smooth({ type: "continuous"})
-                        }
-                    },
+                    onUpdate: () => { this.blinkOpening(end) },
                     onComplete: () => {
                         if (this.lid) {
-                            this.lid.segments[0].point.y = startPos
-                            this.lid.segments[1].point.y = startPosTop
-                            this.lid.segments[2].point.y = startPos
-                            this.lid.segments[3].point.y = startPosBottom
+                            this.lid.segments[0].point.y = this.lid.position.y
+                            this.lid.segments[1].point.y = this.lid.position.y - this.height / 2
+                            this.lid.segments[2].point.y = this.lid.position.y
+                            this.lid.segments[3].point.y = this.lid.position.y + this.height / 2
                             
                             _.each(this.lid.segments, (v,i) => {
                                 if (!this.sclera || !this.lid) {
@@ -203,8 +193,35 @@ class Eye  {
                 })
             },
         })
-            
     }
+
+    // blinkClosing is a private function
+    blinkClosing(progress: {perc: number}) {
+        if (this.lid && this.sclera) {
+            this.lid.segments[1].point.y = this.lid.position.y - (5 - progress.perc * 5)
+            this.lid.segments[3].point.y = this.lid.position.y + (5 - progress.perc * 5)
+            this.lid.smooth({ type: "continuous"})
+            
+            this.sclera.segments[1].point.y = this.lid.segments[1].point.y 
+            this.sclera.segments[3].point.y = this.lid.segments[3].point.y 
+            this.sclera.smooth({ type: "continuous"})
+        }
+    }
+
+    // blinkOpening is a private function
+    blinkOpening(progress: {perc: number}) {
+        if (this.lid && this.sclera) {
+            this.lid.segments[1].point.y = this.lid.position.y - (progress.perc * 5)
+            this.lid.segments[3].point.y = this.lid.position.y + (progress.perc * 5)
+            this.lid.smooth({ type: "continuous"})
+
+            this.sclera.segments[1].point.y = this.lid.segments[1].point.y 
+            this.sclera.segments[3].point.y = this.lid.segments[3].point.y 
+            this.sclera.smooth({ type: "continuous"})
+        }
+    }
+
+            
 
     updatePosition(x?:number,y?:number) {
         if (!this.pupil) {
