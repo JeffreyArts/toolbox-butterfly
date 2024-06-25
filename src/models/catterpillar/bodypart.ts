@@ -25,11 +25,12 @@ interface BodyPart {
 
 }
 
-class BodyPart  {
+class BodyPart {
 
     #generatePaperPath() {
         const newPath = new Paper.Path.Circle(new Paper.Point(this.x,this.y), this.radius) 
         newPath.fillColor = new Paper.Color("#58f208")
+        newPath.fillColor = new Paper.Color("rgba(255,128,128,1)")
         newPath.strokeColor = new Paper.Color("#17381d")
         newPath.strokeColor.alpha = .2
         return newPath
