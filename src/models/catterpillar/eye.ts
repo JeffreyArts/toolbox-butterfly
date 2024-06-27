@@ -134,7 +134,11 @@ class Eye  {
     }
     
     stopBlinking() {
-        this.autoBlink = false
+        if (this.autoBlink === true) {
+            this.autoBlink = false
+        } else {
+            this.autoBlink = undefined
+        }
     }
 
     blink() {
@@ -151,10 +155,10 @@ class Eye  {
         const start = {
             perc: 0
         }
-        const startPos = this.lid.position.y
-        const startPosTop = this.lid.segments[1].point.y
-        const startPosBottom = this.lid.segments[3].point.y
-        const topLidOffset = this.lid.segments[1].point.y - startPos
+        // const startPos = this.lid.position.y
+        // const startPosTop = this.lid.segments[1].point.y
+        // const startPosBottom = this.lid.segments[3].point.y
+        // const topLidOffset = this.lid.segments[1].point.y - startPos
         gsap.to(start, {
             perc: 1,
             duration: .24,
@@ -172,7 +176,7 @@ class Eye  {
                     perc: 1,
                     duration: .32,
                     ease: "power3.out",
-                    onUpdate: () => { this.blinkOpening(end) },
+                    onUpdate: () => { this.blinkOpening(end.perc) },
                     onComplete: () => {
                         if (this.lid) {
                             this.lid.segments[0].point.y = this.lid.position.y
@@ -209,15 +213,15 @@ class Eye  {
     }
 
     // blinkOpening is a private function
-    blinkOpening(progress: {perc: number}) {
+    blinkOpening(perc: number) {
         if (this.lid && this.sclera) {
-            this.lid.segments[1].point.y = this.lid.position.y - (progress.perc * 5)
-            this.lid.segments[3].point.y = this.lid.position.y + (progress.perc * 5)
+            this.lid.segments[1].point.y = this.lid.position.y - (perc * 5)
+            this.lid.segments[3].point.y = this.lid.position.y + (perc * 5)
             this.lid.smooth({ type: "continuous"})
 
             this.sclera.segments[1].point.y = this.lid.segments[1].point.y 
             this.sclera.segments[3].point.y = this.lid.segments[3].point.y 
-            this.sclera.smooth({ type: "continuous"})
+            // this.sclera.smooth({ type: "continuous"}) // Seems obsolete
         }
     }
 

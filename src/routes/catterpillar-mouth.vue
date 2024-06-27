@@ -19,6 +19,7 @@
                     <canvas id="paperCanvas"></canvas>
                 </div>
             </div>
+            <div :style="{backgroundColor: catterPillar?.isMoving ? 'green': 'red'}" style="width: 48px; height: 48px;"></div>
         </section>
 
         <aside class="sidebar">
@@ -70,14 +71,21 @@
                             </label>
                         </span>
                     </div>
-                    <!-- <div class="option">
+                    <div class="option">
                         <span>
-                            <input type="checkbox" id="blinkInterval" v-model="blinkInterval" @change="setBlinkInterval">
-                            <label for="blinkInterval">
-                                Auto blink
-                            </label>
+                            <strong>Current state: {{ catterPillar?.mouth.state }}</strong>
+                            <br>
+                            <button class="button __is" @click="switchState('🙂')">
+                                🙂
+                            </button>
+                            <button class="button __is" @click="switchState('😮')">
+                                😮
+                            </button>
+                            <button class="button __is" @click="switchState('😐')">
+                                😐
+                            </button>
                         </span>
-                    </div> -->
+                    </div>
                     <div class="option">
                         <span>
                             <button class="button __is" for="blink" @click="blink">
@@ -474,7 +482,7 @@ export default defineComponent ({
             const x = el.clientWidth/2 - (this.options.length * this.options.bodyPart.size) / 2
             
             this.catterPillar = new Catterpillar(this.mWorld, {x, y: 8, ...options, autoBlink: true})
-            // this.catterPillar.draw()
+
             Matter.Composite.add(this.mWorld, [
                 this.catterPillar.constraint,
                 this.catterPillar.composite
@@ -494,6 +502,9 @@ export default defineComponent ({
         },
         blink() {
             this.catterPillar?.blink()
+        },
+        switchState(state:  "😮" | "🙂" | "😐") {
+            this.catterPillar?.mouth.switchState(state, 3)
         },
         updateFPS () {
             if (!this.stats) {

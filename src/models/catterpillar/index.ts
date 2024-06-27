@@ -2,10 +2,10 @@ import _ from "lodash"
 import Matter from "matter-js"
 import gsap from "gsap"
 import Eye from "./eye"
+import Mouth from "./mouth"
 import BodyPart from "./bodypart"
 
 import { BodyPartOptions } from "./bodypart"
-import { EyeOptions } from "./eye"
 
 export type CatterpillarOptions = {
     x?: number
@@ -61,6 +61,7 @@ interface Catterpillar {
         left: Eye,
         right: Eye,
     }
+    mouth: Mouth
     // startBlinking: () => void
     // stopBlinking: () => void
     blinkInterval?: number
@@ -81,6 +82,9 @@ interface Catterpillar {
     composite: Matter.Composite
     constraint: Matter.Constraint
     isMoving: boolean
+    mouthRecovering: boolean
+    scared: number
+    scaredAction: number
 }
 
 class Catterpillar  {
@@ -156,6 +160,7 @@ class Catterpillar  {
         })
 
         composite.label = "catterpillar"
+
         return {
             composite,
             eye: this.eye,
@@ -415,6 +420,35 @@ class Catterpillar  {
         this.eye.right.x = this.head.position.x + this.eye["right"].width/2
         this.eye.right.y = this.head.position.y - this.eye["right"].height/2
            
+        this.mouth.x = this.head.position.x + maxOffset/2 + maxOffset * offsetPerc - maxOffset
+        this.mouth.y = this.head.position.y + this.bodyPart.size * .25
+
+        const velocity = Math.abs(this.head.velocity.x) + Math.abs(this.head.velocity.y) 
+        if (velocity > 20 && !this.isMoving) {
+
+            if (this.scared) {
+                clearTimeout(this.scared)
+                clearTimeout(this.scaredAction)
+            } else {
+                this.eye.left.stopBlinking()
+                this.eye.right.stopBlinking()
+                this.mouth.switchState("😮", 1.28)
+            }
+            
+            this.scared = setTimeout(() => {
+                this.scared = 0
+                this.scaredAction = setTimeout(() => {
+                    this.eye.left.blink()
+                    this.eye.right.blink()
+                    this.mouth.switchState("🙂", 4)
+                    this.mouthRecovering = false
+                    this.eye.left.autoBlink = true
+                    this.eye.right.autoBlink = true
+                },2400)
+
+            }, 200)
+        }
+
         requestAnimationFrame(() => this.#draw())
     }
 
@@ -462,26 +496,25 @@ class Catterpillar  {
         this.bodyPart.stiffness     = options.bodyPart?.stiffness
         this.bodyPart.damping       = options.bodyPart?.damping
         this.bodyPart.restitution   = options.bodyPart?.restitution
-
         if (typeof options.autoBlink === "boolean") {
             this.autoBlink = options.autoBlink
         } else {
             this.autoBlink = true
         }
-
+        
         // All options set, now call the helper functions to create the catterpillar
         const t = this.#createBodyParts()
         this.composite = t.composite
         this.head = t.head
         this.butt = t.butt
-
         this.body = []
+        
         for (let index = 1; index < this.composite.bodies.length-1; index++) {
             this.body.push(this.composite.bodies[index])
         }
-
+        
         this.constraint = this.#createBodyConstraint()
-
+        
         const eyeOptions = {
             x: this.x,
             y: this.y,
@@ -494,6 +527,8 @@ class Catterpillar  {
             left: new Eye(eyeOptions),
             right: new Eye(eyeOptions)
         }
+
+        this.mouth = new Mouth({size: this.bodyPart.size * 1.25})
         
         this.#draw.bind(this)
         this.#draw()
@@ -512,6 +547,23 @@ class Catterpillar  {
             bodyPart.remove()
         })
         this.isMoving = false
+    }
+
+    // recoverMouth() {
+    //     if (this.mouthRecovering) {
+    //         return
+    //     }
+    //     this.eye.left.blink()
+    //     this.eye.right.blink()
+    //     this.mouthRecovering = true
+    //     setTimeout(() => {
+    //         this.mouth.switchState("🙂", 12.4)
+    //         this.mouthRecovering = false
+    //     },2400)
+    // }
+    
+    switchState(state:  "😮" | "🙂" | "😐") {
+        this.mouth.switchState(state)
     }
 
     moveLeft() {
