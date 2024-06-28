@@ -73,6 +73,9 @@
                     </div>
                     <div class="option">
                         <span>
+                            <span>{{ catterPillar?.mouth.topLip.left.x }}</span><br>
+                            <span>{{ catterPillar?.mouth.topLip.left.y }}</span>
+                            <br>
                             <strong>Current state: {{ catterPillar?.mouth.state }}</strong>
                             <br>
                             <button class="button __is" @click="switchState('🙂')">
@@ -482,6 +485,7 @@ export default defineComponent ({
             const x = el.clientWidth/2 - (this.options.length * this.options.bodyPart.size) / 2
             
             this.catterPillar = new Catterpillar(this.mWorld, {x, y: 8, ...options, autoBlink: true})
+            console.log(this.catterPillar.mouth)
 
             Matter.Composite.add(this.mWorld, [
                 this.catterPillar.constraint,

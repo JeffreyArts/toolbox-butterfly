@@ -55,6 +55,7 @@ interface Mouth {
         center: paper.Point,
         right: paper.Point,
     }
+    animation: null | gsap.TweenTarget
     inTransition: boolean
     size: number
     state: "😮" | "🙂" | "😐"
@@ -81,6 +82,7 @@ class Mouth  {
             new Paper.Point(this.size / 2,  0),// This is going to be removed by calling the closePath method
         ])
         this.paper.closePath()
+        this.animation = null
 
         this.bottomLip = {
             left:  this.paper.segments[0].point,
@@ -119,19 +121,6 @@ class Mouth  {
             return
         }
 
-        const startPos = {
-            topLip: {
-                left: this.paper.segments[0].point,
-                center: this.paper.segments[1].point,
-                right: this.paper.segments[2].point,
-            },
-            bottomLip: {
-                left: this.paper.segments[5].point,
-                center: this.paper.segments[4].point,
-                right: this.paper.segments[3].point,
-            },
-        }
-
         if (this.state === "🙂") {
             this.updateState(this.getSmilePosition())
         }
@@ -143,8 +132,6 @@ class Mouth  {
         if (this.state === "😐") {
             this.updateState(this.getShockedPosition())
         }
-
-        this.paper.smooth({ type: "continuous"})
     }
 
     updateState(newState: {
@@ -159,81 +146,125 @@ class Mouth  {
             right: {x: number, y: number}
         }
     }) {
-        // Top lip
-        this.topLip.left.x = newState.topLip.left.x
-        this.topLip.left.y = newState.topLip.left.y
-
-        this.topLip.center.x = newState.topLip.center.x
-        this.topLip.center.y = newState.topLip.center.y
         
-        this.topLip.right.x = newState.topLip.right.x
-        this.topLip.right.y = newState.topLip.right.y
+        // Top lip
+        this.topLip.left.x      = this.x + newState.topLip.left.x
+        this.topLip.left.y      = this.y + newState.topLip.left.y
+
+        this.topLip.center.x    = this.x + newState.topLip.center.x
+        this.topLip.center.y    = this.y + newState.topLip.center.y
+        
+        this.topLip.right.x     = this.x + newState.topLip.right.x
+        this.topLip.right.y     = this.y + newState.topLip.right.y
 
         // Bottom lip
-        this.bottomLip.left.x = newState.bottomLip.left.x
-        this.bottomLip.left.y = newState.bottomLip.left.y
+        this.bottomLip.left.x   = this.x + newState.bottomLip.left.x
+        this.bottomLip.left.y   = this.y + newState.bottomLip.left.y
 
-        this.bottomLip.center.x = newState.bottomLip.center.x
-        this.bottomLip.center.y = newState.bottomLip.center.y
+        this.bottomLip.center.x = this.x + newState.bottomLip.center.x
+        this.bottomLip.center.y = this.y + newState.bottomLip.center.y
         
-        this.bottomLip.right.x = newState.bottomLip.right.x
-        this.bottomLip.right.y = newState.bottomLip.right.y
-        
+        this.bottomLip.right.x  = this.x + newState.bottomLip.right.x
+        this.bottomLip.right.y  = this.y + newState.bottomLip.right.y
+
         this.paper.smooth({ type: "continuous"})
     }
 
     switchState(state:  "😮" | "🙂" | "😐", duration = .64 as number) {
         // duration = amount of seconds that the switch take
         // Don't switch state if it is the same state
-        if (state == this.state || this.inTransition) {
+        
+        if (this.inTransition && this.animation) {
+            gsap.killTweensOf(this.animation)
+        }
+
+        if (state == this.state) {
             return
         }
-        console.log("Switch state to:" , state)
-        
         this.inTransition = true
         const progress = { perc: 0 }
         let ease = "sine.inOut"
         if (state === "😮") {
             ease = "elastic.out(1,0.5)"
         }
-        const startPos = {
-            topLip: {
-                left: this.paper.segments[0].point,
-                center: this.paper.segments[1].point,
-                right: this.paper.segments[2].point,
-            },
-            bottomLip: {
-                left: this.paper.segments[5].point,
-                center: this.paper.segments[4].point,
-                right: this.paper.segments[3].point,
-            },
-        }
 
-        gsap.to(progress, {
-            perc: 1,
-            duration,
-            ease,
-            onUpdate: () => { 
-                switch (state) {
-                case  "😮":
-                    this.animateState(this.getOpenPosition(), progress.perc) 
-                    break
-                case  "🙂":
-                    this.animateState(this.getSmilePosition(), progress.perc) 
-                    break
-                case  "😐":
-                    this.animateState(this.getShockedPosition(), progress.perc) 
-                    break
-                default:
-                    break
+        const from = this.getPosition(this.state)
+        const to = this.getPosition(state)
+        
+        // Some data re-arranging so GSAP can process it correctly
+        const gsapFrom = {
+            "topLip.left.x": from.topLip.left.x,
+            "topLip.left.y": from.topLip.left.y,
+            "topLip.center.x": from.topLip.center.x,
+            "topLip.center.y": from.topLip.center.y,
+            "topLip.right.x": from.topLip.right.x,
+            "topLip.right.y": from.topLip.right.y,
+            "bottomLip.left.x": from.bottomLip.left.x,
+            "bottomLip.left.y": from.bottomLip.left.y,
+            "bottomLip.center.x": from.bottomLip.center.x,
+            "bottomLip.center.y": from.bottomLip.center.y,
+            "bottomLip.right.x": from.bottomLip.right.x,
+            "bottomLip.right.y": from.bottomLip.right.y,
+        }
+        
+        this.animation = gsap.to(gsapFrom
+            , {
+                "topLip.left.x": to.topLip.left.x,
+                "topLip.left.y": to.topLip.left.y,
+                "topLip.center.x": to.topLip.center.x,
+                "topLip.center.y": to.topLip.center.y,
+                "topLip.right.x": to.topLip.right.x,
+                "topLip.right.y": to.topLip.right.y,
+                "bottomLip.left.x": to.bottomLip.left.x,
+                "bottomLip.left.y": to.bottomLip.left.y,
+                "bottomLip.center.x": to.bottomLip.center.x,
+                "bottomLip.center.y": to.bottomLip.center.y,
+                "bottomLip.right.x": to.bottomLip.right.x,
+                "bottomLip.right.y": to.bottomLip.right.y,
+                duration,
+                ease,
+                onUpdate: () => { 
+                    if (!this.animation) {
+                        return
+                    }
+                    this.updateState({
+                        topLip: {
+                            left: {
+                                x: gsapFrom["topLip.left.x"],
+                                y: gsapFrom["topLip.left.y"],
+                            },
+                            center: {
+                                x: gsapFrom["topLip.center.x"],
+                                y: gsapFrom["topLip.center.y"],
+                            },
+                            right: {
+                                x: gsapFrom["topLip.right.x"],
+                                y: gsapFrom["topLip.right.y"],
+                            }
+                        },
+                        bottomLip: {
+                            left: {
+                                x: gsapFrom["bottomLip.left.x"],
+                                y: gsapFrom["bottomLip.left.y"],
+                            },
+                            center: {
+                                x: gsapFrom["bottomLip.center.x"],
+                                y: gsapFrom["bottomLip.center.y"],
+                            },
+                            right: {
+                                x: gsapFrom["bottomLip.right.x"],
+                                y: gsapFrom["bottomLip.right.y"],
+                            }
+                        }
+                    })
+                    this.paper.smooth({ type: "continuous"})
+                },
+                onComplete: () => {
+                    console.log("Complete!")
+                    this.state = state
+                    this.inTransition = false
                 }
-            },
-            onComplete: () => {
-                console.log("Complete!")
-                this.state = state
-                this.inTransition = false
-            }
-        })
+            })
     }
 
     animateState(
@@ -244,75 +275,72 @@ class Mouth  {
             return
         }
 
-        const bottomLipLeft = this.paper.segments[0].point
-        const bottomLipCenter = this.paper.segments[1].point
-        const bottomLipRight = this.paper.segments[2].point
-            
-        const topLipRight = this.paper.segments[3].point
-        const topLipCenter = this.paper.segments[4].point
-        const topLipLeft = this.paper.segments[5].point
+        // Top lip
+        this.topLip.left.x = this.x + (finalState.topLip.left.x * perc)
+        this.topLip.left.y = this.y + (finalState.topLip.left.y * perc)
+        
+        this.topLip.center.x = this.x + (finalState.topLip.center.x * perc)
+        this.topLip.center.y = this.y + (finalState.topLip.center.y * perc)
 
-        const newState = {
-            topLip: {
-                left: {
-                    x: bottomLipLeft.x + (finalState.topLip.left.x - topLipLeft.x) * perc,
-                    y: bottomLipLeft.y + (finalState.topLip.left.y - topLipLeft.y) * perc,
-                },
-                center: {
-                    x: topLipCenter.x + (finalState.topLip.center.x - topLipCenter.x) * perc,
-                    y: topLipCenter.y + (finalState.topLip.center.y - topLipCenter.y) * perc,
-                },
-                right: {
-                    x: topLipRight.x + (finalState.topLip.right.x - topLipRight.x) * perc,
-                    y: topLipRight.y + (finalState.topLip.right.y - topLipRight.y) * perc,
-                }
-            },
-            bottomLip: {
-                left: {
-                    x: bottomLipLeft.x + (finalState.bottomLip.left.x - bottomLipLeft.x) * perc,
-                    y: bottomLipLeft.y + (finalState.bottomLip.left.y - bottomLipLeft.y) * perc,
-                },
-                center: {
-                    x: bottomLipCenter.x + (finalState.bottomLip.center.x - bottomLipCenter.x) * perc,
-                    y: bottomLipCenter.y + (finalState.bottomLip.center.y - bottomLipCenter.y) * perc,
-                },
-                right: {
-                    x: bottomLipRight.x + (finalState.bottomLip.right.x - bottomLipRight.x) * perc,
-                    y: bottomLipRight.y + (finalState.bottomLip.right.y - bottomLipRight.y) * perc,
-                }
-            },
-        }
-        this.updateState(newState)
+        this.topLip.right.x = this.x + (finalState.topLip.right.x * perc)
+        this.topLip.right.y = this.y + (finalState.topLip.right.y * perc)
+
+        // Bottom lip
+        this.bottomLip.left.x = this.x + (finalState.bottomLip.left.x * perc)
+        this.bottomLip.left.y = this.y + (finalState.bottomLip.left.y * perc)
+        
+        this.bottomLip.center.x = this.x + (finalState.bottomLip.center.x * perc)
+        this.bottomLip.center.y = this.y + (finalState.bottomLip.center.y * perc)
+
+        this.bottomLip.right.x = this.x + (finalState.bottomLip.right.x * perc)
+        this.bottomLip.right.y = this.y + (finalState.bottomLip.right.y * perc)
+                
+        this.paper.smooth({ type: "continuous"})
     }
     
+    getPosition(state?: "😮" | "🙂" | "😐") : MouthPoints{
+        if (!state) {
+            state = this.state
+        }
+        if (state === "😮") {
+            return this.getOpenPosition()
+        } else if (state === "😐") {
+            return this.getShockedPosition()
+        } else if (state === "🙂") {
+            return this.getSmilePosition()
+        }  else {
+            throw new Error("Invalid state input")
+        }
+    }
+
     getOpenPosition() {
         return {
             topLip: {
                 left: {
-                    x: this.x - this.size/2 * .88,
-                    y: (this.y + this.size *.2) - (this.size * .2) 
+                    x: - this.size/2 * .8,
+                    y: - 2.5 + 2
                 },
                 center: {
-                    x: this.x,
-                    y: (this.y + this.size *.2) - (this.size * .4)
+                    x: 0,
+                    y: - this.size * .32 + 2
                 },
                 right: {
-                    x: this.x + this.size/2 * .88, 
-                    y: (this.y + this.size *.2) - (this.size * .2)
+                    x: this.size/2 * .8,
+                    y: - 2.5 + 2
                 }
             },
             bottomLip: {
                 left: {
-                    x: this.x - this.size/2,
-                    y: (this.y + this.size *.2) + (this.size * .2)
+                    x: -this.size/2 * .8,
+                    y: 5 + 2
                 },
                 center: {
-                    x: this.x,
-                    y: (this.y + this.size *.2) + (this.size * .4)
+                    x: 0,
+                    y: this.size * .48 + 2
                 },
                 right: {
-                    x: this.x + this.size/2, 
-                    y: (this.y + this.size *.2) + (this.size * .2)
+                    x: this.size/2 * .8, 
+                    y: 5 + 2
                 }
             }
         }
@@ -322,30 +350,30 @@ class Mouth  {
         return {
             topLip: {
                 left: {
-                    x: this.x - (this.size/2),
-                    y: this.y - .5
+                    x: -this.size/2,
+                    y: .5
                 },
                 center: {
-                    x: this.x,
-                    y: this.y + 2
+                    x: 0,
+                    y: 2
                 },
                 right: {
-                    x: this.x + (this.size/2),
-                    y: this.y - .5
+                    x: this.size/2,
+                    y: .5
                 }
             },
             bottomLip: {
                 left: {
-                    x: this.x - (this.size/2),
-                    y: this.y
+                    x: -this.size/2,
+                    y: 0
                 },
                 center: {
-                    x: this.x, 
-                    y: this.y + 4
+                    x: 0, 
+                    y: 4
                 },
                 right: {
-                    x: this.x + (this.size/2),
-                    y: this.y
+                    x: this.size/2,
+                    y: 0
                 }
             }
         }
@@ -355,30 +383,30 @@ class Mouth  {
         return {
             topLip: {
                 left: {
-                    x: this.x - (this.size/2),
-                    y: this.y + 1
+                    x: -this.size/2,
+                    y: 1
                 },
                 center: {
-                    x: this.x,
-                    y: this.y + 1
+                    x: 0,
+                    y: 1
                 },
                 right: {
-                    x: this.x + (this.size/2),
-                    y: this.y + 1
+                    x: this.size/2,
+                    y: 1
                 }
             },
             bottomLip: {
                 left: {
-                    x: this.x - (this.size/2),
-                    y: this.y + 3
+                    x: -this.size/2,
+                    y: 3
                 },
                 center: {
-                    x: this.x, 
-                    y: this.y + 3
+                    x: 0, 
+                    y: 3
                 },
                 right: {
-                    x: this.x + (this.size/2),
-                    y: this.y + 3
+                    x: this.size/2,
+                    y: 3
                 }
             }
         }

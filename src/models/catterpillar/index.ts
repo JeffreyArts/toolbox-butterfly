@@ -170,7 +170,6 @@ class Catterpillar  {
     }
     
     #createBodyConstraint() : Matter.Constraint {
-        // console.log("stiffness", this.stiffness, "damping", this.damping, "length", (this.bodyPart.size) * this.bodyLength, "catterpillarBody.bodies", this.composite.bodies)
         return Matter.Constraint.create({
             bodyA: this.head,
             bodyB: this.butt,
@@ -195,7 +194,6 @@ class Catterpillar  {
             }
             
             const solidObjects = [] as Array<Matter.Body>
-            // console.log(this.world.bodies)
             _.each (this.world.bodies, mBody => {
                 if (mBody.label === "ground") {
                     solidObjects.push(mBody)
@@ -205,20 +203,12 @@ class Catterpillar  {
             // Check if the catterpillar collides with the ground, and exit when it does not
             let collision: undefined | Matter.Body
             _.map(this.composite.bodies, body => {
-
-                // if (!collision) {
-                //     this.isMoving = false  
-                //     return false
-                // }
-                
                 _.each(solidObjects, solidObject => {
                     if ( Matter.Collision.collides(body, solidObject) !== null) {
                         collision = solidObject
                     }
                 })
             })
-
-            console.log("Collision", collision)
             
             
             if (!collision) {
@@ -423,6 +413,10 @@ class Catterpillar  {
         this.mouth.x = this.head.position.x + maxOffset/2 + maxOffset * offsetPerc - maxOffset
         this.mouth.y = this.head.position.y + this.bodyPart.size * .25
 
+        requestAnimationFrame(() => this.#draw())
+    }
+
+    #loop(){
         const velocity = Math.abs(this.head.velocity.x) + Math.abs(this.head.velocity.y) 
         if (velocity > 20 && !this.isMoving) {
 
@@ -444,12 +438,12 @@ class Catterpillar  {
                     this.mouthRecovering = false
                     this.eye.left.autoBlink = true
                     this.eye.right.autoBlink = true
-                },2400)
+                }, 2400)
 
             }, 200)
         }
 
-        requestAnimationFrame(() => this.#draw())
+        requestAnimationFrame(() => this.#loop())
     }
 
     constructor (
@@ -532,7 +526,12 @@ class Catterpillar  {
         
         this.#draw.bind(this)
         this.#draw()
+
+        this.#loop.bind(this)
+        this.#loop()
     }
+    
+    
 
     blink() {
         this.eye.left.blink()
@@ -562,10 +561,6 @@ class Catterpillar  {
     //     },2400)
     // }
     
-    switchState(state:  "😮" | "🙂" | "😐") {
-        this.mouth.switchState(state)
-    }
-
     moveLeft() {
         return this.move("left")
     }
