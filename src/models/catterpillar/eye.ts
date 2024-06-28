@@ -52,6 +52,7 @@ class Eye  {
             this.#updateBlinkInterval()
         }, this.blinkInterval)
     }
+
     #blinkUpdate(progress: {perc: number}) {
 
         if (this.lid && this.sclera) {
@@ -63,6 +64,42 @@ class Eye  {
             this.sclera.segments[3].point.y = this.lid.segments[3].point.y 
             this.sclera.smooth({ type: "continuous"})
         }
+    }
+
+    #setSize(){
+        console.log("SET SIZE!", this.width)
+        if (!this.lid) {
+            return
+        }
+        this.lid.segments[0].point.x = this.width * 0
+        this.lid.segments[0].point.y = this.height * 0.5
+
+        this.lid.segments[1].point.x = this.width * 0.5
+        this.lid.segments[1].point.y = this.height * 0
+
+        this.lid.segments[2].point.x = this.width * 1
+        this.lid.segments[2].point.y = this.height * 0.5
+
+        this.lid.segments[3].point.x = this.width * 0.5
+        this.lid.segments[3].point.y = this.height * 1
+
+        this.lid.closePath()
+        this.lid.smooth({ type: "continuous"})
+
+        this.sclera.segments[0].point.x = this.width * 0
+        this.sclera.segments[0].point.y = this.height * 0.5
+
+        this.sclera.segments[1].point.x = this.width * 0.5
+        this.sclera.segments[1].point.y = this.height * 0
+
+        this.sclera.segments[2].point.x = this.width * 1
+        this.sclera.segments[2].point.y = this.height * 0.5
+
+        this.sclera.segments[3].point.x = this.width * 0.5
+        this.sclera.segments[3].point.y = this.height * 1
+
+        this.sclera.closePath()
+        this.sclera.smooth({ type: "continuous"})
     }
     
     constructor (
@@ -114,9 +151,13 @@ class Eye  {
                     target.updatePosition()
                 }
 
+                if (key === "width" || key === "height") {
+                    target[key] = value
+                    target.#setSize()
+                }
+
                 if (key === "autoBlink") {
                     target[key] = value
-                    console.log("Auto blink!")
                     if (value) {
                         target.startBlinking()
                     } else {
@@ -223,9 +264,7 @@ class Eye  {
             this.sclera.segments[3].point.y = this.lid.segments[3].point.y 
             // this.sclera.smooth({ type: "continuous"}) // Seems obsolete
         }
-    }
-
-            
+    }            
 
     updatePosition(x?:number,y?:number) {
         if (!this.pupil) {
@@ -256,7 +295,7 @@ class Eye  {
         this.pupilOffset.x = offset.x
         this.pupilOffset.y = offset.y
     }
-
+    
     remove() {
         this.stopBlinking()
         this.lid.remove()

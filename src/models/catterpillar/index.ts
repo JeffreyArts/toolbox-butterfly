@@ -431,6 +431,18 @@ class Catterpillar  {
             
             this.scared = setTimeout(() => {
                 this.scared = 0
+                
+                // this.eye.left.width = this.eye.left.width * 1.5
+                // this.eye.left.height = this.eye.left.height * 1.5
+
+                // this.eye.right.width = this.eye.right.width * 1.5
+                // this.eye.right.height = this.eye.right.height * 1.5
+
+                // gsap.to(this.eye.right, {
+                //     width: this.eye.right.width * 1.5,
+                //     height:this.eye.right.height * 1.5,
+                //     duration: .4
+                // })
                 this.scaredAction = setTimeout(() => {
                     this.eye.left.blink()
                     this.eye.right.blink()

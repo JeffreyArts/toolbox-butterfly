@@ -508,7 +508,7 @@ export default defineComponent ({
             this.catterPillar?.blink()
         },
         switchState(state:  "😮" | "🙂" | "😐") {
-            this.catterPillar?.mouth.switchState(state, 3)
+            this.catterPillar?.mouth.switchState(state, .64)
         },
         updateFPS () {
             if (!this.stats) {
