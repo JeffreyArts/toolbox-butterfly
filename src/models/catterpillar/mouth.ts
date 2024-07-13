@@ -4,6 +4,7 @@ import gsap from "gsap"
 
 export type MouthOptions = {
     size?: number,
+    scale?: number
 }
 
 export type MouthState = "😮" | "🙂" | "😐" | "🙁"
@@ -59,6 +60,7 @@ interface Mouth {
     }
     animation: null | gsap.TweenTarget
     inTransition: boolean
+    scale: number
     size: number
     state: MouthState
 }
@@ -70,6 +72,7 @@ class Mouth  {
         this.x = 0
         this.y = 0
         this.size = options.size ? options.size : 16
+        this.scale = options.scale ? options.scale : 1
         this.inTransition = false
 
         this.state = "🙂"
@@ -154,24 +157,24 @@ class Mouth  {
     }) {
         
         // Top lip
-        this.topLip.left.x      = this.x + newState.topLip.left.x
-        this.topLip.left.y      = this.y + newState.topLip.left.y
+        this.topLip.left.x      = this.x + (newState.topLip.left.x * this.scale)
+        this.topLip.left.y      = this.y + (newState.topLip.left.y * this.scale)
 
-        this.topLip.center.x    = this.x + newState.topLip.center.x
-        this.topLip.center.y    = this.y + newState.topLip.center.y
+        this.topLip.center.x    = this.x + (newState.topLip.center.x * this.scale)
+        this.topLip.center.y    = this.y + (newState.topLip.center.y * this.scale)
         
-        this.topLip.right.x     = this.x + newState.topLip.right.x
-        this.topLip.right.y     = this.y + newState.topLip.right.y
+        this.topLip.right.x     = this.x + (newState.topLip.right.x * this.scale)
+        this.topLip.right.y     = this.y + (newState.topLip.right.y * this.scale)
 
         // Bottom lip
-        this.bottomLip.left.x   = this.x + newState.bottomLip.left.x
-        this.bottomLip.left.y   = this.y + newState.bottomLip.left.y
+        this.bottomLip.left.x   = this.x + (newState.bottomLip.left.x * this.scale)
+        this.bottomLip.left.y   = this.y + (newState.bottomLip.left.y * this.scale)
 
-        this.bottomLip.center.x = this.x + newState.bottomLip.center.x
-        this.bottomLip.center.y = this.y + newState.bottomLip.center.y
+        this.bottomLip.center.x = this.x + (newState.bottomLip.center.x * this.scale)
+        this.bottomLip.center.y = this.y + (newState.bottomLip.center.y * this.scale)
         
-        this.bottomLip.right.x  = this.x + newState.bottomLip.right.x
-        this.bottomLip.right.y  = this.y + newState.bottomLip.right.y
+        this.bottomLip.right.x  = this.x + (newState.bottomLip.right.x * this.scale)
+        this.bottomLip.right.y  = this.y + (newState.bottomLip.right.y * this.scale)
 
         this.paper.smooth({ type: "continuous"})
     }
@@ -325,30 +328,30 @@ class Mouth  {
         return {
             topLip: {
                 left: {
-                    x: - this.size/2 * .8,
-                    y: - 2.5 + 2
+                    x: - 4,
+                    y: - 0.5
                 },
                 center: {
                     x: 0,
-                    y: - this.size * .32 + 2
+                    y: - 2
                 },
                 right: {
-                    x: this.size/2 * .8,
-                    y: - 2.5 + 2
+                    x: 4,
+                    y: - 0.5
                 }
             },
             bottomLip: {
                 left: {
-                    x: -this.size/2 * .8,
-                    y: 5 + 2
+                    x: -4,
+                    y: 5
                 },
                 center: {
                     x: 0,
-                    y: this.size * .48 + 2
+                    y: 6
                 },
                 right: {
-                    x: this.size/2 * .8, 
-                    y: 5 + 2
+                    x: 4, 
+                    y: 5
                 }
             }
         }
@@ -358,29 +361,29 @@ class Mouth  {
         return {
             topLip: {
                 left: {
-                    x: -this.size/2,
-                    y: -.5
+                    x: -4.5,
+                    y: -.25
                 },
                 center: {
                     x: 0,
-                    y: 2
+                    y: 1
                 },
                 right: {
-                    x: this.size/2,
-                    y: -0.5
+                    x: 4.5,
+                    y: -0.25
                 }
             },
             bottomLip: {
                 left: {
-                    x: -this.size/2,
+                    x: -6,
                     y: 0
                 },
                 center: {
                     x: 0, 
-                    y: 4
+                    y: 2.5
                 },
                 right: {
-                    x: this.size/2,
+                    x: 6,
                     y: 0
                 }
             }
@@ -391,7 +394,7 @@ class Mouth  {
         return {
             topLip: {
                 left: {
-                    x: -this.size/2,
+                    x: -5,
                     y: 2
                 },
                 center: {
@@ -399,13 +402,13 @@ class Mouth  {
                     y: -1
                 },
                 right: {
-                    x: this.size/2,
+                    x: 5,
                     y: 2
                 }
             },
             bottomLip: {
                 left: {
-                    x: -this.size/2 + 1,
+                    x: - 4,
                     y: 2.5
                 },
                 center: {
@@ -413,7 +416,7 @@ class Mouth  {
                     y: 1
                 },
                 right: {
-                    x: this.size/2 - 1,
+                    x: 4,
                     y: 2.5
                 }
             }

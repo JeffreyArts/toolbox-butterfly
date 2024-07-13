@@ -12,6 +12,7 @@ import CatterpillarMoving4 from "./catterpillar-moving-4.vue"
 import CatterpillarEyes from "./catterpillar-eyes.vue"
 import CatterpillarMouth from "./catterpillar-mouth.vue"
 import Door from "./door.vue"
+import Mouth from "./mouth.vue"
 import PhysicsDiv from "./physics-div.vue"
 import PhysicsDivTranslate from "./physics-div-translate.vue"
 import PhysicsCanvas from "./physics-canvas.vue"
@@ -87,6 +88,11 @@ const routes = [
         path: "/flag-colors",
         name: "Flag colors",
         component: FlagColors,
+    },
+    {
+        path: "/mouth",
+        name: "Mouth",
+        component: Mouth,
     },
     {
         path: "/physics-div-position",
