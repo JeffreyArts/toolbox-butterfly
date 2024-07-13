@@ -103,7 +103,7 @@ class Mouth  {
         // this.paper.smooth({ type: "continuous"})
 
         return new Proxy(this, {
-            set: function (target, key, value) {
+            set: function (target:any, key, value) {
                 // console.log(`${String(key)} set to ${value}`)
                 if (key === "x" || key === "y") {
                     target[key] = value

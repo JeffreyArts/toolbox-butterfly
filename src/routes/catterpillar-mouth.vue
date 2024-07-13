@@ -31,25 +31,25 @@
                             <td><strong>Length:</strong></td><td>{{options.length}}</td>
                         </tr>
                         <tr>
-                            <td><strong>Max velocity:</strong></td><td>{{ parseFloat(options.maxVelocity.toString()).toFixed(2) }}</td>
+                            <td><strong>Max velocity:</strong></td><td>{{ displayFloat(options.maxVelocity) }}</td>
                         </tr>
                         <tr>
-                            <td><strong>Stiffness:</strong></td><td>{{ parseFloat(options.stiffness + "").toFixed(2) }}</td>
+                            <td><strong>Stiffness:</strong></td><td>{{ displayFloat(options.stiffness) }}</td>
                         </tr>
                         <tr>
-                            <td><strong>Restitution:</strong></td><td>{{ parseFloat(options.restitution + "").toFixed(2) }}</td>
+                            <td><strong>Restitution:</strong></td><td>{{ displayFloat(options.restitution) }}</td>
                         </tr>
                         <tr>
-                            <td><strong>Bodypart size:</strong></td><td>{{ parseFloat(options.bodyPart.size + "").toFixed(2) }}</td>
+                            <td><strong>Bodypart size:</strong></td><td>{{ displayFloat(options.bodyPart?.size) }}</td>
                         </tr>
                         <tr>
-                            <td><strong>Bodypart restitution:</strong></td><td>{{ parseFloat(options.bodyPart.restitution + "").toFixed(2) }}</td>
+                            <td><strong>Bodypart restitution:</strong></td><td>{{ displayFloat(options.bodyPart?.restitution) }}</td>
                         </tr>
                         <tr>
-                            <td><strong>Bodypart stiffness:</strong></td><td>{{ parseFloat(options.bodyPart.stiffness + "").toFixed(2) }}</td>
+                            <td><strong>Bodypart stiffness:</strong></td><td>{{ displayFloat(options.bodyPart?.stiffness) }}</td>
                         </tr>
                         <tr>
-                            <td><strong>Bodypart damping:</strong></td><td>{{ parseFloat(options.bodyPart.damping + "").toFixed(2) }}</td>
+                            <td><strong>Bodypart damping:</strong></td><td>{{ displayFloat(options.bodyPart?.damping) }}</td>
                         </tr>
                     </table>
                 </div>
@@ -176,6 +176,14 @@ export default defineComponent ({
         window.removeEventListener("resize", this.resetView)
     },
     methods: {
+        displayFloat(v:number | string | undefined) {
+            if (!v) {
+                return "-"
+            }
+            v = v.toString()
+            
+            return parseFloat(v).toFixed(2)
+        },
         resetView() {
             this.removeMatter()
             setTimeout(() =>{
@@ -270,6 +278,9 @@ export default defineComponent ({
             this.mouseDown = true
             this.mousePos = mousePosition.xy(e)
             _.each(this.catterPillar.composite.bodies, body => {
+                if (!range) {
+                    return
+                }
                 if ((this.mousePos.x > (body.position.x - range) - range / 2) &&
                     (this.mousePos.x < (body.position.x + range) + range / 2) &&
                     (this.mousePos.y > (body.position.y - range) - range / 2) &&
