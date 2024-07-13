@@ -6,6 +6,8 @@ export type MouthOptions = {
     size?: number,
 }
 
+export type MouthState = "😮" | "🙂" | "😐" | "🙁"
+
 type MouthPoints = {
     topLip: {
         left: {
@@ -58,7 +60,7 @@ interface Mouth {
     animation: null | gsap.TweenTarget
     inTransition: boolean
     size: number
-    state: "😮" | "🙂" | "😐"
+    state: MouthState
 }
 
 class Mouth  {
@@ -132,6 +134,10 @@ class Mouth  {
         if (this.state === "😐") {
             this.updateState(this.getShockedPosition())
         }
+
+        if (this.state === "🙁") {
+            this.updateState(this.getSadPosition())
+        }
     }
 
     updateState(newState: {
@@ -170,7 +176,7 @@ class Mouth  {
         this.paper.smooth({ type: "continuous"})
     }
 
-    switchState(state:  "😮" | "🙂" | "😐", duration = .64 as number) {
+    switchState(state: MouthState, duration = .64 as number) {
         // duration = amount of seconds that the switch take
         // Don't switch state if it is the same state
         
@@ -298,7 +304,7 @@ class Mouth  {
         this.paper.smooth({ type: "continuous"})
     }
     
-    getPosition(state?: "😮" | "🙂" | "😐") : MouthPoints{
+    getPosition(state?: MouthState) : MouthPoints{
         if (!state) {
             state = this.state
         }
@@ -308,6 +314,8 @@ class Mouth  {
             return this.getShockedPosition()
         } else if (state === "🙂") {
             return this.getSmilePosition()
+        } else if (state === "🙁") {
+            return this.getSadPosition()
         }  else {
             throw new Error("Invalid state input")
         }
@@ -351,7 +359,7 @@ class Mouth  {
             topLip: {
                 left: {
                     x: -this.size/2,
-                    y: .5
+                    y: -.5
                 },
                 center: {
                     x: 0,
@@ -359,7 +367,7 @@ class Mouth  {
                 },
                 right: {
                     x: this.size/2,
-                    y: .5
+                    y: -0.5
                 }
             },
             bottomLip: {
@@ -374,6 +382,39 @@ class Mouth  {
                 right: {
                     x: this.size/2,
                     y: 0
+                }
+            }
+        }
+    }
+    
+    getSadPosition() {
+        return {
+            topLip: {
+                left: {
+                    x: -this.size/2,
+                    y: 2
+                },
+                center: {
+                    x: 0,
+                    y: -1
+                },
+                right: {
+                    x: this.size/2,
+                    y: 2
+                }
+            },
+            bottomLip: {
+                left: {
+                    x: -this.size/2 + 1,
+                    y: 2.5
+                },
+                center: {
+                    x: 0, 
+                    y: 1
+                },
+                right: {
+                    x: this.size/2 - 1,
+                    y: 2.5
                 }
             }
         }

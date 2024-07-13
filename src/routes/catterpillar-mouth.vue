@@ -54,38 +54,23 @@
                     </table>
                 </div>
 
-                <div class="option-group" name="General">
+                <div class="option-group" name="Catterpillar">
                     <div class="option">
                         <span>
-                            <input type="checkbox" id="displayMouth" v-model="pageOptions.showMouth">
-                            <label for="displayMouth">
-                                Show mouth
-                            </label>
-                        </span>
-                    </div>
-                    <div class="option">
-                        <span>
-                            <input type="checkbox" id="displayMatterJS" v-model="pageOptions.showMatterJS">
-                            <label for="displayMatterJS">
-                                Show Matter JS
-                            </label>
-                        </span>
-                    </div>
-                    <div class="option">
-                        <span>
-                            <span>{{ catterPillar?.mouth.topLip.left.x }}</span><br>
-                            <span>{{ catterPillar?.mouth.topLip.left.y }}</span>
-                            <br>
                             <strong>Current state: {{ catterPillar?.mouth.state }}</strong>
                             <br>
-                            <button class="button __is" @click="switchState('🙂')">
+                            <br>
+                            <button class="button __is" @click="switchState('🙂')" :style="catterPillar?.mouth.inTransition ? 'cursor: not-allowed; filter: grayscale(100%);' : ''">
                                 🙂
                             </button>
-                            <button class="button __is" @click="switchState('😮')">
+                            <button class="button __is" @click="switchState('😮')" :style="catterPillar?.mouth.inTransition ? 'cursor: not-allowed; filter: grayscale(100%);' : ''">
                                 😮
                             </button>
-                            <button class="button __is" @click="switchState('😐')">
+                            <button class="button __is" @click="switchState('😐')" :style="catterPillar?.mouth.inTransition ? 'cursor: not-allowed; filter: grayscale(100%);' : ''">
                                 😐
+                            </button>
+                            <button class="button __is" @click="switchState('🙁')" :style="catterPillar?.mouth.inTransition ? 'cursor: not-allowed; filter: grayscale(100%);' : ''">
+                                🙁
                             </button>
                         </span>
                     </div>
@@ -94,6 +79,16 @@
                             <button class="button __is" for="blink" @click="blink">
                                 Blink
                             </button>
+                        </span>
+                    </div>
+                </div>
+                <div class="option-group" name="General">
+                    <div class="option">
+                        <span>
+                            <input type="checkbox" id="displayMatterJS" v-model="pageOptions.showMatterJS">
+                            <label for="displayMatterJS">
+                                Show Matter JS
+                            </label>
                         </span>
                     </div>
                     <div class="option">
@@ -121,6 +116,7 @@ import StatsJS from "stats.js"
 import Paper from "paper"
 import gsap from "gsap"
 import Catterpillar, { CatterpillarOptions } from "@/models/catterpillar"
+import { MouthState } from "@/models/catterpillar/mouth"
 import mousePosition from "@/services/mouse-position"
     
 export default defineComponent ({ 
@@ -507,7 +503,7 @@ export default defineComponent ({
         blink() {
             this.catterPillar?.blink()
         },
-        switchState(state:  "😮" | "🙂" | "😐") {
+        switchState(state:  MouthState) {
             this.catterPillar?.mouth.switchState(state, .64)
         },
         updateFPS () {

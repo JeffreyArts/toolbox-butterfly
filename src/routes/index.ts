@@ -54,7 +54,7 @@ const routes = [
         component: CatterpillarMoving,
     },
     {
-        path: "/catterpillar-moving - 2",
+        path: "/catterpillar-moving-2",
         name: "Catterpillar moving 2",
         component: CatterpillarMoving2,
     },
