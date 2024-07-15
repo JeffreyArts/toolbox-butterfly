@@ -80,7 +80,7 @@ interface Catterpillar {
     restitution: number
     floppiness: number
     composite: Matter.Composite
-    constraint: Matter.Constraint
+    spine: Matter.Constraint
     isMoving: boolean
     mouthRecovering: boolean
     scared: number
@@ -176,7 +176,7 @@ class Catterpillar  {
             length: (this.bodyPart.size) * this.bodyLength,
             stiffness: this.stiffness,
             damping: this.damping,
-            label: "catterpillarConstraint",
+            label: "catterpillarSpine",
             render: {
                 visible: true,
                 strokeStyle: "#4f0944",
@@ -273,10 +273,10 @@ class Catterpillar  {
                     }
                 }, 100)
 
-                gsap.to(this.constraint, {
+                gsap.to(this.spine, {
                     length: (this.bodyLength * this.bodyPart.size) * .6,
                     onComplete: () => {
-                        gsap.to(this.constraint, {
+                        gsap.to(this.spine, {
                             length: (this.bodyLength * this.bodyPart.size),
                             onComplete: () => {
                                 setTimeout(() => {
@@ -313,7 +313,7 @@ class Catterpillar  {
                 Matter.Composite.add(this.world, headConstaint)
 
                 // Actually move, when head is pointing in the right direction
-                if (this.constraint) {
+                if (this.spine) {
                     // Slide butt forward ( to the left )
                     let newPosX = 0
                     if (direction === "left") {
@@ -338,12 +338,12 @@ class Catterpillar  {
                     })
 
                     // Animate body
-                    gsap.to(this.constraint, {
+                    gsap.to(this.spine, {
                         length: newLength,
                         ease: "back.out",
                         duration: duration/2,
                         onComplete:() => {
-                            gsap.to(this.constraint, {
+                            gsap.to(this.spine, {
                                 length: (this.bodyPart.size) * this.bodyLength,
                                 onComplete: () => {
                                     setTimeout(() => {
@@ -519,7 +519,8 @@ class Catterpillar  {
             this.body.push(this.composite.bodies[index])
         }
         
-        this.constraint = this.#createBodyConstraint()
+        this.spine = this.#createBodyConstraint()
+        Matter.Composite.add(this.composite, this.spine)
         
         const eyeOptions = {
             x: this.x,

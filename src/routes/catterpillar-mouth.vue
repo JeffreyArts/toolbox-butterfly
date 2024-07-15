@@ -498,7 +498,6 @@ export default defineComponent ({
             console.log(this.catterPillar.mouth)
 
             Matter.Composite.add(this.mWorld, [
-                this.catterPillar.constraint,
                 this.catterPillar.composite
             ])
         },
