@@ -16,33 +16,53 @@
                     <canvas id="paperCanvas"></canvas>
                 </div>
             </div>
+            <button class="button default" @click="addCustomState">Add custom state</button>
+            <br>
             <div class="data-object">
                 <pre>{{ JSON.stringify(mouthData, null, 2) }}</pre>
             </div>
+            <button class="button" @click="copyMouthData(true)">
+                <span v-if="copied">Copied!</span>
+                <span v-if="!copied">Copy</span>
+            </button>
         </section>
 
         <aside class="sidebar">
             <div class="options">
-
-
                 <div class="option-group" name="Options" v-if="mouth">
                     <div class="option">
                         <span>
                             <strong>Current state: {{ mouth.state }}</strong>
                             <br>
                             <br>
-                            <button class="button __is" @click="switchState('🙂')" :style="mouth.inTransition ? 'cursor: not-allowed; filter: grayscale(100%);' : ''">
+                            <button class="button __is" @click="switchState('🙂')" :class="[mouth.inTransition || mouth.state === '🙂' ? '__isDisabled' : '',]">
                                 🙂
                             </button>
-                            <button class="button __is" @click="switchState('😮')" :style="mouth.inTransition ? 'cursor: not-allowed; filter: grayscale(100%);' : ''">
+                            <button class="button __is" @click="switchState('😮')" :class="[mouth.inTransition || mouth.state === '😮' ? '__isDisabled' : '',]">
                                 😮
                             </button>
-                            <button class="button __is" @click="switchState('😐')" :style="mouth.inTransition ? 'cursor: not-allowed; filter: grayscale(100%);' : ''">
+                            <button class="button __is" @click="switchState('😐')" :class="[mouth.inTransition || mouth.state === '😐' ? '__isDisabled' : '',]">
                                 😐
                             </button>
-                            <button class="button __is" @click="switchState('🙁')" :style="mouth.inTransition ? 'cursor: not-allowed; filter: grayscale(100%);' : ''">
+                            <button class="button __is" @click="switchState('🙁')" :class="[mouth.inTransition || mouth.state === '🙁' ? '__isDisabled' : '',]">
                                 🙁
                             </button>
+                            <button class="button __is" @click="switchState('😚')" :class="[mouth.inTransition || mouth.state === '😚' ? '__isDisabled' : '',]">
+                                😚
+                            </button>
+                        </span>
+                    </div>
+                    <div class="option" v-if="customStates.length > 0">
+                        <span>
+                            <strong>Custom states</strong>
+                            <br>
+                            <br>
+                            <span v-for="(state, i) in customStates" :key="i">
+                                <button class="button __is" @click="switchState(state)" :class="[mouth.inTransition || customState === i ? '__isDisabled' : '',]">
+                                    {{ parseInt(i.toString(), 10) + 1 }}
+                                </button>
+                                &nbsp;
+                            </span>
                         </span>
                     </div>
                     <div class="option">
@@ -68,7 +88,7 @@ import StatsJS from "stats.js"
 import Paper from "paper"
 import gsap from "gsap"
 import Catterpillar, { CatterpillarOptions } from "@/models/catterpillar"
-import Mouth, { MouthState } from "@/models/catterpillar/mouth"
+import Mouth, { MouthState, MouthPoints } from "@/models/catterpillar/mouth"
 import mousePosition from "@/services/mouse-position"
     
 export default defineComponent ({ 
@@ -81,6 +101,7 @@ export default defineComponent ({
             mousePos: {x: 0, y:0},
             mouseTarget: null as Matter.Body | null,
             mouth: null as Mouth | null,
+            copied: false,
             mouthData: {
                 topLip: {
                     left: {x: 1, y:1},
@@ -92,7 +113,9 @@ export default defineComponent ({
                     center: {x: 1, y:1},
                     right: {x: 1, y:1},
                 }
-            },
+            } as MouthPoints,
+            customStates: [] as Array<MouthPoints>,
+            customState: undefined as number | undefined,
             activePoint: undefined as {dot:paper.Path, parentDot: paper.Point} | undefined,
             points: [] as Array<{dot:paper.Path, parentDot: paper.Point}>,
             displayPoints: true,
@@ -101,8 +124,6 @@ export default defineComponent ({
     },
     mounted() {
         this.initPaperJS()
-
-        console.log(this.mouth)
         const el = this.$el.querySelector("#paperCanvas")
         
         const head = new Paper.Path.Circle({x: el.width/4, y: el.height/4}, el.width/4)
@@ -111,6 +132,7 @@ export default defineComponent ({
         this.mouth.x = el.width/4
         this.mouth.y = el.height/10 + el.height/4
         this.createPoints()
+        this.updateMouthData()
         this.displayFPS(el)
 
         window.addEventListener("mouseup", this.cancelMouseDown)
@@ -156,6 +178,9 @@ export default defineComponent ({
                 this.showPoints()
             }
         },
+        addCustomState() {
+            this.customStates.push(this.mouthData)
+        },
         toggleDisplayPoints() {
             if (this.displayPoints) {
                 this.showPoints()
@@ -181,11 +206,85 @@ export default defineComponent ({
 
             this.mouseDown = true
             this.mousePos = mousePosition.xy(e)
-            console.log(this.activePoint)
         },
         cancelMouseDown() {
             this.mouseDown = false
             this.mouseTarget = null
+        },
+        copyMouthData(toggleCopy?: boolean) {
+            if (toggleCopy) {
+                this.copied = true
+                setTimeout(() => {
+                    this.copied = false
+                }, 2000)
+            }
+            navigator.clipboard.writeText(`
+        return {
+            topLip: {
+                left: {
+                    x: ${this.mouthData.topLip.left.x},
+                    y: ${this.mouthData.topLip.left.y}
+                },
+                center: {
+                    x: ${this.mouthData.topLip.center.x},
+                    y: ${this.mouthData.topLip.center.y}
+                },
+                right: {
+                    x: ${this.mouthData.topLip.right.x},
+                    y: ${this.mouthData.topLip.right.y}
+                }
+            },
+            bottomLip: {
+                left: {
+                    x: ${this.mouthData.bottomLip.left.x},
+                    y: ${this.mouthData.bottomLip.left.y}
+                },
+                center: {
+                    x: ${this.mouthData.bottomLip.center.x},
+                    y: ${this.mouthData.bottomLip.center.y}
+                },
+                right: {
+                    x: ${this.mouthData.bottomLip.right.x},
+                    y: ${this.mouthData.bottomLip.right.y}
+                }
+            },
+        }`)
+        },
+        updateMouthData() {
+            if (!this.mouth) {
+                throw new Error("Can't call updateMouthData when mouse is undefined")
+            }
+            this.mouthData = {
+                bottomLip: {
+                    left: {
+                        x: parseFloat(((this.mouth.bottomLip.left.x - this.mouth.x) / this.mouth.scale).toFixed(2)),
+                        y: parseFloat(((this.mouth.bottomLip.left.y - this.mouth.y) / this.mouth.scale).toFixed(2)),
+                    },
+                    center: {
+                        x: parseFloat(((this.mouth.bottomLip.center.x - this.mouth.x) / this.mouth.scale).toFixed(2)),
+                        y: parseFloat(((this.mouth.bottomLip.center.y - this.mouth.y) / this.mouth.scale).toFixed(2)),
+                    },
+                    right: {
+                        x: parseFloat(((this.mouth.bottomLip.right.x - this.mouth.x) / this.mouth.scale).toFixed(2)),
+                        y: parseFloat(((this.mouth.bottomLip.right.y - this.mouth.y) / this.mouth.scale).toFixed(2)),
+                    }
+                },
+                topLip: {
+                    left: {
+                        x: parseFloat(((this.mouth.topLip.left.x - this.mouth.x) / this.mouth.scale).toFixed(2)),
+                        y: parseFloat(((this.mouth.topLip.left.y - this.mouth.y) / this.mouth.scale).toFixed(2)),
+                    },
+                    center: {
+                        x: parseFloat(((this.mouth.topLip.center.x - this.mouth.x) / this.mouth.scale).toFixed(2)),
+                        y: parseFloat(((this.mouth.topLip.center.y - this.mouth.y) / this.mouth.scale).toFixed(2)),
+                    },
+                    right: {
+                        x: parseFloat(((this.mouth.topLip.right.x - this.mouth.x) / this.mouth.scale).toFixed(2)),
+                        y: parseFloat(((this.mouth.topLip.right.y - this.mouth.y) / this.mouth.scale).toFixed(2)),
+                    }
+                }
+            }
+
         },
         mouseMoveEvent(e:MouseEvent | TouchEvent) {
             // if (!this.mouseDown) {
@@ -219,36 +318,7 @@ export default defineComponent ({
                 this.activePoint.parentDot.y = this.mousePos.y
 
                 this.mouth.paper.smooth({ type: "continuous"})
-                this.mouthData = {
-                    bottomLip: {
-                        left: {
-                            x: this.mouth.bottomLip.left.x / this.mouth.scale,
-                            y: this.mouth.bottomLip.left.y / this.mouth.scale,
-                        },
-                        center: {
-                            x: this.mouth.bottomLip.center.x / this.mouth.scale,
-                            y: this.mouth.bottomLip.center.y / this.mouth.scale,
-                        },
-                        right: {
-                            x: this.mouth.bottomLip.right.x / this.mouth.scale,
-                            y: this.mouth.bottomLip.right.y / this.mouth.scale,
-                        }
-                    },
-                    topLip: {
-                        left: {
-                            x: this.mouth.topLip.left.x / this.mouth.scale,
-                            y: this.mouth.topLip.left.y / this.mouth.scale,
-                        },
-                        center: {
-                            x: this.mouth.topLip.center.x / this.mouth.scale,
-                            y: this.mouth.topLip.center.y / this.mouth.scale,
-                        },
-                        right: {
-                            x: this.mouth.topLip.right.x / this.mouth.scale,
-                            y: this.mouth.topLip.right.y / this.mouth.scale,
-                        }
-                    }
-                }
+                this.updateMouthData()
             }
         },
         initPaperJS() {
@@ -274,56 +344,31 @@ export default defineComponent ({
             targetEl.appendChild( this.stats.dom )
             requestAnimationFrame( this.updateFPS )      
         },
-        switchState(state:  MouthState) {
+        switchState(state:  MouthState | MouthPoints) {
             if (!this.mouth) {
                 throw new Error("Missing mouth object")
             }
             let time = 0
             const step = 10
+            
             this.mouth.switchState(state, .64)
+
+            
+
             const interval = setInterval(() => {
                 _.each(this.points, point => {
                     point.dot.position.x = point.parentDot.x
                     point.dot.position.y = point.parentDot.y
                 })
                 time += step / 1000
-
+                this.updateMouthData()
                 if (time >= .64) {
                     clearInterval(interval)
                 }
             }, step)
             
 
-            this.mouthData = {
-                bottomLip: {
-                    left: {
-                        x: this.mouth.bottomLip.left.x / this.mouth.scale,
-                        y: this.mouth.bottomLip.left.y / this.mouth.scale,
-                    },
-                    center: {
-                        x: this.mouth.bottomLip.center.x / this.mouth.scale,
-                        y: this.mouth.bottomLip.center.y / this.mouth.scale,
-                    },
-                    right: {
-                        x: this.mouth.bottomLip.right.x / this.mouth.scale,
-                        y: this.mouth.bottomLip.right.y / this.mouth.scale,
-                    }
-                },
-                topLip: {
-                    left: {
-                        x: this.mouth.topLip.left.x / this.mouth.scale,
-                        y: this.mouth.topLip.left.y / this.mouth.scale,
-                    },
-                    center: {
-                        x: this.mouth.topLip.center.x / this.mouth.scale,
-                        y: this.mouth.topLip.center.y / this.mouth.scale,
-                    },
-                    right: {
-                        x: this.mouth.topLip.right.x / this.mouth.scale,
-                        y: this.mouth.topLip.right.y / this.mouth.scale,
-                    }
-                }
-            }
+            this.updateMouthData()
         },
         updateFPS () {
             if (!this.stats) {
@@ -379,5 +424,13 @@ export default defineComponent ({
         color: #333;
         width: 100%;
         padding: 0 16px;
+    }
+    .button {
+        transition: all ease .4s;
+
+        &.__isDisabled {
+            cursor: not-allowed;
+            filter: grayscale(100%);
+        }
     }
 </style>

@@ -7,9 +7,9 @@ export type MouthOptions = {
     scale?: number
 }
 
-export type MouthState = "😮" | "🙂" | "😐" | "🙁"
+export type MouthState = "😮" | "🙂" | "😐" | "🙁" | "😚" | "😙" | "😗"
 
-type MouthPoints = {
+export type MouthPoints = {
     topLip: {
         left: {
             x: number,
@@ -141,6 +141,9 @@ class Mouth  {
         if (this.state === "🙁") {
             this.updateState(this.getSadPosition())
         }
+        if (this.state === "😚" || this.state === "😙" || this.state === "😗") {
+            this.updateState(this.getKissPosition())
+        }
     }
 
     updateState(newState: {
@@ -179,7 +182,7 @@ class Mouth  {
         this.paper.smooth({ type: "continuous"})
     }
 
-    switchState(state: MouthState, duration = .64 as number) {
+    switchState(state: MouthState | MouthPoints, duration = .64 as number) {
         // duration = amount of seconds that the switch take
         // Don't switch state if it is the same state
         
@@ -198,7 +201,12 @@ class Mouth  {
         }
 
         const from = this.getPosition(this.state)
-        const to = this.getPosition(state)
+        
+        let to = state as MouthPoints
+        if (typeof state === "string") {
+            to = this.getPosition(state)
+        } 
+
         
         // Some data re-arranging so GSAP can process it correctly
         const gsapFrom = {
@@ -269,8 +277,12 @@ class Mouth  {
                     this.paper.smooth({ type: "continuous"})
                 },
                 onComplete: () => {
-                    console.log("Complete!")
-                    this.state = state
+                    if (typeof state === "string") {
+                        this.state = state
+                        if (state === "😚" || state === "😙" || state === "😗")  {
+                            this.switchState("🙂", .4)
+                        }
+                    }
                     this.inTransition = false
                 }
             })
@@ -319,6 +331,12 @@ class Mouth  {
             return this.getSmilePosition()
         } else if (state === "🙁") {
             return this.getSadPosition()
+        } else if (state === "😚") {
+            return this.getKissPosition()
+        } else if (state === "😙") {
+            return this.getKissPosition()
+        } else if (state === "😗") {
+            return this.getKissPosition()
         }  else {
             throw new Error("Invalid state input")
         }
@@ -395,6 +413,38 @@ class Mouth  {
             topLip: {
                 left: {
                     x: -5,
+                    y: 1.5
+                },
+                center: {
+                    x: 0,
+                    y: -0.5
+                },
+                right: {
+                    x: 5,
+                    y: 1.5
+                }
+            },
+            bottomLip: {
+                left: {
+                    x: -5,
+                    y: 2.5
+                },
+                center: {
+                    x: 0,
+                    y: 1
+                },
+                right: {
+                    x: 5,
+                    y: 2.5
+                }
+            },
+        }
+    }
+    getExtremeSadPosition() {
+        return {
+            topLip: {
+                left: {
+                    x: -5,
                     y: 2
                 },
                 center: {
@@ -427,32 +477,65 @@ class Mouth  {
         return {
             topLip: {
                 left: {
-                    x: -this.size/2,
-                    y: 1
+                    x: -5,
+                    y: 1.5
                 },
                 center: {
                     x: 0,
                     y: 1
                 },
                 right: {
-                    x: this.size/2,
-                    y: 1
+                    x: 5,
+                    y: 1.5
                 }
             },
             bottomLip: {
                 left: {
-                    x: -this.size/2,
-                    y: 3
+                    x: -5,
+                    y: 2.75
                 },
                 center: {
-                    x: 0, 
+                    x: 0,
                     y: 3
                 },
                 right: {
-                    x: this.size/2,
-                    y: 3
+                    x: 5,
+                    y: 2.75
                 }
-            }
+            },
+        }
+    }
+
+    getKissPosition() {
+        return {
+            topLip: {
+                left: {
+                    x: -3,
+                    y: -0.5
+                },
+                center: {
+                    x: 0,
+                    y: -3
+                },
+                right: {
+                    x: 3,
+                    y: -0.5
+                }
+            },
+            bottomLip: {
+                left: {
+                    x: -3,
+                    y: 1
+                },
+                center: {
+                    x: 0,
+                    y: 3
+                },
+                right: {
+                    x: 3,
+                    y: 1
+                }
+            },
         }
     }
 }

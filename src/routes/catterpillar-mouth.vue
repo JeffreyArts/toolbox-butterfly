@@ -72,6 +72,9 @@
                             <button class="button __is" @click="switchState('🙁')" :style="catterPillar?.mouth.inTransition ? 'cursor: not-allowed; filter: grayscale(100%);' : ''">
                                 🙁
                             </button>
+                            <button class="button __is" @click="switchState('😚')" :style="catterPillar?.mouth.inTransition ? 'cursor: not-allowed; filter: grayscale(100%);' : ''">
+                                😚
+                            </button>
                         </span>
                     </div>
                     <div class="option">

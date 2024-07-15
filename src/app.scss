@@ -139,6 +139,16 @@ src: url("/src/assets/fonts/fixed-sys.otf");
     border: 0 none transparent;
     padding: 8px 16px;
     transition: .16s all ease;
+
+    &.default {
+        background-color: #eee;
+        color: #222;
+        &:hover, &:focus {
+            box-shadow: 8px 8px 0 rgba(0,0,0,1);
+            cursor: pointer;
+            border-radius: 2px;
+        }
+    }
 }
 
 
