@@ -13,6 +13,7 @@ import CatterpillarEyes from "./catterpillar-eyes.vue"
 import CatterpillarMouth from "./catterpillar-mouth.vue"
 import Door from "./door.vue"
 import Mouth from "./mouth.vue"
+import SpeechBubble from "./speech-bubble.vue"
 import PhysicsDiv from "./physics-div.vue"
 import PhysicsDivTranslate from "./physics-div-translate.vue"
 import PhysicsCanvas from "./physics-canvas.vue"
@@ -93,6 +94,11 @@ const routes = [
         path: "/mouth",
         name: "Mouth",
         component: Mouth,
+    },
+    {
+        path: "/speech-bubble",
+        name: "Speech bubble",
+        component: SpeechBubble,
     },
     {
         path: "/physics-div-position",
