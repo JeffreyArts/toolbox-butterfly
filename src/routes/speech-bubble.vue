@@ -16,6 +16,7 @@
                     <canvas id="paperCanvas" :style="[{opacity: pageOptions.showPaperJS ? 1 : 0}]" ></canvas>
                 </div>
             </div>
+            <textarea v-model="speechBubbleClass" cols="30" rows="7"></textarea>
         </section>
 
         <aside class="sidebar">
@@ -71,13 +72,13 @@
     </div>
 </template>
 
-
 <script lang="ts">
 import {defineComponent} from "vue"
 import Matter from "matter-js"
+import MatterService from "@/services/matter-js"
+import paperService from "@/services/paper-js"
 import _ from "lodash"
 import StatsJS from "stats.js"
-import Paper from "paper"
 import SpeechBubble from "@/models/speech-bubble"
 import mousePosition from "@/services/mouse-position"
     
@@ -99,10 +100,30 @@ export default defineComponent ({
             animateTextDuration: 40,
             speechBubble: null as null | SpeechBubble,
             animatedText: "",
+            speechBubbleClass: `.speech-bubble {
+    font-size: 14px;
+    color: #222;
+    padding: 4px 0;
+    max-width: 140px;
+}`,
             pageOptions: {
                 showMatterJS: false,
                 showPaperJS: true
             },
+        }
+    },
+    watch: {
+        speechBubbleClass: {
+            handler() {
+                let styleElement = document.head.querySelector("#dynamic-css")
+                if (!styleElement) {
+                    styleElement = document.createElement("style")
+                    document.head.append(styleElement)
+                }
+                styleElement.innerHTML = this.speechBubbleClass
+                this.resetView()
+            },
+            immediate: true
         }
     },
     mounted() {
@@ -112,64 +133,65 @@ export default defineComponent ({
         this.createSpeechBubble()
         this.displayFPS(el)
 
-        window.addEventListener("mouseup", this.cancelMouseDown)
         window.addEventListener("resize", this.resetView)
     },
     unmounted() {
+
+        this.removeMatter()
+        this.removePaperJS()
         if (this.speechBubble) {
             this.removeSpeechBubble()
         }
-        this.removeMatter()
         this.stats = null
 
-        window.removeEventListener("mouseup", this.cancelMouseDown)
         window.removeEventListener("resize", this.resetView)
     },
     methods: {
-        displayFloat(v:number | string | undefined) {
-            if (!v) {
-                return "-"
+        initPaperJS() {
+            const canvas = this.$el.querySelector("#paperCanvas")
+            const el = this.$el.querySelector(".scroll-container")
+            if (!el) {
+                throw new Error("Can't find .scroll-container")
             }
-            v = v.toString()
+            paperService.init(canvas, el.clientWidth, el.clientHeight)
+        },
+        initMatterJS() {
+            if (!this.$refs) {
+                throw new Error("Missing $refs")
+            }
+            const canvasEl = this.$refs["renderCanvas"] as HTMLCanvasElement
+            const mjs = MatterService.init(canvasEl)
             
-            return parseFloat(v).toFixed(2)
+            this.mWorld = mjs.world
+            this.mRunner = mjs.runner
+            this.mEngine = mjs.engine
+            
+            this.renderLoop()    
+        },
+        removePaperJS() {
+            paperService.destroy()
+        },
+        removeMatter() {
+            this.mWorld = null
+            if (this.mRunner && this.mEngine) {
+                MatterService.destroy(this.mRunner, this.mEngine)
+            }
         },
         resetView() {
             this.removeSpeechBubble()
             this.removeMatter()
+            this.removePaperJS()
 
             setTimeout(() =>{
-                this.initPaperJS()
-                this.initMatterJS()
-                this.createSpeechBubble()
+                this.initView()
             })
         },
-        removeMatter() {
-            this.mWorld = null
-            
-            if (this.mRunner) {
-                Matter.Runner.stop(this.mRunner)
-            }
-
-            if (this.mEngine) {
-                Matter.Engine.clear(this.mEngine)
-            }
-
+        initView() {
+            this.initPaperJS()
+            this.initMatterJS()
+            this.createSpeechBubble()
         },
-        cancelMouseDown() {
-            if (!this.catterPillar || this.catterPillar.isMoving && !this.mouseTarget) {
-                return
-            }
-            
-            this.mouseDown = false
-            this.mouseTarget = null
-            this.catterPillar.isMoving = false
 
-            _.each(this.catterPillar.composite?.bodies, body => {
-                Matter.Body.setAngularSpeed(body, 0)
-                Matter.Body.setAngularVelocity(body, 0)
-            })
-        },
         mouseClickEvent(e: MouseEvent) {
             if (!this.mWorld || !this.speechBubble ) {
                 return
@@ -194,37 +216,6 @@ export default defineComponent ({
             //     this.catterPillar.isMoving = true
             //     this.catterPillarMove(this.catterPillar.composite.bodies, this.mousePos.x < head.position.x ? "left" : "right", true)
             // }
-        },
-        animateTextLoop(duration = 100, index = 0) {
-            if (this.speechBubble) {
-                this.speechBubble.text = this.animatedText.slice(0, index+1) + "..."
-                if (index >= this.animatedText.length - 1) {
-                    this.speechBubble.text += "..."
-
-                    setTimeout(() => {
-                        if (!this.speechBubble) { return }
-                        this.speechBubble.text = this.animatedText.slice(0, index+1) + " .."
-                        setTimeout(() => {
-                            if (!this.speechBubble) { return }
-                            this.speechBubble.text = this.animatedText.slice(0, index+1) + "  ."
-                            setTimeout(() => {
-                                if (!this.speechBubble) { return }
-                                this.speechBubble.text = this.animatedText.slice(0, index+1)
-                            }, duration *.6)
-                        }, duration *.7)
-                    }, duration *.8)
-                }
-            }
-            if (index < this.animatedText.length - 1) {
-                setTimeout(() => {
-                    this.animateTextLoop(duration, index+1)
-                }, duration)
-            }
-        },
-        animateText(e:Event) {
-            e.preventDefault()
-            // this.animateTextLoop(72)
-            this.animateTextLoop(this.animateTextDuration)
         },
         mouseDownEvent(e:MouseEvent | TouchEvent) {
             e.stopPropagation() 
@@ -256,72 +247,45 @@ export default defineComponent ({
             }
             this.mousePos = mousePosition.xy(e)
         },
-        initPaperJS() {
-            const canvas = this.$el.querySelector("#paperCanvas")
-            const el = this.$el.querySelector(".scroll-container")
-            
-            if (!canvas) {
-                console.error("Can't find canvas")
-                return
+
+        displayFloat(v:number | string | undefined) {
+            if (!v) {
+                return "-"
             }
-
-            canvas.width = el.clientWidth
-            canvas.height = el.clientHeight
-
+            v = v.toString()
             
-            Paper.setup(canvas)
+            return parseFloat(v).toFixed(2)
         },
-        initMatterJS() {
-            const el = this.$refs["matterContainer"] as HTMLElement
-            const canvasEl = this.$refs["renderCanvas"] as HTMLCanvasElement
+        animateTextLoop(duration = 100, index = 0) {
+            if (this.speechBubble) {
+                this.speechBubble.text = this.animatedText.slice(0, index+1) + "..."
+                if (index >= this.animatedText.length - 1) {
+                    this.speechBubble.text += "..."
 
-            if (!el) {
-                throw new Error("matterContainer ref can not be found")
-            }
-            if (!canvasEl) {
-                throw new Error("renderCanvas ref can not be found")
-            }
-
-            if (canvasEl.children.length > 0) {
-                for (let i=0; i < canvasEl.children.length; i++) {
-                    canvasEl.children[i].remove()
+                    setTimeout(() => {
+                        if (!this.speechBubble) { return }
+                        this.speechBubble.text = this.animatedText.slice(0, index+1) + " .."
+                        setTimeout(() => {
+                            if (!this.speechBubble) { return }
+                            this.speechBubble.text = this.animatedText.slice(0, index+1) + "  ."
+                            setTimeout(() => {
+                                if (!this.speechBubble) { return }
+                                this.speechBubble.text = this.animatedText.slice(0, index+1)
+                            }, duration *.6)
+                        }, duration *.7)
+                    }, duration *.8)
                 }
             }
-
-            // create an engine
-            const engine = Matter.Engine.create({
-                enableSleeping: true,
-                gravity: {
-                    x: 0,
-                    y: 1
-                },
-                timing: {
-                    timeScale: 1
-                }
-            })
-
-            // create runner
-            const render = Matter.Render.create({
-                element: canvasEl,
-                engine: engine,
-                options: {
-                    width: canvasEl.clientWidth,
-                    height: canvasEl.clientHeight,
-                    showAngleIndicator: true,
-                    showVelocity: true,
-                }
-            })
-
-            const runner = Matter.Runner.create()
-            
-            this.mWorld = engine.world
-            this.mRunner = runner
-            this.mEngine = engine
-            Matter.Render.run(render)
-
-            // run the engine
-            Matter.Runner.run(this.mRunner, this.mEngine)
-            this.renderLoop()    
+            if (index < this.animatedText.length - 1) {
+                setTimeout(() => {
+                    this.animateTextLoop(duration, index+1)
+                }, duration)
+            }
+        },
+        animateText(e:Event) {
+            e.preventDefault()
+            // this.animateTextLoop(72)
+            this.animateTextLoop(this.animateTextDuration)
         },
         createSpeechBubble() {
             if (this.mWorld) {
@@ -438,11 +402,11 @@ export default defineComponent ({
     }
 </style>
 
-<style lang="scss">
+<!-- <style lang="scss">
 .speech-bubble {
     font-size: 14px;
     color: #222;
     padding: 4px 0;
     max-width: 140px;
 }
-</style>
+</style> -->

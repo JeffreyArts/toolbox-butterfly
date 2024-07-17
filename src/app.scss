@@ -26,6 +26,11 @@ h1 {
     @media all and (min-width: 640px) {
         font-size: 2em;
         padding: 16px 0;
+        &:first-letter {
+            font-size: 1em;
+            padding-left: 0;
+            line-height: auto;
+        }
     }
 }
 body {

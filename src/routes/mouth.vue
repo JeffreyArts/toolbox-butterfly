@@ -83,11 +83,11 @@
 <script lang="ts">
 import {defineComponent} from "vue"
 import Matter from "matter-js"
+import MatterService from "@/services/matter-js"
+import paperService from "@/services/paper-js"
 import _ from "lodash"
 import StatsJS from "stats.js"
 import Paper from "paper"
-import gsap from "gsap"
-import Catterpillar, { CatterpillarOptions } from "@/models/catterpillar"
 import Mouth, { MouthState, MouthPoints } from "@/models/catterpillar/mouth"
 import mousePosition from "@/services/mouse-position"
     
@@ -123,26 +123,99 @@ export default defineComponent ({
         }
     },
     mounted() {
-        this.initPaperJS()
         const el = this.$el.querySelector("#paperCanvas")
         
-        const head = new Paper.Path.Circle({x: el.width/4, y: el.height/4}, el.width/4)
-        head.fillColor = new Paper.Color("rgb(88, 242, 8)")
-        this.mouth = new Mouth({size: 10, scale: 14})
-        this.mouth.x = el.width/4
-        this.mouth.y = el.height/10 + el.height/4
-        this.createPoints()
-        this.updateMouthData()
+        this.initView()
         this.displayFPS(el)
 
+        window.addEventListener("resize", this.resetView)
         window.addEventListener("mouseup", this.cancelMouseDown)
     },
     unmounted() {
         this.active = false
         this.stats = null
+        this.removePaperJS()
+
+        window.removeEventListener("resize", this.resetView)
         window.removeEventListener("mouseup", this.cancelMouseDown)
     },
     methods: {
+        initPaperJS() {
+            const canvas = this.$el.querySelector("#paperCanvas")
+            const el = this.$el.querySelector(".scroll-container")
+            if (!el) {
+                throw new Error("Can't find .scroll-container")
+            }
+            paperService.init(canvas, el.clientWidth, el.clientHeight)
+        },
+        initView() {
+            this.initPaperJS()
+
+            const el = this.$el.querySelector("#paperCanvas")
+            const head = new Paper.Path.Circle({x: el.width/4, y: el.height/4}, el.width/4)
+            head.fillColor = new Paper.Color("rgb(88, 242, 8)")
+            this.mouth = new Mouth({size: 10, scale: 14})
+
+            this.mouth.x = el.width/4
+            this.mouth.y = el.height/10 + el.height/4
+            this.createPoints()
+            this.updateMouthData()
+        },
+        removePaperJS() {
+            paperService.destroy()
+        },
+        resetView() {
+            this.removePaperJS()
+
+            setTimeout(this.initView)
+        },
+
+        mouseClickEvent(e: MouseEvent) {
+            console.log(this.mousePos)
+        },
+        mouseDownEvent(e:MouseEvent | TouchEvent) {
+            e.stopPropagation() 
+
+            this.mouseDown = true
+            this.mousePos = mousePosition.xy(e)
+        },
+        cancelMouseDown() {
+            this.mouseDown = false
+            this.mouseTarget = null
+        },
+        mouseMoveEvent(e:MouseEvent | TouchEvent) {
+            this.mousePos = mousePosition.xy(e)
+            
+            _.each(this.points, point => {
+                if ((point.dot.position.x > this.mousePos.x - 6 && point.dot.position.x < this.mousePos.x + 6) &&
+                    (point.dot.position.y > this.mousePos.y - 6 && point.dot.position.y < this.mousePos.y + 6)) {
+                    point.dot.fillColor = new Paper.Color("yellow")
+                    this.activePoint = point
+                } else {
+                    if (this.displayPoints) {
+                        point.dot.fillColor = new Paper.Color("#777")
+                    } else {
+                        point.dot.fillColor = new Paper.Color("transparent")
+                    }
+                }
+            })
+            
+
+            if (this.mouseDown && this.activePoint) {
+                if (!this.mouth) {
+                    return
+                }
+
+                this.activePoint.dot.position.x = this.mousePos.x
+                this.activePoint.dot.position.y = this.mousePos.y
+                this.activePoint.parentDot.x = this.mousePos.x
+                this.activePoint.parentDot.y = this.mousePos.y
+
+                this.mouth.paper.smooth({ type: "continuous"})
+                this.updateMouthData()
+            }
+        },
+
         createPoints() {
             if (!this.mouth) {
                 throw new Error("First initiate mouth object")
@@ -178,9 +251,6 @@ export default defineComponent ({
                 this.showPoints()
             }
         },
-        addCustomState() {
-            this.customStates.push(this.mouthData)
-        },
         toggleDisplayPoints() {
             if (this.displayPoints) {
                 this.showPoints()
@@ -197,19 +267,6 @@ export default defineComponent ({
             _.each(this.points, (point) => {
                 point.dot.fillColor = new Paper.Color("transparent")
             })
-        },
-        mouseClickEvent(e: MouseEvent) {
-            console.log(this.mousePos)
-        },
-        mouseDownEvent(e:MouseEvent | TouchEvent) {
-            e.stopPropagation() 
-
-            this.mouseDown = true
-            this.mousePos = mousePosition.xy(e)
-        },
-        cancelMouseDown() {
-            this.mouseDown = false
-            this.mouseTarget = null
         },
         copyMouthData(toggleCopy?: boolean) {
             if (toggleCopy) {
@@ -286,63 +343,8 @@ export default defineComponent ({
             }
 
         },
-        mouseMoveEvent(e:MouseEvent | TouchEvent) {
-            // if (!this.mouseDown) {
-            //     return
-            // }
-            this.mousePos = mousePosition.xy(e)
-            
-            _.each(this.points, point => {
-                if ((point.dot.position.x > this.mousePos.x - 6 && point.dot.position.x < this.mousePos.x + 6) &&
-                    (point.dot.position.y > this.mousePos.y - 6 && point.dot.position.y < this.mousePos.y + 6)) {
-                    point.dot.fillColor = new Paper.Color("yellow")
-                    this.activePoint = point
-                } else {
-                    if (this.displayPoints) {
-                        point.dot.fillColor = new Paper.Color("#777")
-                    } else {
-                        point.dot.fillColor = new Paper.Color("transparent")
-                    }
-                }
-            })
-            
-
-            if (this.mouseDown && this.activePoint) {
-                if (!this.mouth) {
-                    return
-                }
-
-                this.activePoint.dot.position.x = this.mousePos.x
-                this.activePoint.dot.position.y = this.mousePos.y
-                this.activePoint.parentDot.x = this.mousePos.x
-                this.activePoint.parentDot.y = this.mousePos.y
-
-                this.mouth.paper.smooth({ type: "continuous"})
-                this.updateMouthData()
-            }
-        },
-        initPaperJS() {
-            const canvas = this.$el.querySelector("#paperCanvas")
-            const el = this.$el.querySelector(".scroll-container")
-            
-            if (!canvas) {
-                console.error("Can't find canvas")
-                return
-            }
-
-            canvas.width = el.clientWidth
-            canvas.height = el.clientHeight
-
-            
-            Paper.setup(canvas)
-        },
-        displayFPS(targetEl: HTMLElement) {
-            this.stats = new StatsJS()
-            this.stats.showPanel( 0 ) // 0: fps, 1: ms, 2: mb, 3+: custom
-            this.stats.update() // 0: fps, 1: ms, 2: mb, 3+: custom
-            this.stats.dom.id = "fpsCanvas"
-            targetEl.appendChild( this.stats.dom )
-            requestAnimationFrame( this.updateFPS )      
+        addCustomState() {
+            this.customStates.push(this.mouthData)
         },
         switchState(state:  MouthState | MouthPoints) {
             if (!this.mouth) {
@@ -369,6 +371,14 @@ export default defineComponent ({
             
 
             this.updateMouthData()
+        },
+        displayFPS(targetEl: HTMLElement) {
+            this.stats = new StatsJS()
+            this.stats.showPanel( 0 ) // 0: fps, 1: ms, 2: mb, 3+: custom
+            this.stats.update() // 0: fps, 1: ms, 2: mb, 3+: custom
+            this.stats.dom.id = "fpsCanvas"
+            targetEl.appendChild( this.stats.dom )
+            requestAnimationFrame( this.updateFPS )      
         },
         updateFPS () {
             if (!this.stats) {
