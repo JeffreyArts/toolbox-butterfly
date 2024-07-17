@@ -135,14 +135,6 @@ export default defineComponent ({
             mouseDown: false,
             mousePos: {x: 0, y:0},
             mouseTarget: null as null | Matter.Body,
-            isBlinking: false,
-            blinks: 0,
-            blinkInterval: true,
-            blinkTimeout: 0,
-            paperJS: {
-                paths: [] as Array<paper.Path>,
-                mouth: null as null | paper.Path,
-            },
             catterPillar: null as null | Catterpillar,
             pageOptions: {
                 showMatterJS: true,
@@ -160,7 +152,6 @@ export default defineComponent ({
         this.displayFPS(el)
         this.createGround()
         this.generateOptions()
-        // this.setBlinkInterval()
 
         window.addEventListener("keydown", this.keyPressEvent)
         window.addEventListener("mouseup", this.cancelMouseDown)
