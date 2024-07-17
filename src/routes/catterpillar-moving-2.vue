@@ -107,12 +107,6 @@ import _ from "lodash"
 import StatsJS from "stats.js"
 import Paper from "paper"
 import gsap from "gsap"
-    
-function degrees_to_radians(degrees:number)
-{
-    var pi = Math.PI
-    return degrees * (pi/180)
-}
 
 export default defineComponent ({ 
     props: [],
@@ -125,7 +119,6 @@ export default defineComponent ({
             stats: null as null | Stats,   
             ground: null as null | Matter.Body, 
             paperJS: {
-                // points: [] as Array<paper.Point>
                 paths: [] as Array<paper.Path>,
             },
             catterPillar: {
@@ -143,7 +136,7 @@ export default defineComponent ({
                 restitution: 0.8,
                 showMatterJS: true,
                 showPaperJS: false,
-            },
+            } as any,
             originalOptions: {
                 maxVelocity: 3,
                 length: 12,
@@ -153,12 +146,12 @@ export default defineComponent ({
                 restitution: 0.8,
                 showMatterJS: true,
                 showPaperJS: false,
-            }
+            } as any
         }
     },
     watch: {
         "options": {
-            handler(options){
+            handler(){
                 if (this.ignoreOptionsUpdate) {
                     return
                 }
@@ -168,9 +161,11 @@ export default defineComponent ({
                 if (localStorageOptions) {
                     newOptions = _.cloneDeep(JSON.parse(localStorageOptions))
                 }
-
                 _.forOwn(this.options, (value, key) => {
                     if (_.isObject(value)) {
+                        if (!_.isObject(newOptions[key])) {
+                            newOptions[key] = {}
+                        }
                         _.forOwn(value, (v, k) => {
                             newOptions[key][k] = v
                         })
@@ -178,7 +173,6 @@ export default defineComponent ({
                         newOptions[key] = value
                     }
                 })
-                console.log(newOptions)
                 localStorage.setItem("options", JSON.stringify(newOptions))
             },
             deep: true
@@ -250,7 +244,12 @@ export default defineComponent ({
             this.ignoreOptionsUpdate = true
             const optionsString = localStorage.getItem("options")
             if (optionsString) {
-                this.options = JSON.parse(optionsString)
+                const localOptions = JSON.parse(optionsString)
+                _.forOwn(this.options, (value,key) => {
+                    if (localOptions[key]) {
+                        this.options[key] = localOptions[key]
+                    }
+                })
             }
             setTimeout(() => {
                 this.ignoreOptionsUpdate = false

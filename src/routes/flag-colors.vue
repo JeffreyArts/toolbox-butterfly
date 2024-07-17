@@ -44,6 +44,7 @@ export default defineComponent ({
     props: [],
     data() {
         return {
+            ignoreOptionsUpdate: true,
             painting: [] as Array<paper.Path>,
             countryList: [
                 {"name":"Afghanistan",                          code: "AF", "colors":[{"hex":"#FFFFFF","percent":86},{"hex":"#000000","percent":14}]},
@@ -311,13 +312,7 @@ export default defineComponent ({
             }>,
             options: {
                 selectedCountry: "",
-                ballSize: 32,
-                density: 0.001,
-                friction: 0.1,
-                mass: 1,
-                slop: 0.05,
-                restitution: 0
-            }
+            } as any
         }
     },
     watch: {
@@ -376,11 +371,19 @@ export default defineComponent ({
             }
         },
         loadOptions() {
-            let options = this.options
+            this.ignoreOptionsUpdate = true
             const optionsString = localStorage.getItem("options")
             if (optionsString) {
-                this.options = JSON.parse(optionsString)
+                const localOptions = JSON.parse(optionsString)
+                _.forOwn(this.options, (value,key) => {
+                    if (localOptions[key]) {
+                        this.options[key] = localOptions[key]
+                    }
+                })
             }
+            setTimeout(() => {
+                this.ignoreOptionsUpdate = false
+            })
         },
         updateImage() {
             if (!Paper || !this.$el) {

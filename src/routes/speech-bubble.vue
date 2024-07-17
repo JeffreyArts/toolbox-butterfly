@@ -100,7 +100,7 @@ export default defineComponent ({
             speechBubble: null as null | SpeechBubble,
             animatedText: "",
             pageOptions: {
-                showMatterJS: true,
+                showMatterJS: false,
                 showPaperJS: true
             },
         }
@@ -326,7 +326,7 @@ export default defineComponent ({
         createSpeechBubble() {
             if (this.mWorld) {
                 const el = this.$el.querySelector(".scroll-container")
-                this.speechBubble = new SpeechBubble(this.mWorld, el, {x: el.clientWidth/2, y: el.clientHeight/2, text: "Hallo wereld"})
+                this.speechBubble = new SpeechBubble(this.mWorld, el, {x: el.clientWidth/2, y: el.clientHeight/2, text: "Hello world"})
                 Matter.Composite.add(this.mWorld, [this.speechBubble.composite])
             }
         },

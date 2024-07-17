@@ -175,10 +175,7 @@ export default defineComponent ({
     unmounted() {
         this.removeMatter()
         this.stats = null
-        const el = this.$refs["matterContainer"] as HTMLElement
-        if (!el) {
-            return
-        }
+            
         window.removeEventListener("keydown", this.keyPressEvent)
         window.removeEventListener("mouseup", this.cancelMouseDown)
         window.removeEventListener("resize", this.resetView)

@@ -120,7 +120,7 @@ import {defineComponent} from "vue"
 import Matter from "matter-js"
 import _ from "lodash"
 import StatsJS from "stats.js"
-    
+
 export default defineComponent ({ 
     props: [],
     data() {
@@ -131,6 +131,7 @@ export default defineComponent ({
             mObject: [] as Array<Matter.Body>,
             stats: null as null | Stats,
             animation: true,
+            ignoreOptionsUpdate: false,
             options: {
                 amountOfBalls: 1,
                 ballSize: 32,
@@ -139,13 +140,34 @@ export default defineComponent ({
                 mass: 1,
                 slop: 0.05,
                 restitution: 0
-            }
+            } as any
         }
     },
     watch: {
         "options": {
             handler(){
-                localStorage.setItem("options", JSON.stringify(this.options))
+                if (this.ignoreOptionsUpdate) {
+                    return
+                }
+                
+                let newOptions = {} as any
+                const localStorageOptions = localStorage.getItem("options")
+                if (localStorageOptions) {
+                    newOptions = _.cloneDeep(JSON.parse(localStorageOptions))
+                }
+                _.forOwn(this.options, (value, key) => {
+                    if (_.isObject(value)) {
+                        if (!_.isObject(newOptions[key])) {
+                            newOptions[key] = {}
+                        }
+                        _.forOwn(value, (v, k) => {
+                            newOptions[key][k] = v
+                        })
+                    } else {
+                        newOptions[key] = value
+                    }
+                })
+                localStorage.setItem("options", JSON.stringify(newOptions))
             },
             deep: true
         },
@@ -364,11 +386,19 @@ export default defineComponent ({
     },
     methods: {
         loadOptions() {
-            let options = this.options
+            this.ignoreOptionsUpdate = true
             const optionsString = localStorage.getItem("options")
             if (optionsString) {
-                this.options = JSON.parse(optionsString)
+                const localOptions = JSON.parse(optionsString)
+                _.forOwn(this.options, (value,key) => {
+                    if (localOptions[key]) {
+                        this.options[key] = localOptions[key]
+                    }
+                })
             }
+            setTimeout(() => {
+                this.ignoreOptionsUpdate = false
+            })
         },
         initMatterJS() {
             const el = this.$refs["matterContainer"] as HTMLElement

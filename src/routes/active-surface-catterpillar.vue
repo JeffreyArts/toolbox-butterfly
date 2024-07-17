@@ -126,10 +126,6 @@ export default defineComponent ({
     unmounted() {
         this.removeMatter()
         this.stats = null
-        const el = this.$refs["matterContainer"] as HTMLElement
-        if (!el) {
-            return
-        }
     },
     methods: {
         removeMatter() {
