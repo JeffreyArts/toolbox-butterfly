@@ -149,10 +149,7 @@ class SpeechBubble  {
         return res
     }
     #createBubble (x: number, y: number) {
-        let bgc = getComputedStyle(this.domElement)["background-color"]
-        if (bgc === "rgba(0, 0, 0, 0)" || bgc === "transparent") {
-            bgc = "#F8FADB"
-        }
+        const bgc = "#F8FADB"
         
         this.paperJS =  new Paper.Path({
             fillColor: bgc,
