@@ -55,6 +55,12 @@ body {
         margin: auto;
         max-width: calc(80vh - 64px);
     }
+    .footnote {
+        text-align:center;
+        font-family: "FixedSys";
+        font-size: .8em;
+        text-shadow: 1px 1px 1px rgba(0,0,0,.8);
+    }
 }
 
 .sidebar {
