@@ -50,12 +50,30 @@ export default defineComponent ({
             }
         })
         
-        if (localStorage.getItem("siteMenuOpen") === "1") {
+        const target = this.$refs["siteMenu"]
+        if (!target) {
+            throw new Error("Missing target siteMenu")
+        }
+        
+        if (localStorage.getItem("siteMenuOpen") === "0") {
             this.isOpen = false 
+
+            gsap.set(target, {
+                paddingLeft: 0,
+                width: 0,
+                minWidth: 0,    
+            })
         } else {
             this.isOpen = true
+
+            gsap.set(target, {
+                paddingLeft: 24,
+                width: "100%",
+                minWidth: 320,    
+            })
         }
-        this.toggleMenu()
+        localStorage.setItem("siteMenuOpen", this.isOpen ? "1" : "0")
+        // this.toggleMenu()
         document.addEventListener("mousemove", this.displayToggle)
     },
     unmounted() {
@@ -71,6 +89,7 @@ export default defineComponent ({
             // Add .__menuOpen to <body>
             if (!this.isOpen) {
                 this.bodyElement.classList.remove("__menuOpen")
+                this.isOpen = !this.isOpen 
                 gsap.to(target, {
                     paddingLeft: 24,
                     width: "100%",
@@ -79,9 +98,11 @@ export default defineComponent ({
                     duration: .4,
                     onComplete: () => {
                         this.showToggle = true
-                        this.isOpen = !this.isOpen 
                         localStorage.setItem("siteMenuOpen", this.isOpen ? "1" : "0")
-                        window.dispatchEvent(new Event("resize"))
+
+                        setTimeout(() => {
+                            window.dispatchEvent(new Event("resize"))
+                        })
                     }
                 })
             } else {
@@ -96,7 +117,10 @@ export default defineComponent ({
                         this.isOpen = !this.isOpen 
                         this.showToggle = false
                         localStorage.setItem("siteMenuOpen", this.isOpen ? "1" : "0")
-                        window.dispatchEvent(new Event("resize"))
+                        
+                        setTimeout(() => {
+                            window.dispatchEvent(new Event("resize"))
+                        })
                     }
                 })
             }
@@ -259,7 +283,6 @@ export default defineComponent ({
     justify-content: center;
     align-items: center;
     z-index: 2024;
-    background-color: #222;
     font-size: 18px;
     color: transparent;
     transition: .4s all ease;
@@ -270,6 +293,7 @@ export default defineComponent ({
         position: absolute;
         height: 2px;
         width: 1em;
+        box-shadow: 0 0 3px rgba(0,0,0,.8), 0 0 8px rgba(0,0,0,1);
         display: block;
         background-color: #fff;
         transition: .4s all ease;
