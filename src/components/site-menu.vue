@@ -1,6 +1,6 @@
 <template>
     <div class="site-menu-container">
-        <div class="site-menu">
+        <div class="site-menu" ref="siteMenu">
             <router-link to="/" class="site-menu-title">Toolbox</router-link>
             
             <div class="site-menu-list">
@@ -12,6 +12,9 @@
         </div>
         
         
+        <div class="site-menu-toggle-mobile" @click="toggleMenu()" :class="[isOpen ? '__isOpen': '']">
+            <span>─</span>
+        </div>
         <div class="site-menu-toggle" @click="toggleMenu()" :class="[showToggle ? '__isVisible': '']">›</div>
     </div>
 </template>
@@ -20,6 +23,7 @@
 import { RouteRecord, RouteComponent } from "vue-router"
 import {defineComponent} from "vue"
 import _ from "lodash"
+import gsap from "gsap"
 
 export default defineComponent ({
     name: "SiteMenu", 
@@ -59,23 +63,43 @@ export default defineComponent ({
     },
     methods: {
         toggleMenu() :void {
-            if (this.isOpen && this.bodyElement != null) {
-                this.isOpen = false
-                this.showToggle = false
-                this.bodyElement.className = this.bodyElement.className.replace(" __menuOpen", "")
-            } else {
-                this.isOpen = true
-                this.bodyElement.className += " __menuOpen"
-
-                setTimeout(() => {
-                    this.showToggle = false
-                }, 0)
+            const target = this.$refs["siteMenu"]
+            if (!target) {
+                throw new Error("Missing target siteMenu")
             }
-            localStorage.setItem("siteMenuOpen", this.isOpen ? "1" : "0")
 
-            setTimeout(()=> {
-                window.dispatchEvent(new Event("resize"))
-            },320)
+            // Add .__menuOpen to <body>
+            if (!this.isOpen) {
+                this.bodyElement.classList.remove("__menuOpen")
+                gsap.to(target, {
+                    paddingLeft: 24,
+                    width: "100%",
+                    minWidth: 320,
+                    ease: "power4.out",
+                    duration: .4,
+                    onComplete: () => {
+                        this.showToggle = true
+                        this.isOpen = !this.isOpen 
+                        localStorage.setItem("siteMenuOpen", this.isOpen ? "1" : "0")
+                        window.dispatchEvent(new Event("resize"))
+                    }
+                })
+            } else {
+                this.bodyElement.classList.add("__menuOpen")
+                gsap.to(target, {
+                    paddingLeft: 0,
+                    width: 0,
+                    minWidth: 0,
+                    ease: "power4.in",
+                    duration: .4,
+                    onComplete: () => {
+                        this.isOpen = !this.isOpen 
+                        this.showToggle = false
+                        localStorage.setItem("siteMenuOpen", this.isOpen ? "1" : "0")
+                        window.dispatchEvent(new Event("resize"))
+                    }
+                })
+            }
         },
         displayToggle(event: MouseEvent) :void {
             var width = this.$el.querySelector(".site-menu").clientWidth
@@ -131,7 +155,7 @@ export default defineComponent ({
     margin: 0;
     position: relative;
     background-image: linear-gradient(90deg, rgba(0,0,0,.32),  rgba(0,0,0,.16));
-    transition: all ease 0.24s;
+    // transition: all ease 0.24s;
 }
 
 .__menuOpen {
@@ -214,15 +238,64 @@ export default defineComponent ({
     right: -32px;
     font-size:32px;
     transition: all ease 0.24s;
-
+    display: none;
+    
     &.__isVisible {
         width: 32px;
         opacity: 1;
     }
-    @media all and (max-width: 560px) {
-        width: 32px !important;
-        opacity: 1 !important;
-
+    @media all and (min-width: 560px) {
+        display: block
     }
+}
+
+.site-menu-toggle-mobile {
+    position: absolute;
+    right: -40px;
+    top: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2024;
+    background-color: #222;
+    font-size: 18px;
+    color: transparent;
+    transition: .4s all ease;
+
+    &:after,
+    &:before {
+        content: "";
+        position: absolute;
+        height: 2px;
+        width: 1em;
+        display: block;
+        background-color: #fff;
+        transition: .4s all ease;
+        transform-origin: center;
+    }
+    &:after {
+        bottom: 14px;
+    }
+    &:before {
+        top: 14px;
+    }
+
+    &.__isOpen {
+        right: 0;
+        background-color: transparent;
+
+        &:before {
+            transform: rotate(45deg);
+            translate: 0 5px;
+        }
+
+        &:after {
+            transform: rotate(-45deg);
+            translate: 0 -5px;
+        }
+    }
+
 }
 </style>
