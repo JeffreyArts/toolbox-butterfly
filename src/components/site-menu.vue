@@ -4,10 +4,11 @@
             <router-link to="/" class="site-menu-title">Toolbox</router-link>
             
             <div class="site-menu-list">
-                <router-link class="site-menu-list-item"
-                    :to="route.path" v-for="(route, routeIndex) in routes" 
+                <span class="site-menu-list-item"
+                    @click="goTo(route.path)"
+                    v-for="(route, routeIndex) in routes" 
                     :key="routeIndex"
-                    :class="[currentRoute.name == route.name ? '__isCurrent' : '']">{{route.name}}</router-link>
+                    :class="[currentRoute.name == route.name ? '__isCurrent' : '']">{{route.name}}</span>
             </div>
         </div>
         
@@ -94,7 +95,7 @@ export default defineComponent ({
                     paddingLeft: 24,
                     width: "100%",
                     minWidth: 320,
-                    ease: "power4.out",
+                    ease: "power1.inOut",
                     duration: .4,
                     onComplete: () => {
                         this.showToggle = true
@@ -111,7 +112,7 @@ export default defineComponent ({
                     paddingLeft: 0,
                     width: 0,
                     minWidth: 0,
-                    ease: "power4.in",
+                    ease: "power1.inOut",
                     duration: .4,
                     onComplete: () => {
                         this.isOpen = !this.isOpen 
@@ -151,6 +152,12 @@ export default defineComponent ({
                 }
             }
             
+        },
+        goTo(path: string) {
+            this.$router.push({path})
+            if (window.innerWidth <=640) {
+                this.toggleMenu()
+            }
         }
         
     }
@@ -179,7 +186,6 @@ export default defineComponent ({
     margin: 0;
     position: relative;
     background-image: linear-gradient(90deg, rgba(0,0,0,.32),  rgba(0,0,0,.16));
-    // transition: all ease 0.24s;
 }
 
 .__menuOpen {
