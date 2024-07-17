@@ -13,6 +13,8 @@
                     <canvas id="paperCanvas" :style="[{opacity: options.showPaperJS ? 1 : 0}]"></canvas>
                 </div>
             </div>
+
+            <span class="footnote">Press left arrow for movement</span>
         </section>
 
         <aside class="sidebar">
@@ -102,7 +104,9 @@
 
 <script lang="ts">
 import {defineComponent} from "vue"
-import Matter, { Collision } from "matter-js"
+import Matter from "matter-js"
+import MatterService from "@/services/matter-js"
+import paperService from "@/services/paper-js"
 import _ from "lodash"
 import StatsJS from "stats.js"
 import Paper from "paper"
@@ -211,129 +215,67 @@ export default defineComponent ({
         }
     },
     mounted() {
-        this.initMatterJS()
-        this.initPaperJS()
         const el = this.$el.querySelector(".scroll-container")
         this.displayFPS(el)
         this.loadOptions()
-        this.createGround()
-        this.generateCatterpillar()
+        this.initView()
+
         window.addEventListener("keydown", this.keyPressEvent)
+        window.addEventListener("resize", this.resetView)
     },
     unmounted() {
         this.removeMatter()
+        this.removePaperJS()
+        window.removeEventListener("keydown", this.keyPressEvent)
+        window.removeEventListener("resize", this.resetView)
         this.stats = null
-        const el = this.$refs["matterContainer"] as HTMLElement
-        if (!el) {
-            return
-        }
     },
     methods: {
-        removeMatter() {
-            this.mWorld = null
-            
-            if (this.mRunner) {
-                Matter.Runner.stop(this.mRunner)
-            }
-
-            if (this.mEngine) {
-                Matter.Engine.clear(this.mEngine)
-            }
-        },
-        loadOptions() {
-            this.ignoreOptionsUpdate = true
-            const optionsString = localStorage.getItem("options")
-            if (optionsString) {
-                const localOptions = JSON.parse(optionsString)
-                _.forOwn(this.options, (value,key) => {
-                    if (localOptions[key]) {
-                        this.options[key] = localOptions[key]
-                    }
-                })
-            }
-            setTimeout(() => {
-                this.ignoreOptionsUpdate = false
-            })
-        },
-        resetOptions() {
-            this.options = JSON.parse(JSON.stringify(this.originalOptions))
-        },
+        
         initPaperJS() {
             const canvas = this.$el.querySelector("#paperCanvas")
             const el = this.$el.querySelector(".scroll-container")
-            
-            if (!canvas) {
-                console.error("Can't find canvas")
-                return
+            console.log("initPaperJS", el.clientWidth, el)
+            if (!el) {
+                throw new Error("Can't find .scroll-container")
             }
-
-            canvas.width = el.clientWidth
-            canvas.height = el.clientHeight
-            Paper.setup(canvas)
+            paperService.init(canvas, el.clientWidth, el.clientHeight)
         },
         initMatterJS() {
-            const el = this.$refs["matterContainer"] as HTMLElement
+            if (!this.$refs) {
+                throw new Error("Missing $refs")
+            }
             const canvasEl = this.$refs["renderCanvas"] as HTMLCanvasElement
-            if (!el) {
-                throw new Error("matterContainer ref can not be found")
-            }
-            if (!canvasEl) {
-                throw new Error("renderCanvas ref can not be found")
-            }
-
-            // create an engine
-            const engine = Matter.Engine.create({
-                enableSleeping: true,
-                gravity: {
-                    x: 0,
-                    y: 1
-                }
-            })
-
-            // create runner
-            const render = Matter.Render.create({
-                element: canvasEl,
-                engine: engine,
-                options: {
-                    width: canvasEl.clientWidth,
-                    height: canvasEl.clientHeight,
-                    showAngleIndicator: true,
-                }
-            })
-
-            const runner = Matter.Runner.create()
+            const mjs = MatterService.init(canvasEl)
             
-            this.mWorld = engine.world
-            this.mRunner = runner
-            this.mEngine = engine
-            Matter.Render.run(render)
-
-            // run the engine
-            Matter.Runner.run(this.mRunner, this.mEngine)
+            this.mWorld = mjs.world
+            this.mRunner = mjs.runner
+            this.mEngine = mjs.engine
+            
             this.renderLoop()    
         },
-        createGround() {
-            const el = this.$refs["matterContainer"] as HTMLElement
-            if (!el) {
-                throw new Error("matterContainer ref can not be found")
-            }
-            if (!this.mWorld) {
-                throw new Error("mWorld can't be null")
-            }
-
-            this.ground = Matter.Bodies.rectangle(el.clientWidth/2, el.clientHeight-16, el.clientWidth, 16, {
-                isStatic: true,
-                label: "ground",
-                friction: 1,
-                collisionFilter: {
-                    category: 2,
-                    mask: 1
-                }
-            })
-            
-            // add all of the bodies to the world
-            Matter.Composite.add(this.mWorld, [this.ground])
+        removePaperJS() {
+            paperService.destroy()
         },
+        removeMatter() {
+            this.mWorld = null
+            if (this.mRunner && this.mEngine) {
+                MatterService.destroy(this.mRunner, this.mEngine)
+            }
+        },
+        resetView() {
+            this.removeMatter()
+            this.removePaperJS()
+
+            setTimeout(this.initView)
+        },
+        initView() {
+            this.initMatterJS()
+            this.initPaperJS()
+            this.createGround()
+            this.generateCatterpillar()
+        },
+
         keyPressEvent(e: KeyboardEvent) {
             if (!this.mEngine || this.catterPillar.isMoving) {
                 return
@@ -373,6 +315,48 @@ export default defineComponent ({
                 console.log("should go right")
                 this.catterPillar.isMoving = false
             }
+        },
+
+        loadOptions() {
+            this.ignoreOptionsUpdate = true
+            const optionsString = localStorage.getItem("options")
+            if (optionsString) {
+                const localOptions = JSON.parse(optionsString)
+                _.forOwn(this.options, (value,key) => {
+                    if (localOptions[key]) {
+                        this.options[key] = localOptions[key]
+                    }
+                })
+            }
+            setTimeout(() => {
+                this.ignoreOptionsUpdate = false
+            })
+        },
+        resetOptions() {
+            this.options = JSON.parse(JSON.stringify(this.originalOptions))
+        },
+        
+        createGround() {
+            const el = this.$refs["matterContainer"] as HTMLElement
+            if (!el) {
+                throw new Error("matterContainer ref can not be found")
+            }
+            if (!this.mWorld) {
+                throw new Error("mWorld can't be null")
+            }
+
+            this.ground = Matter.Bodies.rectangle(el.clientWidth/2, el.clientHeight-16, el.clientWidth, 16, {
+                isStatic: true,
+                label: "ground",
+                friction: 1,
+                collisionFilter: {
+                    category: 2,
+                    mask: 1
+                }
+            })
+            
+            // add all of the bodies to the world
+            Matter.Composite.add(this.mWorld, [this.ground])
         },
         catterPillarMoveLeft(bodies: Array<Matter.Body>) {
             if (!bodies) {
@@ -529,11 +513,12 @@ export default defineComponent ({
             if (!el || !this.mWorld) {
                 return
             }
-
             if (this.catterPillar.composite) {
                 this.removeCatterpillar()
             }
-
+            
+            this.catterPillar.isMoving = false
+            
             const center = {x: el.clientWidth/2, y: el.clientHeight/2}
             const size = this.options.size
 
