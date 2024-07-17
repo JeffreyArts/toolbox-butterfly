@@ -130,6 +130,7 @@ export default defineComponent ({
             mEngine: null as null | Matter.Engine,
             mRunner: null as null | Matter.Runner,
             mObject: [] as Array<Matter.Body>,
+            ground: null as null | Matter.Body,
             stats: null as null | Stats,    
             animation: true,
             ignoreOptionsUpdate: false,
@@ -364,6 +365,7 @@ export default defineComponent ({
         this.initMatterJS()
         const el = this.$el.querySelector(".scroll-container")
         this.displayFPS(el)
+        window.addEventListener("resize", this.updateView)
     },
     unmounted() {
         this.mWorld = null
@@ -375,6 +377,7 @@ export default defineComponent ({
         if (this.mEngine) {
             Matter.Engine.clear(this.mEngine)
         }
+        window.removeEventListener("resize", this.updateView)
     },
     methods: {
         loadOptions() {
@@ -391,6 +394,19 @@ export default defineComponent ({
             setTimeout(() => {
                 this.ignoreOptionsUpdate = false
             })
+        },
+        updateView() {
+            const el = this.$refs["matterContainer"] as HTMLElement
+            if (!el) {
+                throw new Error("matterContainer ref can not be found")
+            }
+            
+            if (this.mWorld && this.ground) {
+                Matter.Composite.remove(this.mWorld, this.ground)
+
+                this.ground = Matter.Bodies.rectangle(el.clientWidth/2, el.clientHeight-16, el.clientWidth, 16, { isStatic: true })
+                Matter.Composite.add(this.mWorld,  this.ground)
+            }
         },
         initMatterJS() {
             const el = this.$refs["matterContainer"] as HTMLElement
@@ -419,10 +435,10 @@ export default defineComponent ({
             }
             
             // create ground
-            const ground = Matter.Bodies.rectangle(el.clientWidth/2, el.clientHeight-16, el.clientWidth, 16, { isStatic: true })
+            this.ground = Matter.Bodies.rectangle(el.clientWidth/2, el.clientHeight-16, el.clientWidth, 16, { isStatic: true })
             
             // add all of the bodies to the world
-            Matter.Composite.add(engine.world, [...balls, ground])
+            Matter.Composite.add(engine.world, [...balls, this.ground])
             // create runner
             const runner = Matter.Runner.create()
 

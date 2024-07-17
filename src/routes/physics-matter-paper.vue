@@ -144,7 +144,10 @@ export default defineComponent ({
             mWorld: null as null | Matter.Composite,
             mEngine: null as null | Matter.Engine,
             mRunner: null as null | Matter.Runner,
+            mRender: null as null | Matter.Render,
             mObject: [] as Array<Matter.Body>,
+            ground: null as null | Matter.Body,
+            paperGround: null as null | paper.Shape,
             stats: null as null | Stats,    
             animation: true,
             paperBalls: [] as Array<paper.Shape>,
@@ -393,6 +396,7 @@ export default defineComponent ({
         this.initPaperJS()
         const el = this.$el.querySelector(".scroll-container")
         this.displayFPS(el)
+        window.addEventListener("resize", this.updateView)
     },
     unmounted() {
         this.mWorld = null
@@ -404,8 +408,56 @@ export default defineComponent ({
         if (this.mEngine) {
             Matter.Engine.clear(this.mEngine)
         }
+        window.removeEventListener("resize", this.updateView)
     },
     methods: {
+        updateView() {
+            const el = this.$refs["matterContainer"] as HTMLElement
+            const scrollContainer = this.$el.querySelector(".scroll-container")
+            
+            if (!el) {
+                throw new Error("matterContainer ref can not be found")
+            }
+            
+            if (this.mWorld && this.mRender && this.ground) {
+                Matter.Composite.remove(this.mWorld, this.ground)
+
+                this.ground = Matter.Bodies.rectangle(el.clientWidth/2, el.clientHeight-16, el.clientWidth, 16, { isStatic: true })
+                Matter.Composite.add(this.mWorld,  this.ground)
+                console.log(this.mWorld, this.mRunner)
+                this.mRender.canvas.width = el.clientWidth
+                this.mRender.canvas.height = el.clientHeight
+            }
+
+            // Update paper canvas
+            const canvas = this.$el.querySelector("#paperCanvas")
+            
+            if (!canvas) {
+                console.error("Can't find canvas")
+                return
+            }
+
+            canvas.width = scrollContainer.clientWidth
+            canvas.height = scrollContainer.clientHeight
+
+            Paper.view.viewSize = new Paper.Size(scrollContainer.clientWidth, scrollContainer.clientHeight)
+            if (this.paperGround) {
+                this.paperGround.remove()
+            }
+
+            this.mWorld?.bodies.forEach(body => {
+                if (body.label.startsWith("Rectangle")) {
+                    const width = body.bounds.max.x - body.bounds.min.x 
+                    const height = body.bounds.max.y - body.bounds.min.y 
+                    this.paperGround = new Paper.Shape.Rectangle( new Paper.Point(body.bounds.min.x,  body.bounds.min.y), new Paper.Size(width, height))
+
+                    this.paperGround.strokeColor = new Paper.Color("#333")
+                    this.paperGround.fillColor = new Paper.Color("#fff")
+                }
+
+
+            }) 
+        },
         loadOptions() {
             this.ignoreOptionsUpdate = true
             const optionsString = localStorage.getItem("options")
@@ -438,10 +490,10 @@ export default defineComponent ({
                 if (body.label.startsWith("Rectangle")) {
                     const width = body.bounds.max.x - body.bounds.min.x 
                     const height = body.bounds.max.y - body.bounds.min.y 
-                    const rectangle = new Paper.Shape.Rectangle( new Paper.Point(body.bounds.min.x,  body.bounds.min.y), new Paper.Size(width, height))
+                    this.paperGround = new Paper.Shape.Rectangle( new Paper.Point(body.bounds.min.x,  body.bounds.min.y), new Paper.Size(width, height))
 
-                    rectangle.strokeColor = new Paper.Color("#333")
-                    rectangle.fillColor = new Paper.Color("#fff")
+                    this.paperGround.strokeColor = new Paper.Color("#333")
+                    this.paperGround.fillColor = new Paper.Color("#fff")
                 }
 
                 if (body.label.startsWith("Circle")) {
@@ -485,12 +537,12 @@ export default defineComponent ({
             }
             
             // create ground
-            const ground = Matter.Bodies.rectangle(el.clientWidth/2, el.clientHeight-16, el.clientWidth, 16, { isStatic: true })
+            this.ground = Matter.Bodies.rectangle(el.clientWidth/2, el.clientHeight-16, el.clientWidth, 16, { isStatic: true })
             
             // add all of the bodies to the world
-            Matter.Composite.add(engine.world, [...balls, ground])
+            Matter.Composite.add(engine.world, [...balls, this.ground])
             // create runner
-            const render = Matter.Render.create({
+            this.mRender = Matter.Render.create({
                 element: canvasEl,
                 engine: engine,
                 options: {
@@ -503,7 +555,7 @@ export default defineComponent ({
             this.mWorld = engine.world
             this.mRunner = runner
             this.mEngine = engine
-            Matter.Render.run(render)
+            Matter.Render.run(this.mRender)
             // run the engine
             Matter.Runner.run(this.mRunner, this.mEngine)
             this.renderLoop()
