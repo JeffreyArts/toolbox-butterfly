@@ -371,7 +371,9 @@ export default defineComponent ({
             canvas.width = el.clientWidth
             canvas.height = el.clientHeight
             Paper.setup(canvas)
-            this.updateImage()
+            if (this.options.selectedCountry) {
+                this.updateImage()
+            }
         },
         loadOptions() {
             let options = this.options

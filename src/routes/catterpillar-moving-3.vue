@@ -69,7 +69,7 @@
                         <label for="bodyStiffness">
                             Body stiffness
                         </label>
-                        <input type="number" id="bodyStiffness" v-model="options.bodyPart.stiffness" step="0.01" min="0" max="1">
+                        <input type="number" id="bodyStiffness" v-model="options.stiffness" step="0.01" min="0" max="1">
                     </div>
                     <div class="option">
                         <label for="maxVelocity">
@@ -166,10 +166,26 @@ export default defineComponent ({
         "options": {
             handler(){
                 if (this.ignoreOptionsUpdate) {
-                    console.log("ignoreOptionsUpdate")
                     return
                 }
-                localStorage.setItem("options", JSON.stringify(this.options))
+                
+                let newOptions = {} as any
+                const localStorageOptions = localStorage.getItem("options")
+                if (localStorageOptions) {
+                    newOptions = _.cloneDeep(JSON.parse(localStorageOptions))
+                }
+
+                _.forOwn(this.options, (value, key) => {
+                    if (_.isObject(value)) {
+                        _.forOwn(value, (v, k) => {
+                            newOptions[key][k] = v
+                        })
+                    } else {
+                        newOptions[key] = value
+                    }
+                })
+                console.log("newOptions", newOptions)
+                localStorage.setItem("options", JSON.stringify(newOptions))
             },
             deep: true
         },
@@ -237,12 +253,10 @@ export default defineComponent ({
             }
         },
         loadOptions() {
-            let options = this.options
             this.ignoreOptionsUpdate = true
             const optionsString = localStorage.getItem("options")
             if (optionsString) {
                 this.options = JSON.parse(optionsString)
-                // console.log(optionsString)
             }
             setTimeout(() => {
                 this.ignoreOptionsUpdate = false

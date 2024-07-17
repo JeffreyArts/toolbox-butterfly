@@ -16,7 +16,7 @@
                     @mousemove="mouseMoveEvent"
                     @touchmove="mouseMoveEvent">
                     <div class="render-canvas" ref="renderCanvas" :style="[{opacity: pageOptions.showMatterJS ? 1 : 0}]" />
-                    <canvas id="paperCanvas"></canvas>
+                    <canvas id="paperCanvas" :style="[{opacity: pageOptions.showPaperJS ? 1 : 0}]" />
                 </div>
             </div>
             <div :style="{backgroundColor: catterPillar?.isMoving ? 'green': 'red'}" style="width: 48px; height: 48px;"></div>
@@ -84,6 +84,10 @@
                             </button>
                         </span>
                     </div>
+                    <div class="option">
+                        <label for="">Color:</label>
+                        <input type="color" v-model="options.color" />
+                    </div>
                 </div>
                 <div class="option-group" name="General">
                     <div class="option">
@@ -91,6 +95,14 @@
                             <input type="checkbox" id="displayMatterJS" v-model="pageOptions.showMatterJS">
                             <label for="displayMatterJS">
                                 Show Matter JS
+                            </label>
+                        </span>
+                    </div>
+                    <div class="option">
+                        <span>
+                            <input type="checkbox" id="paperJS" v-model="pageOptions.showPaperJS">
+                            <label for="paperJS">
+                                Show Paper JS
                             </label>
                         </span>
                     </div>
@@ -138,12 +150,22 @@ export default defineComponent ({
             catterPillar: null as null | Catterpillar,
             pageOptions: {
                 showMatterJS: true,
-                showMouth: true
+                showPaperJS: true,
             },
             ignoreOptionsUpdate: false,
             options: {
             } as CatterpillarOptions
         }
+    },
+    watch: {
+        "options.color": {
+            handler(){
+                if (this.catterPillar && this.options.color) {
+                    this.catterPillar.color = this.options.color
+                }
+            },
+            deep: true
+        },
     },
     mounted() {
         this.initMatterJS()
@@ -152,6 +174,7 @@ export default defineComponent ({
         this.displayFPS(el)
         this.createGround()
         this.generateOptions()
+        this.generateCatterpillar()
 
         window.addEventListener("keydown", this.keyPressEvent)
         window.addEventListener("mouseup", this.cancelMouseDown)
@@ -199,13 +222,16 @@ export default defineComponent ({
 
         },
         generateOptions() {
+
+            const color = this.options.color ? this.options.color : "#58f208"
             this.options = {
-                length:         12 + Math.floor(Math.random() * 4 - 2),
+                color:          color,
+                length:         14 + Math.floor(Math.random() * 8 - 4),
                 maxVelocity:    3.2 + Math.random() * 1.6 - 0.8,
                 stiffness:      .16 + Math.random() * 0.40 - 0.08, 
                 restitution:    .72 + Math.random() * 0.16 - 0.08,
                 bodyPart: {
-                    size:        12 + Math.floor(Math.random() * 4 - 2),
+                    size:        12 + Math.floor(Math.random() * 12 - 6),
                     stiffness:   .2 + Math.random() * .8 - .04,
                     damping:    0,
                     restitution: .5 + Math.random() * .6 - .3,
@@ -486,7 +512,6 @@ export default defineComponent ({
             const x = el.clientWidth/2 - (this.options.length * this.options.bodyPart.size) / 2
             
             this.catterPillar = new Catterpillar(this.mWorld, {x, y: 8, ...options, autoBlink: true})
-            console.log(this.catterPillar.mouth)
 
             Matter.Composite.add(this.mWorld, [
                 this.catterPillar.composite

@@ -105,7 +105,7 @@ export default defineComponent ({
             if (!this.animation) {
                 return
             }
-            // console.log("✍️")
+
             const sourceCanvas = this.$refs.sourceCanvas as HTMLCanvasElement
             const sourceContext = sourceCanvas.getContext("2d")
             const overlayCanvas =  document.querySelector(".overlay") as HTMLCanvasElement
@@ -567,10 +567,8 @@ export default defineComponent ({
                         // ctx.closePath()
                     },
                 })
-
-                
+   
                 // openDoor(doorFront, ctx, .2)
-                console.log("doorFront", doorFront)
                 // // Draw door handle
                 // const handle = {
                 //     x1: source.width/2 + door.width/2 - 20,

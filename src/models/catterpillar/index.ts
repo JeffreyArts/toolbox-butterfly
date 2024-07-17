@@ -10,6 +10,7 @@ import { BodyPartOptions } from "./bodypart"
 export type CatterpillarOptions = {
     x?: number
     y?: number
+    color?: string
     length?: number
     stiffness?: number 
     damping?: number
@@ -62,8 +63,7 @@ interface Catterpillar {
         right: Eye,
     }
     mouth: Mouth
-    // startBlinking: () => void
-    // stopBlinking: () => void
+    color: string
     blinkInterval?: number
     autoBlink: boolean
     x: number
@@ -102,6 +102,7 @@ class Catterpillar  {
         return new BodyPart({
             x: -128,
             y: -128,
+            color: this.color,
             radius: this.bodyPart.size,
             restitution: this.bodyPart.restitution,
             slop: this.bodyPart.slop ? this.bodyPart.slop : this.bodyPart.size/5,
@@ -458,11 +459,18 @@ class Catterpillar  {
         requestAnimationFrame(() => this.#loop())
     }
 
+    #updateColor() {
+        _.each(this.bodyParts, bodyPart => {
+            bodyPart.color = this.color
+        })
+    }
+
     constructor (
         world: Matter.World,
         options = {
             x: 0,
             y: 0,
+            color: "#58f208",
             length: 8,
             stiffness: .8, 
             damping: .8, 
@@ -490,6 +498,7 @@ class Catterpillar  {
         this.isMoving = false
         this.x              = options.x             ? options.x : 0
         this.y              = options.y             ? options.y : 0
+        this.color          = options.color         ? options.color : "#58f208"
         this.bodyLength     = options.length        ? options.length : 8
         this.stiffness      = options.stiffness     ? options.stiffness : .8
         this.maxVelocity    = options.maxVelocity   ? options.maxVelocity : 3
@@ -542,6 +551,20 @@ class Catterpillar  {
 
         this.#loop.bind(this)
         this.#loop()
+
+        return new Proxy(this, {
+            set: function (target:any, key, value) {
+                if (key === "color") {
+                    target[key] = value
+                    target.#updateColor()
+                }
+                
+                if (typeof target[key] !== "undefined") {
+                    target[key] = value
+                }
+                return true
+            }
+        })
     }
     
     
@@ -555,6 +578,7 @@ class Catterpillar  {
         this.bodyLength = -1
         this.eye.left.remove()
         this.eye.right.remove()
+        this.mouth.remove()
         _.each(this.bodyParts, bodyPart => {
             bodyPart.remove()
         })

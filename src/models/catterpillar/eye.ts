@@ -67,7 +67,6 @@ class Eye  {
     }
 
     #setSize(){
-        console.log("SET SIZE!", this.width)
         if (!this.lid) {
             return
         }
@@ -145,7 +144,6 @@ class Eye  {
 
         return new Proxy(this, {
             set: function (target, key, value) {
-                // console.log(`${String(key)} set to ${value}`)
                 if (key === "x" || key === "y") {
                     target[key] = value
                     target.updatePosition()

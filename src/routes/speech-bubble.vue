@@ -109,7 +109,7 @@ export default defineComponent ({
         this.initMatterJS()
         this.initPaperJS()
         const el = this.$el.querySelector(".scroll-container")
-        // this.createSpeechBubble()
+        this.createSpeechBubble()
         this.displayFPS(el)
 
         window.addEventListener("mouseup", this.cancelMouseDown)
@@ -121,10 +121,6 @@ export default defineComponent ({
         }
         this.removeMatter()
         this.stats = null
-        const el = this.$refs["matterContainer"] as HTMLElement
-        if (!el) {
-            return
-        }
 
         window.removeEventListener("mouseup", this.cancelMouseDown)
         window.removeEventListener("resize", this.resetView)

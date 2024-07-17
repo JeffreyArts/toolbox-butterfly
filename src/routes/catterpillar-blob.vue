@@ -194,16 +194,11 @@ export default defineComponent ({
                 console.error("First initialise Matter World")
                 return
             }
-            
-            // const ground = 
-
-            // add all of the bodies to the world
-            // Matter.Composite.add(this.mWorld, Matter.Bodies.circle(el.clientWidth, el.clientHeight, el.clientHeight/16, { isStatic: false, label: "mousePointer" }))
 
             el.addEventListener("mousemove",this.mouseMoveEvent)
         },
         mouseMoveEvent(e: MouseEvent) {
-            console.log("Mouse",e)
+            // console.log("Mouse",e)
         },
         initPaperJS() {
             const canvas = this.$el.querySelector("#paperCanvas")
@@ -301,10 +296,8 @@ export default defineComponent ({
             this.removeBlob()
 
             const center = {x: el.clientWidth/2, y: el.clientHeight/2}
-
-            const staticRadius = Math.min(el.clientHeight/2, el.clientWidth/2) - offset
             const centerRadius = this.options.size/2
-            // const centerRadius = this.options.size
+            
             let radius = Math.min(el.clientHeight/2, el.clientWidth/2) - offset
             let prev = null
             let first = null
@@ -318,8 +311,6 @@ export default defineComponent ({
 
             for (let i=0; i < this.options.points; i++) {
                 const angle = 360/this.options.points
-                // radius = i === 0 ? radius + Math.random() * .7  : radius + Math.random() * .7 * 20 - 10
-                // radius = i === 0 ? radius + Math.random() * .7  : radius + Math.random() * .7 * 20 - 10
                 
                 const x = center.x + (radius * Math.cos(angle*i*Math.PI/180)) * this.options.size/100
                 const y = center.y + (radius * Math.sin(angle*i*Math.PI/180)) * this.options.size/100

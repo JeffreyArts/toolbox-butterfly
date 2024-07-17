@@ -185,10 +185,26 @@ export default defineComponent ({
         "options": {
             handler(){
                 if (this.ignoreOptionsUpdate) {
-                    console.log("ignoreOptionsUpdate")
                     return
                 }
-                localStorage.setItem("options", JSON.stringify(this.options))
+                
+                let newOptions = {} as any
+                const localStorageOptions = localStorage.getItem("options")
+                if (localStorageOptions) {
+                    newOptions = _.cloneDeep(JSON.parse(localStorageOptions))
+                }
+
+                _.forOwn(this.options, (value, key) => {
+                    if (_.isObject(value)) {
+                        _.forOwn(value, (v, k) => {
+                            newOptions[key][k] = v
+                        })
+                    } else {
+                        newOptions[key] = value
+                    }
+                })
+                console.log("newOptions", newOptions)
+                localStorage.setItem("options", JSON.stringify(newOptions))
             },
             deep: true
         },
@@ -338,7 +354,6 @@ export default defineComponent ({
             this.mousePos = mousePosition.xy(e)
         },
         loadOptions() {
-            let options = this.options
             this.ignoreOptionsUpdate = true
             const optionsString = localStorage.getItem("options")
             if (optionsString) {

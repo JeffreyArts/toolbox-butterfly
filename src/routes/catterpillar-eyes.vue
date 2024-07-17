@@ -165,6 +165,7 @@ export default defineComponent ({
         this.displayFPS(el)
         this.createGround()
         this.generateOptions()
+        this.generateCatterpillar()
         this.setBlinkInterval()
 
         window.addEventListener("keydown", this.keyPressEvent)

@@ -100,14 +100,10 @@ class Mouth  {
             right:  this.paper.segments[3].point,
         }
 
-
         this.paper.fillColor = new Paper.Color("#222")
-        // this.paper.fillColor = new Paper.Color("#f00")
-        // this.paper.smooth({ type: "continuous"})
 
         return new Proxy(this, {
             set: function (target:any, key, value) {
-                // console.log(`${String(key)} set to ${value}`)
                 if (key === "x" || key === "y") {
                     target[key] = value
                     target.updatePosition()
@@ -317,6 +313,10 @@ class Mouth  {
         this.bottomLip.right.y = this.y + (finalState.bottomLip.right.y * perc)
                 
         this.paper.smooth({ type: "continuous"})
+    }
+
+    remove() {
+        this.paper.remove()
     }
     
     getPosition(state?: MouthState) : MouthPoints{
