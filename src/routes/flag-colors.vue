@@ -6,8 +6,8 @@
         </header>
 
         <hr>
-        <section class="viewport">
-            <div class="viewport-content" ref="viewport-content" ratio="1x1">
+        <section class="viewport flag-colors">
+            <div class="scroll-container" ref="scroll-container" ratio="1x1">
                 <canvas id="paperCanvas" />
             </div>
         </section>
@@ -39,6 +39,7 @@ import {defineComponent} from "vue"
 import axios from "axios"
 import _ from "lodash"
 import Paper from "paper"
+import paperService from "@/services/paper-js"
     
 export default defineComponent ({ 
     props: [],
@@ -347,7 +348,7 @@ export default defineComponent ({
         },
         updateCanvas() {
             const canvas = this.$el.querySelector("#paperCanvas")
-            const el = this.$el.querySelector(".viewport-content")
+            const el = this.$el.querySelector(".scroll-container")
             
             if (!canvas) {
                 console.error("Can't find canvas")
@@ -358,16 +359,22 @@ export default defineComponent ({
                 console.error("Can't find element")
                 return
             }
-
-            // if (this.paper) {
-            //     this.paper.remove()
-            // }
-
             canvas.width = el.clientWidth
             canvas.height = el.clientHeight
+            
+            paperService.destroy()
             Paper.setup(canvas)
+            
+            if (Paper.view.viewSize.width != el.clientWidth) {
+                Paper.view.viewSize.width = el.clientWidth
+            }
+            if (Paper.view.viewSize.height != el.clientWidth) {
+                Paper.view.viewSize.height = el.clientWidth
+            }
             if (this.options.selectedCountry) {
-                this.updateImage()
+                console.log(Paper,el.clientWidth, el.clientHeight)
+                setTimeout(this.updateImage)
+                // ()
             }
         },
         loadOptions() {

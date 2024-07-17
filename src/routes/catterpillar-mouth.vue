@@ -186,10 +186,7 @@ export default defineComponent ({
         this.removeMatter()
         this.removePaperJS()
         this.stats = null
-        const el = this.$refs["matterContainer"] as HTMLElement
-        if (!el) {
-            return
-        }
+        
         window.removeEventListener("keydown", this.keyPressEvent)
         window.removeEventListener("mouseup", this.cancelMouseDown)
         window.removeEventListener("resize", this.resetView)
@@ -206,7 +203,6 @@ export default defineComponent ({
         initPaperJS() {
             const canvas = this.$el.querySelector("#paperCanvas")
             const el = this.$el.querySelector(".scroll-container")
-            console.log("initPaperJS", el.clientWidth, el)
             if (!el) {
                 throw new Error("Can't find .scroll-container")
             }
@@ -529,7 +525,6 @@ export default defineComponent ({
             (head.position.x <= 0 && butt.position.x < 0) ||
             (head.position.y > el.clientHeight + 100 && butt.position.y > el.clientHeight + 100)
             ) {
-                console.log("catterpillar", this.catterPillar.bodyLength)
                 this.removeCatterpillar()
             
                 // Don't create new catterpillar immediately for UX reasons

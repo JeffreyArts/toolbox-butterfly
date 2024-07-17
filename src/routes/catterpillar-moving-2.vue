@@ -231,11 +231,9 @@ export default defineComponent ({
         this.stats = null
     },
     methods: {
-        
         initPaperJS() {
             const canvas = this.$el.querySelector("#paperCanvas")
             const el = this.$el.querySelector(".scroll-container")
-            console.log("initPaperJS", el.clientWidth, el)
             if (!el) {
                 throw new Error("Can't find .scroll-container")
             }

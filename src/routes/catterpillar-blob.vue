@@ -97,6 +97,8 @@
 <script lang="ts">
 import {defineComponent} from "vue"
 import Matter, { Composite } from "matter-js"
+import paperService from "@/services/paper-js"
+import MatterService from "@/services/matter-js"
 import _ from "lodash"
 import StatsJS from "stats.js"
 import Paper from "paper"
@@ -155,24 +157,51 @@ export default defineComponent ({
         }
     },
     mounted() {
-        this.initMatterJS()
-        this.initPaperJS()
         const el = this.$el.querySelector(".scroll-container")
         this.displayFPS(el)
-        this.generateBlob()
+        this.initView()
 
         this.addMouseEvent()
+
+        window.addEventListener("resize", this.resetView)
     },
-    unmounted() {
-        this.removeMatter()
-        this.stats = null
+    beforeUnmount() {
         const el = this.$refs["matterContainer"] as HTMLElement
         if (!el) {
             return
         }
         el.removeEventListener("mousemove",this.mouseMoveEvent)
     },
+    unmounted() {
+        this.removeMatter()
+        this.stats = null
+        window.removeEventListener("resize", this.resetView)
+    },
     methods: {
+        initPaperJS() {
+            const canvas = this.$el.querySelector("#paperCanvas")
+            const el = this.$el.querySelector(".scroll-container")
+            if (!el) {
+                throw new Error("Can't find .scroll-container")
+            }
+            paperService.init(canvas, el.clientWidth, el.clientHeight)
+        },
+        initMatterJS() {
+            if (!this.$refs) {
+                throw new Error("Missing $refs")
+            }
+            const canvasEl = this.$refs["renderCanvas"] as HTMLCanvasElement
+            const mjs = MatterService.init(canvasEl)
+            
+            this.mWorld = mjs.world
+            this.mRunner = mjs.runner
+            this.mEngine = mjs.engine
+            
+            this.renderLoop()    
+        },
+        removePaperJS() {
+            paperService.destroy()
+        },
         removeMatter() {
             this.mWorld = null
             
@@ -184,6 +213,20 @@ export default defineComponent ({
                 Matter.Engine.clear(this.mEngine)
             }
         },
+        resetView() {
+            this.removeMatter()
+            this.removePaperJS()
+
+            setTimeout(this.initView)
+        }, 
+        initView() {
+            this.initMatterJS()
+            this.initPaperJS()
+            this.createGround()
+            this.generateBlob()
+        },    
+        
+        
         addMouseEvent() {
             const el = this.$refs["matterContainer"] as HTMLElement
             if (!el) {
@@ -200,66 +243,7 @@ export default defineComponent ({
         mouseMoveEvent(e: MouseEvent) {
             // console.log("Mouse",e)
         },
-        initPaperJS() {
-            const canvas = this.$el.querySelector("#paperCanvas")
-            const el = this.$el.querySelector(".scroll-container")
-            
-            if (!canvas) {
-                console.error("Can't find canvas")
-                return
-            }
-
-            canvas.width = el.clientWidth
-            canvas.height = el.clientHeight
-            Paper.setup(canvas)
-        },
-        initMatterJS() {
-            const el = this.$refs["matterContainer"] as HTMLElement
-            const canvasEl = this.$refs["renderCanvas"] as HTMLCanvasElement
-            if (!el) {
-                throw new Error("matterContainer ref can not be found")
-            }
-            if (!canvasEl) {
-                throw new Error("renderCanvas ref can not be found")
-            }
-
-            // create an engine
-            const engine = Matter.Engine.create({
-                gravity: {
-                    x: 0,
-                    y: 1
-                }
-            })
-
-            // create runner
-            const render = Matter.Render.create({
-                element: canvasEl,
-                engine: engine,
-                options: {
-                    width: canvasEl.clientWidth,
-                    height: canvasEl.clientHeight,
-                }
-            })
-
-            const runner = Matter.Runner.create()
-            const ground = Matter.Bodies.rectangle(el.clientWidth/2, el.clientHeight+160, el.clientWidth, 348, {
-                isStatic: true,
-                label: "ground",
-                friction: 1,
-            })
-
-            // add all of the bodies to the world
-            Matter.Composite.add(engine.world, [ground])
-            
-            this.mWorld = engine.world
-            this.mRunner = runner
-            this.mEngine = engine
-            Matter.Render.run(render)
-
-            // run the engine
-            Matter.Runner.run(this.mRunner, this.mEngine)
-            this.renderLoop()
-        },
+        
         removeBlob() {
             if (!this.mWorld) {
                 return
@@ -286,6 +270,28 @@ export default defineComponent ({
             if (this.imgBlob.paperPath) {
                 this.imgBlob.paperPath.remove()
             }
+        },
+        createGround() {
+            const el = this.$refs["matterContainer"] as HTMLElement
+            if (!el) {
+                throw new Error("matterContainer ref can not be found")
+            }
+            if (!this.mWorld) {
+                throw new Error("mWorld can't be null")
+            }
+
+            const ground = Matter.Bodies.rectangle(el.clientWidth/2, el.clientHeight-16, el.clientWidth, 16, {
+                isStatic: true,
+                label: "ground",
+                friction: 1,
+                collisionFilter: {
+                    category: 2,
+                    mask: 1
+                }
+            })
+            
+            // add all of the bodies to the world
+            Matter.Composite.add(this.mWorld, [ground])
         },
         generateBlob() {
             const offset = 40

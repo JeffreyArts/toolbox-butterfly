@@ -9,7 +9,7 @@ export default {
         canvasEl.width = width
         canvasEl.height = height
         Paper.setup(canvasEl)
-        console.log(width, height, Paper.view.viewSize.width)
+
         if (Paper.view.viewSize.width != width) {
             Paper.view.viewSize.width = width
         }
