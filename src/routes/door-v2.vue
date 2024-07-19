@@ -34,6 +34,18 @@
                         <input type="number" id="doorAngle" min="-90" max="180" v-model="door.door.angle">
                     </div>
                     <div class="option">
+                        <label>Hinges</label>
+                        <input type="radio" id="hinges-left" value="left" v-model="door.hinges">
+                        <label for="hinges-left">
+                            Left
+                        </label>
+
+                        <input type="radio" id="hinges-right" value="right" v-model="door.hinges">
+                        <label for="hinges-right">
+                            Right
+                        </label>
+                    </div>
+                    <div class="option">
                         <label for="doorOpen">Destroy door</label>
                         <button class="button" @click="door.remove">Destroy</button>
                     </div>
@@ -135,8 +147,8 @@ export default defineComponent ({
             if (e && e.target) {
                 this.updateMousePos(e)
                 
-                if (e.target instanceof HTMLInputElement || e.target instanceof HTMLButtonElement) {
-                    return e.preventDefault()
+                if (e.target instanceof HTMLInputElement || e.target instanceof HTMLButtonElement || e.target instanceof HTMLLabelElement) {
+                    return //e.preventDefault()
                 }
             }
 
@@ -151,9 +163,14 @@ export default defineComponent ({
                     targetCanvas: overlayEl,
                     x: this.mousePos.x,
                     y: this.mousePos.y,
+                    maxAngle: 45,
                     width: this.doorOptions.width,
                     height: this.doorOptions.height
                 })
+
+                if (import.meta.env.DEV) {
+                    console.log(this.door)
+                }
             }
             this.clearDrawing = true
         },
@@ -175,7 +192,7 @@ export default defineComponent ({
 </script>
 
 
-<style lang="scss">
+<style lang="scss" scoped>
 .overlay {
     position: fixed;
     left: 0;
@@ -194,6 +211,9 @@ export default defineComponent ({
         opacity: 0;
         pointer-events: none;
     }
+}
+label {
+    cursor: not-allowed;
 }
 #door-title {
     h1 {
