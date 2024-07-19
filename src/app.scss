@@ -178,6 +178,10 @@ src: url("/src/assets/fonts/fixed-sys.otf");
             border-radius: 2px;
         }
     }
+    &.__isDisabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+    }
 }
 
 

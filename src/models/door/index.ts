@@ -1,5 +1,4 @@
 import _ from "lodash"
-import Matter from "matter-js"
 import Color from "color"
 import gsap from "gsap"
 import domtoimage from "dom-to-image"
@@ -22,7 +21,9 @@ interface Door {
     width: number,
     height: number
     door: {
-        points: Array<{x: number, y:number}>
+        points: Array<{x: number, y:number}>,
+        angle: number
+        maxAngle: number
     },
     frame: {
         perc: number,
@@ -43,6 +44,7 @@ interface Door {
         canvas: HTMLCanvasElement
         context: CanvasRenderingContext2D
     }>
+    removed: boolean,
     sourceElement: HTMLElement
     canvas: HTMLCanvasElement
     targetCanvas: HTMLCanvasElement
@@ -50,21 +52,31 @@ interface Door {
 
 class Door  {
     #draw() {
-        const doorLayer = _.find(this.canvasLayers, {name: "doorLayer"})
         const targetLayer = _.find(this.canvasLayers, {name: "targetLayer"})
+        if (this.removed) {
+            if (targetLayer) {
+                targetLayer.context.clearRect(0,0,targetLayer.canvas.width, targetLayer.canvas.height)
+            }
+            return
+        }
+        const doorLayer = _.find(this.canvasLayers, {name: "doorLayer"})
+        const frameLayer = _.find(this.canvasLayers, {name: "frameLayer"})
 
-        this.#clearDoorCanvas()
+        this.#clear()
         this.#drawFrame()
         this.#drawDoor()
 
-        if (doorLayer && targetLayer) {
+        if (doorLayer && targetLayer && frameLayer) {
             // Remove old doorLayer
             targetLayer.context.clearRect(this.x - doorLayer.canvas.width/2, this.y - doorLayer.canvas.height + this.padding.bottom, doorLayer.canvas.width,doorLayer.canvas.height)
             // Add new doorLayer to targetLayer
+            targetLayer.context.drawImage(frameLayer.canvas, this.x - frameLayer.canvas.width/2, this.y - frameLayer.canvas.height + this.padding.bottom)
             targetLayer.context.drawImage(doorLayer.canvas, this.x - doorLayer.canvas.width/2, this.y - doorLayer.canvas.height + this.padding.bottom)
         }
         
-        requestAnimationFrame(() => this.#draw())
+        requestAnimationFrame(() => {
+            this.#draw()
+        })
     }
 
     #createScreenshotLayer() {
@@ -114,18 +126,35 @@ class Door  {
                 name: "doorLayer",
                 canvas,
                 context
+            })
+        }
+        return canvas
+    }
+
+    #createFrameLayer() {
+        const canvas = document.createElement("canvas")
+        const context = canvas.getContext("2d")
+        if (context) {
+            this.canvasLayers.push({
+                name: "frameLayer",
+                canvas,
+                context
                 
             })
         }
         return canvas
     }
 
-    #clearDoorCanvas() {
+    #clear() {
         const door = _.find(this.canvasLayers, {name: "doorLayer"})
-        if (!door) {
-            return
+        if (door) {
+            door.context.clearRect(0,0,door.canvas.width, door.canvas.height)
         }
-        door.context.clearRect(0,0,door.canvas.width, door.canvas.height)
+
+        const frame = _.find(this.canvasLayers, {name: "frameLayer"})
+        if (frame) {
+            frame.context.clearRect(0,0,frame.canvas.width, frame.canvas.height)
+        }
     }
 
     #drawDoor() {
@@ -138,10 +167,16 @@ class Door  {
         if (!screenshotLayer) {
             return console.warn("Missing screenshot layer to create door from")
         }
-        const doorLayer = _.find(this.canvasLayers, {name: "doorLayer"})
         
+        const doorLayer = _.find(this.canvasLayers, {name: "doorLayer"})
         if (!doorLayer) {
             console.error("Missing required doorLayer.")
+            return
+        }
+
+        const frameLayer = _.find(this.canvasLayers, {name: "frameLayer"})
+        if (!frameLayer) {
+            console.error("Missing required frameLayer.")
             return
         }
 
@@ -151,31 +186,169 @@ class Door  {
             y: doorLayer.canvas.height - this.padding.bottom
         }
 
-        
         const coords = _.map(this.door.points, point => {
             return {
                 x: point.x + offset.x,
                 y: point.y + offset.y,
             }
         })
-
         
-        doorLayer.context.strokeStyle = new Color(this.frame.color).darken(.5).hex()
+        const xMax = _.maxBy(this.door.points, "x")
+        const xMin =_.minBy(this.door.points, "x")
+        const yMin =_.minBy(this.door.points, "y")
+        const yMax =_.maxBy(this.door.points, "y")
+        let doorCoords = {
+            xMax: 0,
+            xMin: 0,
+            yMax: 0,
+            yMin: 0,
+        }
+
+        if (xMax && xMin && yMin && yMax) {
+            doorCoords = {
+                xMax: xMax.x,
+                xMin: xMin.x,
+                yMax: yMax.y,
+                yMin: yMin.y
+            }
+        }
+        if (!xMax || !xMin || !yMin || !yMax) {
+            console.error("Invalid door points")
+        }
+        doorLayer.context.clearRect(0,0,doorLayer.canvas.width, doorLayer.canvas.height)
+        
+        // Draw door
+        const doorImageCanvas = screenshotLayer.context.getImageData(this.x - this.width/2 , this.y - this.height, this.width, this.height)
+        doorLayer.context.putImageData(doorImageCanvas, this.padding.left, this.padding.top)
+        
+        // Draw outline door
+        doorLayer.context.lineWidth = 1
+        doorLayer.context.strokeStyle = new Color(this.frame.color).hex()
         this.#drawLine(doorLayer.context, coords)
-        // screenshotLayer.context.getImageData(door.x1, door.y1-door.height, door.width, door.height)
+        
+        // Draw frame "hallway"
+        frameLayer.context.beginPath()
+        frameLayer.context.fillStyle = new Color("#fff").hex()
+        frameLayer.context.rect(this.padding.left, this.padding.top, this.width, this.height)
+        frameLayer.context.fill()
+
+        // Draw fame glow
+        frameLayer.context.fillStyle = "transparent"
+        frameLayer.context.shadowColor =  new Color("#fff").fade(1 - (this.door.angle / this.door.maxAngle)).hexa()
+        frameLayer.context.shadowBlur = ((this.padding.left + this.padding.right) / 2)
+        frameLayer.context.rect(this.padding.left, this.padding.top, this.width, this.height)
+        frameLayer.context.fill()
+        frameLayer.context.closePath()
+        
+        // Remove glow behind door
+        const compositeOperation = frameLayer.context.globalCompositeOperation
+        frameLayer.context.globalCompositeOperation = "destination-out"
+        frameLayer.context.beginPath()
+        frameLayer.context.fillStyle = "#fff"
+        frameLayer.context.moveTo(0,0)
+        frameLayer.context.lineTo(this.padding.left * (1- this.door.angle / this.door.maxAngle),0)
+        frameLayer.context.lineTo(this.padding.left,this.padding.top)
+        frameLayer.context.lineTo(this.padding.left,this.padding.top + this.height)
+        frameLayer.context.lineTo(this.padding.left * (1- this.door.angle / this.door.maxAngle),this.padding.top + this.height + this.padding.bottom)
+        frameLayer.context.lineTo(0,this.padding.top + this.height + this.padding.bottom)
+        frameLayer.context.fill()
+        frameLayer.context.closePath()
+        frameLayer.context.globalCompositeOperation = compositeOperation
+
+        // Turn door open
+        const doorImage = doorLayer.context.getImageData(this.padding.left, this.padding.top, this.width, this.height)
+        const temp = this.#skew3D(doorImage, this.door.angle/100, this.padding)
+        const rotatedDoor = temp.getImageData(0, 0, temp.canvas.width, temp.canvas.height)
+        doorLayer.context.putImageData(rotatedDoor, this.padding.left, 0)
+        
+        
+        // For dev purposes, show canvas in console
+        doorLayer.canvas.className = "doorLayer"
+        const oldDoorLayer = document.querySelector(".doorLayer") 
+        if (oldDoorLayer) {
+            oldDoorLayer.remove()
+        }
+        document.body.append(doorLayer.canvas)
+    }
+
+    #skew3D(sourceImage: ImageData, angle: number, offset?: {top: number, bottom:number}, hinges = "left"){
+        if (!offset) {
+            offset = {
+                top: 0,
+                bottom: 0
+            }
+        }
+
+        if (angle > 1) {
+            console.warn("Angle should be a decimal value between 0 and 90")
+        }
+
+        const width = sourceImage.width
+        const height = sourceImage.height
+
+        const sourceCanvas = document.createElement("canvas") 
+        sourceCanvas.width = width
+        sourceCanvas.height = height
+        const sourceContext = sourceCanvas.getContext("2d")
+        
+        const targetCanvas = document.createElement("canvas") 
+        targetCanvas.width = width
+        targetCanvas.height = height + offset.top + offset.bottom
+        const targetContext = targetCanvas.getContext("2d")
+
+        sourceCanvas.className = "sourceCanvas"
+        const oldsourceCanvas = document.querySelector(".sourceCanvas") 
+        if (oldsourceCanvas) {
+            oldsourceCanvas.remove()
+        }
+        document.body.append(sourceCanvas)
+
+        targetCanvas.className = "targetCanvas"
+        const oldtargetCanvas = document.querySelector(".targetCanvas") 
+        if (oldtargetCanvas) {
+            oldtargetCanvas.remove()
+        }
+        document.body.append(targetCanvas)
+        
+        const offsetY = offset.top
+        const offsetX = 0
+
+        if (sourceContext && targetContext) {
+            targetContext.beginPath()
+            const skew = (angle/.9)
+            // sourceContext.putImageData(sourceImage, 0, 0)
+            sourceContext.putImageData(sourceImage, 0, 0)
+            
+            for (let i = 0; i <= sourceCanvas.height / 2; ++i) {
+            // Top part
+                targetContext.setTransform(1 - skew, - skew * i / sourceCanvas.height, 0, 1, offsetX,offsetY)
+                targetContext.drawImage(sourceCanvas, 
+                    0, sourceCanvas.height / 2 - i, this.width, 2, 
+                    0, sourceCanvas.height / 2 - i, this.width, 2)
+                // Bottom part
+                targetContext.setTransform(1 - skew, skew * i / (sourceCanvas.height), 0, 1, offsetX, offsetY)
+                targetContext.drawImage(sourceCanvas, 
+                    0, sourceCanvas.height / 2 + i, this.width, 2, 
+                    0, sourceCanvas.height / 2 + i, this.width, 2)
+            }
+            targetContext.closePath()
+            // sourceContext.resetTransform
+            return targetContext
+        }
+        throw new Error("Can't create context")
     }
 
     #drawFrame() {
-        const doorLayer = _.find(this.canvasLayers, {name: "doorLayer"})
+        const frameLayer = _.find(this.canvasLayers, {name: "frameLayer"})
         
-        if (!doorLayer) {
-            console.error("Missing required doorLayer.")
+        if (!frameLayer) {
+            console.error("Missing required frameLayer.")
             return
         }
         
         const offset = {
-            x: doorLayer.canvas.width / 2,
-            y: doorLayer.canvas.height - this.padding.bottom
+            x: frameLayer.canvas.width / 2,
+            y: frameLayer.canvas.height - this.padding.bottom
         }
         
         const coordsLeft = _.map(this.frame.left, point => {
@@ -191,12 +364,14 @@ class Door  {
                 y: point.y + offset.y,
             }
         })
-        const strokeColor = new Color("#444")
-        this.frame.color = strokeColor.lighten(this.frame.perc/100*2).hex()
-        doorLayer.context.strokeStyle = this.frame.color
+        const strokeColor = new Color("#aaa")
+        this.frame.color = strokeColor.hex()
+        frameLayer.context.lineWidth = 1
+        frameLayer.context.strokeStyle = this.frame.color
+        frameLayer.context.save()
         
-        this.#drawLine(doorLayer.context, coordsLeft, this.frame.perc/100)
-        this.#drawLine(doorLayer.context, coordsRight, this.frame.perc/100)
+        this.#drawLine(frameLayer.context, coordsLeft, this.frame.perc/100)
+        this.#drawLine(frameLayer.context, coordsRight, this.frame.perc/100)
     }
 
     #getDistance(pointA: {x:number, y:number}, pointB: {x:number, y:number}){
@@ -246,6 +421,7 @@ class Door  {
             }
         }
         ctx.stroke()
+        ctx.closePath()
     }
 
     #updateSizes() {
@@ -255,7 +431,21 @@ class Door  {
             doorLayer.canvas.width = this.width + this.padding.left + this.padding.right
             doorLayer.canvas.height = this.height + this.padding.top + this.padding.bottom
         }
+        
+        const frameLayer = _.find(this.canvasLayers, {name: "frameLayer"})
+        if (frameLayer) {
+            frameLayer.canvas.width = this.width + this.padding.left + this.padding.right
+            frameLayer.canvas.height = this.height + this.padding.top + this.padding.bottom
+        }
 
+        // Update door 
+        this.door.points = [
+            {x: -this.width / 2, y: 0},
+            {x: -this.width / 2, y: -this.height},
+            {x: this.width / 2, y: -this.height},
+            {x: this.width / 2, y: 0},
+        ]
+        
         // Update frame 
         this.frame.left = [
             {x: -this.width / 2, y: 0},
@@ -280,9 +470,11 @@ class Door  {
         this.hinges = options.hinges ? options.hinges : "left"
         
         this.frameBuild = false
+        this.removed = false
         this.isOpen = false
-        this.inTransition = true
+        this.inTransition = false
         this.canvasLayers = []
+
         const targetContext = this.targetCanvas.getContext("2d")
         if (targetContext) {
             this.canvasLayers.push({
@@ -291,20 +483,18 @@ class Door  {
                 context: targetContext
             })
         }
+
         this.frame = {
             perc: 0,
             left: [],
-            right: []
+            right: [],
+            color: "#fff"
         }
 
         this.door = {
-            points: [
-                {x: -this.width / 2, y: 0},
-                {x: -this.width / 2, y: -this.height},
-                {x: this.width / 2, y: -this.height},
-                {x: this.width / 2, y: 0},
-                // {x: -this.width / 2, y: 0},
-            ]
+            points: [],
+            angle: 0,
+            maxAngle: 60,
         }
 
         this.padding = {
@@ -313,428 +503,141 @@ class Door  {
             bottom: 20,
             right: 20
         }
+
         this.#createScreenshotLayer()
         this.#createDoorLayer()
+        this.#createFrameLayer()
         
         this.#updateSizes()
-        const totalLength = this.#getLength(this.frame.left)
         this.#draw()
-        // this.#loop()
+
+        // Automatically create frame when door is initiated
         this.createFrame()
             
         return new Proxy(this, {
             set: function (target: Door, key, value) {
                 if (key === "x" || key === "y") {
                     target[key] = value
-                    // target.updatePosition()
                 }
+                
                 if (key === "width" || key === "height") {
                     target[key] = value
                     target.#updateSizes()
                 }
 
+                if (key === "isOpen" ||
+                    key === "frameBuild" ||
+                    key === "removed") {
+                    target[key] = value
+                }
+
+                // if (typeof target[key] !== "undefined") {
+                //     target[key] = value
+                // }
+
                 return true
             }
         })
     }
+
     createFrame(duration = .8) {
-        // this.frame.perc = 50
-        gsap.to(this.frame, {
-            perc: 100,
-            duration,
-            ease: "power1.out",
-            onComplete: () => {
-                this.frameBuild = true
-            }
+        return new Promise((resolve) => {
+            gsap.to(this.frame, {
+                perc: 100,
+                duration,
+                ease: "power1.out",
+                onComplete: () => {
+                    this.frameBuild = true
+                }
+            })
         })
     }
 
-    // openDoor(dir = "left" as "left" | "right", toAngle = 45) {
-    //     const openLeft = (img: ImageData, context: CanvasRenderingContext2D, skew: number) => {
-    //         const height = img.height
-    //         const width = img.width
-    //         const offsetY = source.height/ 2 - door.height
-    //         const offsetX = source.width / 2 - door.width/2
-            
-    //         const canvas = document.createElement("canvas")
-    //         canvas.height = height
-    //         canvas.width = width
-    //         const ctx = canvas.getContext("2d")
-    //         if (!ctx) {
-    //             return
-    //         }
-    //         ctx.putImageData(img, 0,0)
-            
-    //         // Draw borders
-    //         ctx.beginPath()
-    //         ctx.strokeStyle = "rgba(128,128,128,1)"
-    //         ctx.moveTo(0 , 0)
-    //         ctx.lineTo(img.width, 0)
-    //         ctx.lineTo(img.width, img.height)
-    //         ctx.lineTo(0 , img.height)
-    //         ctx.lineTo(0 , 0)
-    //         ctx.stroke()
-    //         ctx.closePath()
-
-    //         // Draw door shadow
-    //         const shadowDoor = ctx.createLinearGradient(0,0, img.width,0)
-    //         shadowDoor.addColorStop(0, `rgba(0,0,0,${skew * .48})`)
-    //         shadowDoor.addColorStop(1, "transparent")
-    //         ctx.fillStyle = shadowDoor
-    //         ctx.fillRect(0, 0, img.width, img.height)
-
-    //         for (let i = 0; i <= height / 2; ++i) {
-    //             // Top part
-    //             context.setTransform(1 - skew, -skew * i / height, 0, 1, offsetX, offsetY)
-    //             context.drawImage(canvas, 
-    //                 0, height / 2 - i, width, 1, 
-    //                 0, height / 2 - i, width, 2)
-    //             // Bottom part
-    //             context.setTransform(1 - skew, skew * i / height, 0, 1, offsetX, offsetY)
-    //             context.drawImage(canvas, 
-    //                 0, height / 2 + i, width, 2, 
-    //                 0, height / 2 + i, width, 2)
-    //         }
-    //     }
-    // }
-
-    OriginalCode() {
-        const size = {
-            width: 80,
-            height: 320
-        }
-        
-        const source = {
-            x: this.x - size.width/2,
-            y: this.y - size.height/2,
-            width: size.width,
-            height: size.height,
+    destroyFrame(duration = .8) {
+        return new Promise((resolve) => {
+            this.frameBuild = false
+            gsap.to(this.frame, {
+                perc: 0,
+                duration,
+                ease: "power1.out",
+                onComplete: () => {
+                    resolve(this.frameBuild)
+                }
+            })
+        })
+    }
+    
+    open(opts: {
+        duration: number,
+        ease: string,
+        angle: number
+    }) {
+        if (!opts.duration) {
+            opts.duration = .8
         }
 
-        const door = {
-            width: 32,
-            height: 80,
-            angle: 0,
-            x1: 0,
-            x2: 0,
-            y1: 0,
-            y2: 0
+        if (!opts.angle) {
+            opts.angle = this.door.maxAngle
         }
 
-        door.x1 = source.width/2 - door.width/2
-        door.x2 = source.width/2 + door.width/2
-        door.y1 = source.height/2
-        door.y2 = source.height/2
-
-        // this.frame.points = [
-        //     {x: -this.width / 2, y: 0},
-        //     {x: -this.width / 2, y: -this.height},
-        //     {x: this.width / 2, y: -this.height},
-        //     {x: this.width / 2, y: 0},
-        // ]
-
-
-        const target = _.find(this.canvasLayers, {name: "targetLayer"})
-        if (target) {
-
-            target.context.fillStyle = "#f09"
-            target.context.fillRect(0, 0, target.canvas.width, target.canvas.height)
+        if (!opts.ease) {
+            opts.ease = "back.out"
         }
 
-        // console.log(this.#getLength(this.frame.points))
-        // const openLeft = (img: ImageData, context: CanvasRenderingContext2D, skew: number) => {
-        //     const height = img.height
-        //     const width = img.width
-        //     const offsetY = source.height/ 2 - door.height
-        //     const offsetX = source.width / 2 - door.width/2
-            
-        //     const canvas = document.createElement("canvas")
-        //     canvas.height = height
-        //     canvas.width = width
-        //     const ctx = canvas.getContext("2d")
-        //     if (!ctx) {
-        //         return
-        //     }
-        //     ctx.putImageData(img, 0,0)
-            
-        //     // Draw borders
-        //     ctx.beginPath()
-        //     ctx.strokeStyle = "rgba(128,128,128,1)"
-        //     ctx.moveTo(0 , 0)
-        //     ctx.lineTo(img.width, 0)
-        //     ctx.lineTo(img.width, img.height)
-        //     ctx.lineTo(0 , img.height)
-        //     ctx.lineTo(0 , 0)
-        //     ctx.stroke()
-        //     ctx.closePath()
-
-        //     // Draw door shadow
-        //     const shadowDoor = ctx.createLinearGradient(0,0, img.width,0)
-        //     shadowDoor.addColorStop(0, `rgba(0,0,0,${skew * .48})`)
-        //     shadowDoor.addColorStop(1, "transparent")
-        //     ctx.fillStyle = shadowDoor
-        //     ctx.fillRect(0, 0, img.width, img.height)
-
-        //     for (let i = 0; i <= height / 2; ++i) {
-        //         // Top part
-        //         context.setTransform(1 - skew, -skew * i / height, 0, 1, offsetX, offsetY)
-        //         context.drawImage(canvas, 
-        //             0, height / 2 - i, width, 1, 
-        //             0, height / 2 - i, width, 2)
-        //         // Bottom part
-        //         context.setTransform(1 - skew, skew * i / height, 0, 1, offsetX, offsetY)
-        //         context.drawImage(canvas, 
-        //             0, height / 2 + i, width, 2, 
-        //             0, height / 2 + i, width, 2)
-        //     }
-        // }
-
-
-        // const backgroundDrawn = new Promise((resolve, reject) => {
-        //     this.#createScreenshotLayer().then((imgData) => {
-        //         const imgElement = new Image()
-        //         imgElement.onload = () => {
-        //             const artboard = _.find(this.canvasLayers, {name: "doorLayer"})
-        //             if (!artboard) {
-        //                 throw new Error("Can't find door canvas")
-        //             }
-        //             artboard.context.drawImage(imgElement, source.x + size.width /2 - door.width/2, source.y + size.height / 2 - door.height, door.width, door.height, door.x1 ,door.y1-door.height, door.width, door.height)
-        //             // ctx.drawImage(imgElement, source.x, source.y, source.width, source.height, 0,0, size, size)
-        //             // ctx.drawImage(imgElement, source.x, source.y, source.width, source.height, door.x1, door.y1 - door.height, door.width, size)
-        //             resolve(true)
-        //         }
-        //         imgElement.src = imgData
-        //     })
-        // })
-
-        // backgroundDrawn.then(() => {
-        //     const artboard = _.find(this.canvasLayers, {name: "doorLayer"})
-        //     console.log(artboard)
-        //     if (!artboard) {
-        //         throw new Error("Missing doorLayer")
-        //     }
-            
-        //     this.inTransition = true
-        //     const doorFront = artboard.context.getImageData(door.x1, door.y1-door.height, door.width, door.height)
-        //     artboard.context.beginPath()
-        //     artboard.context.strokeStyle = "rgba(255,255,255,.2)"
-        //     artboard.context.moveTo(frame.x, frame.y)
-        //     const tl = gsap.timeline()
-        //     gsap.timeline()
-        //     tl.to(frame, {
-        //         y: source.height/2 - door.height,
-        //         duration: .6,
-        //         ease: "ease",
-        //         onUpdate: () => {
-        //             this.inTransition = true
-        //             artboard.context.beginPath()
-        //             artboard.context.strokeStyle = "rgba(128,128,128,1)"
-        //             artboard.context.moveTo(door.x1 , door.y1)
-        //             artboard.context.lineTo(door.x1 , frame.y)
-        //             artboard.context.stroke()
-        //             artboard.context.closePath()
-                    
-        //             artboard.context.strokeStyle = "rgba(128,128,128,1)"
-        //             artboard.context.moveTo(door.x2, door.y1)
-        //             artboard.context.lineTo(door.x2, frame.y)
-        //             artboard.context.stroke()
-        //             artboard.context.closePath()
-        //         },
-        //     })
-
-        //     // Draw top part
-        //     tl.to(door, {
-        //         x1: source.width/2 + door.width/4,
-        //         duration: .2,
-        //         ease: "power2.in",
-        //         onUpdate: () => {
-        //             this.inTransition = true
-        //             artboard.context.beginPath()
-        //             artboard.context.strokeStyle = "rgba(128,128,128,1)"
-        //             artboard.context.moveTo(source.width/2 - door.width/2, frame.y)
-        //             artboard.context.lineTo(door.x1, frame.y)
-        //             artboard.context.stroke()
-        //             artboard.context.closePath()
-        //         },
-        //     })
-        //     tl.to(door, {
-        //         x2: source.width/2 - door.width/4,
-        //         duration: .2,
-        //         delay: -.2,
-        //         ease: "power2.in",
-        //         onUpdate: () => {
-        //             this.inTransition = true
-        //             artboard.context.beginPath()
-        //             artboard.context.strokeStyle = "rgba(128,128,128,1)"
-        //             artboard.context.moveTo(source.width/2 + door.width/2, frame.y)
-        //             artboard.context.lineTo(door.x2, frame.y)
-        //             artboard.context.stroke()
-        //             artboard.context.closePath()
-        //         },
-        //     })
-            
-        //     tl.to(door, {
-        //         angle: 0.48,
-        //         duration: 1.6,
-        //         delay: 0.6,
-        //         ease: "back.out",
-        //         onUpdate: () => {
-        //             this.inTransition = true
-        //             artboard.context.restore()
-        //             artboard.context.clearRect(0, 0, source.width, source.height)
-        //             artboard.context.save()
-        //             artboard.context.beginPath()
-        //             artboard.context.fillStyle = "#ffffff"
-        //             artboard.context.rect(source.width/2 - door.width/2, source.height/2 - door.height, door.width, door.height)
-        //             artboard.context.fill()
-        //             artboard.context.closePath()
-
-        //             // Draw shadow top right
-        //             const shadowProp = {
-        //                 topRight: {
-        //                     x1: source.width/2 + door.width/2,
-        //                     x2: source.width/2 + door.width/2,
-        //                     y1: source.height/2 - door.height,
-        //                     y2: source.height/2 - door.height,
-        //                     radius: 20
-        //                 },
-        //                 bottomRight: {
-        //                     x1: source.width/2 + door.width/2,
-        //                     x2: source.width/2 + door.width/2,
-        //                     y1: source.height/2,
-        //                     y2: source.height/2,
-        //                     radius: 20
-        //                 },
-        //             }
-        //             const shadowDepth = door.width * .64
-        //             // Define shadow gradients
-        //             const shadow = {
-        //                 right:       artboard.context.createLinearGradient(source.width/2 + door.width/2, 0, source.width/2 + door.width/2 +shadowDepth, 0),
-        //                 bottom:      artboard.context.createLinearGradient(0, source.height/2, 0, source.height/2 +shadowDepth),
-        //                 top:         artboard.context.createLinearGradient(0, source.height/2 - door.height, 0, source.height/2  - door.height -shadowDepth),
-        //                 topRight:    artboard.context.createRadialGradient(source.width/2 + door.width/2, source.height/2 - door.height, 0, source.width/2 + door.width/2, source.height/2 - door.height ,shadowDepth),
-        //                 topLeft:     artboard.context.createRadialGradient(source.width/2 - door.width/2, source.height/2 - door.height, 0, source.width/2 - door.width/2, source.height/2 - door.height,shadowDepth),
-        //                 bottomLeft:  artboard.context.createRadialGradient(source.width/2 - door.width/2, source.height/2, 0, source.width/2 - door.width/2, source.height/2 , shadowDepth),
-        //                 bottomRight: artboard.context.createRadialGradient(source.width/2 + door.width/2, source.height/2              , 0, source.width/2 + door.width/2, source.height/2             ,shadowDepth)
-        //             }
-                    
-        //             // Top right
-        //             shadow.topRight.addColorStop(0, `rgba(255,255,255,${door.angle * .72})`)
-        //             shadow.topRight.addColorStop(1, "transparent")
-        //             artboard.context.fillStyle = shadow.topRight
-        //             artboard.context.fillRect(source.width/2 + door.width/2, source.height/2 - door.height - 40 ,shadowDepth*2, 40)
-                    
-        //             // Top left
-        //             shadow.topLeft.addColorStop(0, `rgba(255,255,255,${door.angle * .72})`)
-        //             shadow.topLeft.addColorStop(1, "transparent")
-        //             artboard.context.fillStyle = shadow.topLeft
-        //             artboard.context.beginPath()
-        //             artboard.context.moveTo(source.width/2 - door.width/2, source.height/2 - door.height)
-        //             artboard.context.lineTo(source.width/2 - door.width/2, source.height/2 - door.height -shadowDepth)
-        //             artboard.context.lineTo(source.width/2 - door.width/2 -shadowDepth*door.angle, source.height/2 - door.height -shadowDepth)
-        //             artboard.context.lineTo(source.width/2 - door.width/2 -shadowDepth*door.angle, source.height/2 - door.height -shadowDepth +shadowDepth*door.angle)
-        //             artboard.context.closePath()
-        //             artboard.context.fill()
-                    
-        //             // artboard.context.fillRect(source.width/2 - door.width/2 -shadowDepth*2, source.height/2 - door.height - 40 ,shadowDepth*2, 40)
-                    
-        //             // Bottom right
-        //             shadow.bottomRight.addColorStop(0, `rgba(255,255,255,${door.angle * .72})`)
-        //             shadow.bottomRight.addColorStop(1, "transparent")
-        //             artboard.context.fillStyle = shadow.bottomRight
-        //             artboard.context.fillRect(source.width/2 + door.width/2, source.height/2 ,shadowDepth*2, 40)
-                    
-        //             // Bottom left
-        //             shadow.bottomLeft.addColorStop(0, `rgba(255,255,255,${door.angle * .72})`)
-        //             shadow.bottomLeft.addColorStop(1, "transparent")
-        //             artboard.context.fillStyle = "red"
-        //             artboard.context.fillStyle = shadow.bottomLeft
-        //             artboard.context.beginPath()
-        //             artboard.context.moveTo(source.width/2 - door.width/2, source.height/2)
-        //             artboard.context.lineTo(source.width/2 - door.width/2, source.height/2 + shadowDepth)
-        //             artboard.context.lineTo(source.width/2 - door.width/2 - shadowDepth*door.angle, source.height/2 + shadowDepth)
-        //             artboard.context.lineTo(source.width/2 - door.width/2 -shadowDepth*door.angle, source.height/2 + shadowDepth -shadowDepth*door.angle)
-        //             // artboard.context.lineTo(source.width/2 - door.width/2 -shadowDepth*door.angle, source.height/2 - door.height -shadowDepth)
-        //             // artboard.context.lineTo(source.width/2 - door.width/2 -shadowDepth*door.angle, source.height/2 - door.height -shadowDepth +shadowDepth*door.angle)
-        //             artboard.context.closePath()
-        //             artboard.context.fill()
-
-        //             // Right
-        //             shadow.right.addColorStop(0, `rgba(255,255,255,${door.angle * .72})`)
-        //             shadow.right.addColorStop(1, "transparent")
-        //             artboard.context.fillStyle = shadow.right
-        //             artboard.context.fillRect(source.width/2 + door.width/2, source.height/2 - door.height ,shadowDepth*2, door.height)
-                    
-        //             // Bottom
-        //             shadow.bottom.addColorStop(0, `rgba(255,255,255,${door.angle * .64})`)
-        //             shadow.bottom.addColorStop(1, "transparent")
-        //             artboard.context.fillStyle = shadow.bottom
-        //             artboard.context.fillRect(source.width/2 - door.width/2, source.height/2, door.width, door.width*.72*2)
-                    
-        //             // Top
-        //             shadow.top.addColorStop(0, `rgba(255,255,255,${door.angle * .72})`)
-        //             shadow.top.addColorStop(1, "transparent")
-        //             artboard.context.fillStyle = shadow.top
-        //             artboard.context.fillRect(source.width/2 - door.width/2, source.height/2 - door.height -shadowDepth*2, door.width,shadowDepth*2)
-                    
-        //             openLeft(doorFront, artboard.context, door.angle)
-        //             // Draw door
-        //             // ctx.beginPath()
-        //             // ctx.strokeStyle = "rgba(128,128,128,1)"
-        //             // ctx.moveTo(door.x1, door.y1)
-        //             // ctx.lineTo(door.x1, door.y1 - door.height)
-        //             // ctx.lineTo(door.x1 + door.width, door.y1 - door.height)
-        //             // ctx.lineTo(door.x1 + door.width, door.y1)
-        //             // ctx.stroke()
-        //             // ctx.closePath()
-        //         },
-        //         onComplete: () => {
-        //             this.inTransition = false
-        //         }
-        //     })
-
-        //     // openDoor(doorFront, ctx, .2)
-        //     // // Draw door handle
-        //     // const handle = {
-        //     //     x1: source.width/2 + door.width/2 - 20,
-        //     //     x2: source.width/2 + door.width/2 - 20,
-        //     //     y1: source.height/2 - door.height*.56,
-        //     //     y2: source.height/2 - door.height*.56
-        //     // }
-        //     // tl.to(handle, {
-        //     //     x1: handle.x1 + 12,
-        //     //     duration: .4,
-        //     //     delay: -.64,
-        //     //     ease: "power2.in",
-        //     //     onUpdate: () => {
-        //     //         ctx.beginPath()
-        //     //         ctx.strokeStyle = "rgba(180,180,180,1)"
-        //     //         ctx.moveTo(handle.x1, handle.y1)
-        //     //         ctx.lineTo(handle.x2, handle.y2)
-        //     //         ctx.stroke()
-        //     //         ctx.closePath()
-        //     //     },
-        //     // })
-        //     // tl.to(handle, {
-        //     //     y1: handle.y1 + 6,
-        //     //     x1: handle.x1 + 6,
-        //     //     duration: .2,
-        //     //     delay: 0,
-        //     //     ease: "power2.in",
-        //     //     onUpdate: () => {
-
-        //     //         ctx.clearRect( source.width/2 + door.width/2 - 20 ,source.height/2 - door.height*.56 -1,18,16)
-        //     //         ctx.beginPath()
-        //     //         ctx.strokeStyle = "rgba(180,180,180,1)"
-        //     //         ctx.moveTo(handle.x1, handle.y1)
-        //     //         ctx.lineTo(handle.x2, handle.y2)
-        //     //         ctx.stroke()
-        //     //         ctx.closePath()
-        //     //     },
-        //     // })
-        // })
+        return new Promise((resolve) => {
+            gsap.to(this.door, {
+                angle: opts.angle,
+                ease: opts.ease,
+                duration: opts.duration,
+                onComplete: () => {
+                    this.isOpen = true
+                    resolve(this.isOpen)
+                }
+            })
+        })
     }
 
+    close(opts: {
+        duration: number,
+        ease: string
+    }) {
+        if (!opts.duration) {
+            opts.duration = .8
+        }
+
+        if (!opts.ease) {
+            opts.ease = "back.out"
+        }
+
+        return new Promise((resolve) => {
+            gsap.to(this.door, {
+                angle: 0,
+                ease: opts.ease,
+                duration: opts.duration,
+                onComplete: () => {
+                    this.isOpen = false
+                    resolve(this.isOpen)
+                }
+            })
+        })
+    }
+
+    remove() {
+        if (this.isOpen) {
+            this.close({
+                duration: .5,
+                ease: "power2.out"
+            }).then(() => {
+                this.destroyFrame().then(()=> {
+                    this.removed = true
+                })
+            })
+        } else {
+            this.destroyFrame().then(()=> {
+                this.removed = true
+            })
+        }
+    }
 }
 
 export default Door
