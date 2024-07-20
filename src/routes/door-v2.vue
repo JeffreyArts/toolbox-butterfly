@@ -52,7 +52,6 @@
                 </div>
             </div>
         </aside>
-        <canvas class="overlay" ref="overlayCanvas"></canvas>
     </div>
 </template>
 
@@ -103,6 +102,7 @@ export default defineComponent ({
     mounted() {
         // this.draw()
         // this.createScreenshot()
+        this.updateOverlay()
         window.addEventListener("click", this.clickEvent)
         window.addEventListener("resize", this.updateOverlay)
     },
@@ -123,7 +123,6 @@ export default defineComponent ({
                 overlayCanvas.className = "overlay"
                 document.body.appendChild(overlayCanvas)
             }
-            this.clickEvent()
         },
         createScreenshot() {
             return new Promise<string>((resolve, reject) => {
@@ -151,12 +150,12 @@ export default defineComponent ({
                     return //e.preventDefault()
                 }
             }
-
+            
             if (this.door) {
                 this.door.remove()
             }
             
-            const overlayEl = this.$refs["overlayCanvas"] as HTMLCanvasElement
+            const overlayEl = document.querySelector(".overlay") as HTMLCanvasElement
             if (this.mousePos.x != -1 && overlayEl) {
                 this.door = new Door({
                     sourceElement: document.body,
