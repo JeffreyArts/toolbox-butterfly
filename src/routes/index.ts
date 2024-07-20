@@ -13,6 +13,7 @@ import CatterpillarEyes from "./catterpillar-eyes.vue"
 import CatterpillarMouth from "./catterpillar-mouth.vue"
 import Door from "./door.vue"
 import DoorV2 from "./door-v2.vue"
+import IconRoute from "./icon.vue"
 import Mouth from "./mouth.vue"
 import SpeechBubble from "./speech-bubble.vue"
 import PhysicsDiv from "./physics-div.vue"
@@ -90,6 +91,11 @@ const routes = [
         path: "/door-v2",
         name: "Door V2",
         component: DoorV2,
+    },
+    {
+        path: "/site-icons",
+        name: "Site icons",
+        component: IconRoute,
     },
     {
         path: "/flag-colors",
