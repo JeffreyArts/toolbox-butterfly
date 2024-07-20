@@ -182,7 +182,7 @@ export default defineComponent ({
     width: 0;
     padding: 32px 0 48px;
     padding-left: 0;
-    overflow: hidden;
+    overflow-x: hidden;
     margin: 0;
     position: relative;
     background-image: linear-gradient(90deg, rgba(0,0,0,.32),  rgba(0,0,0,.16));

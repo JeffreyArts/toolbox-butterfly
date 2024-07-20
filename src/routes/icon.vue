@@ -106,7 +106,15 @@ import {defineComponent} from "vue"
 import _ from "lodash"
 import siteIcon from "@/components/site-icon/index.vue"
 import {sentenceCase} from "change-case"
-    
+interface Options {
+    size: "small" | "medium" | "large"
+    name:  string
+    duration: number
+    delay: number
+    ease:  string
+    effect: "fade-in" | "fade-out" | "shuffle"
+
+}
 export default defineComponent ({ 
     components: {siteIcon},
     props: [],
@@ -120,7 +128,7 @@ export default defineComponent ({
                 delay: 0,
                 ease: "none" as string,
                 effect: "fade-in" as "fade-in" | "fade-out" | "shuffle"
-            },
+            } as Partial<Options>,
             ignoreOptionsUpdate: false,
             eases: ["none", "steps(2)", "steps(3)", "steps(4)","steps(6)", "steps(8)"],
             effects: ["shuffle", "fade-in", "fade-out"],
@@ -214,8 +222,9 @@ export default defineComponent ({
             if (optionsString) {
                 const localOptions = JSON.parse(optionsString)
                 _.forOwn(this.options, (value,key) => {
-                    if (localOptions[key]) {
-                        this.options[key] = localOptions[key]
+                    const typedKey = key as keyof Options
+                    if (localOptions[typedKey]) {
+                        this.options[typedKey] = localOptions[key]
                     }
                 })
             }
