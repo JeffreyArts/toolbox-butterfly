@@ -650,23 +650,22 @@ class Door  {
         ease?: string,
         angle?: number
     }) {
-        if (!opts) {
-            opts = {}
-        }
-
-        if (!opts.duration) {
-            opts.duration = .8
-        }
-
-        if (!opts.angle) {
-            opts.angle = this.door.maxAngle
-        }
-
-        if (!opts.ease) {
-            opts.ease = "back.out"
-        }
-
         return new Promise((resolve) => {
+            if (!opts) {
+                opts = {}
+            }
+    
+            if (!opts.duration) {
+                opts.duration = .8
+            }
+    
+            if (!opts.angle) {
+                opts.angle = this.door.maxAngle
+            }
+    
+            if (!opts.ease) {
+                opts.ease = "back.out"
+            }
             gsap.to(this.door, {
                 angle: opts.angle,
                 ease: opts.ease,
@@ -683,18 +682,18 @@ class Door  {
         duration?: number,
         ease?: string,
     }) {
-        if (!opts) {
-            opts = {}
-        }
-        if (!opts.duration) {
-            opts.duration = .8
-        }
-
-        if (!opts.ease) {
-            opts.ease = "back.out"
-        }
-
         return new Promise((resolve) => {
+            if (!opts) {
+                opts = {}
+            }
+            if (!opts.duration) {
+                opts.duration = .8
+            }
+    
+            if (!opts.ease) {
+                opts.ease = "back.out"
+            }
+    
             gsap.to(this.door, {
                 angle: 0,
                 ease: opts.ease,
