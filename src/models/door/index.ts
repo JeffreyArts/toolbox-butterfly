@@ -235,11 +235,22 @@ class Door  {
         const doorImageCanvas = screenshotLayer.context.getImageData(this.x - this.width/2 , this.y - this.height, this.width, this.height)
         doorLayer.context.putImageData(doorImageCanvas, this.padding.left, this.padding.top)
         
+
         // Draw outline door
         doorLayer.context.lineWidth = 1
         doorLayer.context.strokeStyle = new Color(this.frame.color).hex()
         this.#drawLine(doorLayer.context, coords)
         
+        // Draw shadow door
+        doorLayer.context.beginPath()
+        const shadowDoor = doorLayer.context.createLinearGradient(0,0, doorLayer.canvas.width,0)
+        shadowDoor.addColorStop(0, `rgba(0,0,0,${(this.door.angle / this.door.maxAngle) * .8})`)
+        shadowDoor.addColorStop(1, "transparent")
+        doorLayer.context.fillStyle = shadowDoor
+        doorLayer.context.fillRect(this.padding.left - 1, this.padding.top, this.width + 1, this.height)
+        doorLayer.context.closePath()
+        
+
         // Draw frame "hallway"
         frameLayer.context.beginPath()
         frameLayer.context.fillStyle = new Color("#fff").hex()
@@ -257,6 +268,7 @@ class Door  {
         // Remove glow behind door
         this.#getFrameGlowMask()
         
+
         // Turn door open
         const doorImage = doorLayer.context.getImageData(this.padding.left, this.padding.top, this.width, this.height)
         const temp = this.#skew3D(doorImage, this.door.angle/100, this.padding)
