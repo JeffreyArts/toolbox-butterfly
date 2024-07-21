@@ -43,6 +43,10 @@ import mediumLeave from "./medium/leave.json"
 import mediumSpeechBubble from "./medium/speech-bubble.json"
 import mediumWrench from "./medium/wrench.json"
 
+// Large
+import largeCross from "./large/cross.json"
+import largeEmpty from "./large/empty.json"
+
 /* 
 This icon component uses a two-dimensional grid, with cells of 8x8 pixels - with a gap of 1px around each cell
 
@@ -199,11 +203,13 @@ export default defineComponent ({
                 case "close":           
                 case "cross":           this.icon = mediumCross; break
                 case "circle":          this.icon = mediumCircle; break
-        
+                
                 default: this.icon = []; break
                 }
             } else if (this.size === "large") {
                 switch (this.name) {
+                case "cross":           this.icon = largeCross; break
+                case "empty":           this.icon = largeEmpty; break
         
                 default: this.icon = []; break
                 }

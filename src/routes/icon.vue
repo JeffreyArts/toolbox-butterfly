@@ -70,6 +70,12 @@
                             <option v-for="(c,k) in mediumNames" :key="k" :value="c">{{sentenceCase(c)}}</option>
                         </select>
                     </div>
+                    <div class="option" v-if="options.size === 'large'">
+                        <label for="name">Name</label>
+                        <select name="name" id="name" v-model="options.name">
+                            <option v-for="(c,k) in largeNames" :key="k" :value="c">{{sentenceCase(c)}}</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="option-group" name="Transition" >
                     <div class="option">
@@ -175,6 +181,10 @@ export default defineComponent ({
                 "speech-bubble",
                 "wrench",
             ],
+            largeNames: [
+                "empty",
+                "cross",
+            ],
             customGrid: [] as Array<{x: number, y: number, value: boolean}>
         }
     },
@@ -192,10 +202,14 @@ export default defineComponent ({
                     this.options.name = this.smallNames[0]
                 } else if (this.options.size === "medium") {
                     this.options.name = this.mediumNames[0]
-                } else if (this.options.size === "large") {
+                }  else if (this.options.size === "large") {
+                    this.options.name = this.largeNames[0]
+                } else {
+                    // Dev feature for creating custom sized grid
+                    const size = 21
                     this.customGrid = []
-                    for (let y = 0; y < 21; y++) {
-                        for (let x = 0; x < 21; x++) {
+                    for (let y = 0; y < size; y++) {
+                        for (let x = 0; x < size; x++) {
                             this.customGrid.push({x,y,value: false})
                         }
                     }
