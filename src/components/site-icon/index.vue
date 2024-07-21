@@ -102,16 +102,6 @@ export default defineComponent ({
             originalGrid: [] as Array<{x:number, y:number, color: string}>,
             displayGrid: [] as Array<{x:number, y:number, color: string}>,
             transitions: [] as Array<gsap.core.Tween>,
-            set: {
-                small: [{
-                    name: "eye",
-                    data: [[]]
-                }],
-                medium: [{
-                    name: "message",
-                    data: [[]]
-                }]
-            }
         }
     },
     computed: {
@@ -194,7 +184,7 @@ export default defineComponent ({
                 case "on":              this.icon = smallOn; break
                 case "off":             this.icon = smallOff; break
         
-                default: break
+                default: this.icon = []; break
                 }
             } else if (this.size === "medium") {
                 switch (this.name) {
@@ -208,7 +198,12 @@ export default defineComponent ({
                 case "cross":           this.icon = mediumCross; break
                 case "circle":          this.icon = mediumCircle; break
         
-                default: break
+                default: this.icon = []; break
+                }
+            } else if (this.size === "large") {
+                switch (this.name) {
+        
+                default: this.icon = []; break
                 }
             }
                 
@@ -216,7 +211,10 @@ export default defineComponent ({
             this.originalGrid = []
             const activeColor = this.activeColor ? this.activeColor : "#333"
             const inactiveColor = this.inactiveColor ? this.inactiveColor : "#efefef"
-            // if (!this.activeColor)
+            
+            if (this.icon.length <= 0) {
+                this.customGridToIcon()
+            }
 
             _.each(this.icon, (row,y) => {
                 _.each(row, (val,x) => {
@@ -238,6 +236,18 @@ export default defineComponent ({
             }
                     
             this.transit(this.transitEffect)
+        },
+        customGridToIcon() {
+            if (!this.custom) {
+                console.warn("No custom grid to be transform to icon")
+                return []
+            }
+            _.each(_.sortBy(this.custom, ["y", "x"]), point => {
+                if (!this.icon[point.y]) {
+                    this.icon.push([])
+                }
+                this.icon[point.y].push(!!point.value)
+            })
         },
         transit(opts = {
             duration: .4,

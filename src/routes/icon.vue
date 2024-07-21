@@ -191,7 +191,15 @@ export default defineComponent ({
                     this.options.name = this.smallNames[0]
                 } else if (this.options.size === "medium") {
                     this.options.name = this.mediumNames[0]
-                }            },
+                } else if (this.options.size === "large") {
+                    this.customGrid = []
+                    for (let y = 0; y < 21; y++) {
+                        for (let x = 0; x < 21; x++) {
+                            this.customGrid.push({x,y,value: false})
+                        }
+                    }
+                }
+            },
             immediate: false,
         },
         "options": {
