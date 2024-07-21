@@ -7,38 +7,40 @@
 
         <hr>
         <section class="viewport">
-            <div class="viewport-content" ratio="1x1" 
-                @mousemove="mouseMoveEvent"
-                @mousedown="mouseDownEvent"
-                >
-                <site-icon :name="options.name" :size="options.size" :custom="customGrid" :transitEffect="options"/>
+            <div class="viewport-container">
+                <div class="viewport-content" ratio="1x1" 
+                    @mousemove="mouseMoveEvent"
+                    @mousedown="mouseDownEvent"
+                    >
+                    <site-icon :name="options.name" :size="options.size" :custom="customGrid" :transitEffect="options"/>
+                </div>
+                <ul class="icon-sizes">
+                    <li class="extra-extra-large">
+                        <site-icon :name="options.name" :transitEffect="options" :size="options.size" :custom="customGrid" activeColor="#fff" inactiveColor="rgba(0, 0, 0,.24)" />
+                        65x65px
+                    </li>
+                    <li class="extra-large">
+                        <site-icon :name="options.name" :transitEffect="options" :size="options.size" :custom="customGrid" activeColor="#fff" inactiveColor="rgba(0, 0, 0,.24)" />
+                        52x52px
+                    </li>
+                    <li class="large">
+                        <site-icon :name="options.name" :transitEffect="options" :size="options.size" :custom="customGrid" activeColor="#fff" inactiveColor="rgba(0, 0, 0,.24)" />
+                        39x39px
+                    </li>
+                    <li class="medium">
+                        <site-icon :name="options.name" :transitEffect="options" :size="options.size" :custom="customGrid" activeColor="#fff" inactiveColor="rgba(0, 0, 0,.24)" />
+                        32x32px
+                    </li>
+                    <li class="small">
+                        <site-icon :name="options.name" :transitEffect="options" :size="options.size" :custom="customGrid" activeColor="#fff" inactiveColor="rgba(0, 0, 0,.24)" />
+                        26x26px
+                    </li>
+                    <li class="extra-small">
+                        <site-icon :name="options.name" :transitEffect="options" :size="options.size" :custom="customGrid" activeColor="#fff" inactiveColor="rgba(0, 0, 0,.24)" />
+                        13x13px
+                    </li>
+                </ul>
             </div>
-            <ul class="icon-sizes">
-                <li class="extra-extra-large">
-                    <site-icon :name="options.name" :transitEffect="options" :size="options.size" :custom="customGrid" activeColor="#fff" inactiveColor="rgba(0, 0, 0,.24)" />
-                    65x65px
-                </li>
-                <li class="extra-large">
-                    <site-icon :name="options.name" :transitEffect="options" :size="options.size" :custom="customGrid" activeColor="#fff" inactiveColor="rgba(0, 0, 0,.24)" />
-                    52x52px
-                </li>
-                <li class="large">
-                    <site-icon :name="options.name" :transitEffect="options" :size="options.size" :custom="customGrid" activeColor="#fff" inactiveColor="rgba(0, 0, 0,.24)" />
-                    39x39px
-                </li>
-                <li class="medium">
-                    <site-icon :name="options.name" :transitEffect="options" :size="options.size" :custom="customGrid" activeColor="#fff" inactiveColor="rgba(0, 0, 0,.24)" />
-                    32x32px
-                </li>
-                <li class="small">
-                    <site-icon :name="options.name" :transitEffect="options" :size="options.size" :custom="customGrid" activeColor="#fff" inactiveColor="rgba(0, 0, 0,.24)" />
-                    26x26px
-                </li>
-                <li class="extra-small">
-                    <site-icon :name="options.name" :transitEffect="options" :size="options.size" :custom="customGrid" activeColor="#fff" inactiveColor="rgba(0, 0, 0,.24)" />
-                    13x13px
-                </li>
-            </ul>
             <button class="button" @click="copyCustomGrid()" v-if="customGrid.length > 0">
                 <span v-if="copied">Copied!</span>
                 <span v-if="!copied">Copy</span>
@@ -47,7 +49,7 @@
 
         <aside class="sidebar">
             <div class="options">
-                <div class="option-group" name="Type" >
+                <div class="option-group" name="Select icon" >
                     <div class="option">
                         <span>
                             <label for="size">Size</label>
@@ -95,6 +97,18 @@
                         </span>
                     </div>
                 </div>
+                <div class="option-group" name="General" >
+                    <div class="option">
+                        <span>
+                            <button class="button" @click="clearCanvas">Clear canvas</button>
+                            <button class="button" @click="resetOptions">Reset options</button>
+                        </span>
+                    </div>
+                    <div class="option">
+                        <span>
+                        </span>
+                    </div>
+                </div>
             </div>
         </aside>
     </div>
@@ -112,7 +126,7 @@ interface Options {
     duration: number
     delay: number
     ease:  string
-    effect: "fade-in" | "fade-out" | "shuffle"
+    effect: "left-to-right" | "right-to-left" | "top-to-bottom" | "bottom-to-top" | "shuffle"
 
 }
 export default defineComponent ({ 
@@ -124,14 +138,14 @@ export default defineComponent ({
             options: {
                 size: "medium" as "small" | "medium" | "large",
                 name: "leave" as string,
-                duration: .4,
-                delay: 0,
+                duration: .48,
+                delay: 0.0024,
                 ease: "none" as string,
-                effect: "fade-in" as "fade-in" | "fade-out" | "shuffle"
+                effect: "left-to-right"  as "left-to-right" | "right-to-left" | "top-to-bottom" | "bottom-to-top" | "shuffle"
             } as Partial<Options>,
             ignoreOptionsUpdate: false,
             eases: ["none", "steps(2)", "steps(3)", "steps(4)","steps(6)", "steps(8)"],
-            effects: ["shuffle", "fade-in", "fade-out"],
+            effects: ["left-to-right", "right-to-left", "top-to-bottom", "bottom-to-top", "shuffle"],
             activeRect: null as null | SVGRectElement,
             mouseDown: false,
             mouseDownStartingValue: false,
@@ -154,6 +168,7 @@ export default defineComponent ({
             ],
             mediumNames: [
                 "cross",
+                "circle",
                 "hamburger",
                 "leave",
                 "speech-bubble",
@@ -172,8 +187,11 @@ export default defineComponent ({
         "options.size": {
             handler() {
                 this.customGrid = []
-                console.log("Change size")
-            },
+                if (this.options.size === "small") {
+                    this.options.name = this.smallNames[0]
+                } else if (this.options.size === "medium") {
+                    this.options.name = this.mediumNames[0]
+                }            },
             immediate: false,
         },
         "options": {
@@ -232,6 +250,16 @@ export default defineComponent ({
                 this.ignoreOptionsUpdate = false
             })
         },
+        resetOptions() {
+            this.options = {
+                size: "medium",
+                name: "leave",
+                duration: .48,
+                delay: 0.0024,
+                ease: "none",
+                effect: "left-to-right"
+            }
+        },
         mouseDownEvent(e:Event) {
             this.mouseDown = true
             if (!e.target) {
@@ -254,7 +282,6 @@ export default defineComponent ({
             this.mouseDown = false
         },
         mouseMoveEvent(e: Event) {
-            // console.log(e)
             if (this.mouseDown === false) {
                 return
             }
@@ -312,6 +339,24 @@ export default defineComponent ({
                 })
             })
         },
+        clearCanvas() {
+            const targetSVG = document.querySelector(".viewport-content svg") as SVGElement
+            if (targetSVG) {
+                const children = targetSVG.querySelectorAll("rect")
+                children.forEach(child => {
+                    if (!child) {
+                        return
+                    }
+                    const x = child.getAttribute("x") || "0"
+                    const y = child.getAttribute("y") || "0"
+                    this.customGrid.push({
+                        x: (parseInt(x, 10)-1) /10,
+                        y: (parseInt(y, 10)-1) /10,
+                        value: false
+                    })
+                })
+            }
+        },
         copyCustomGrid() {
 
             this.copied = true
@@ -323,8 +368,6 @@ export default defineComponent ({
             const data = [] as Array<Array<0 | 1>>
 
             _.each(_.sortBy(this.customGrid, "y"), point => {
-                
-
                 if (prevPoint && prevPoint.y != point.y) {
                     result = result.slice(0,-1)
                     result +="],\r\n"
@@ -381,6 +424,13 @@ export default defineComponent ({
             &.small { width: 26px; }
             &.extra-small { width:13px; }
         }
+    }
+    .viewport-container {
+        display: flex;
+        width: 100%;
+        max-width: 512px;
+        flex-flow: column;
+        gap: 16px;
     }
 
 </style>

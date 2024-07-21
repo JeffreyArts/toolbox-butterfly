@@ -35,6 +35,7 @@ import smallSmileyFace from "./small/smiley-face.json"
 import smallTerminal from "./small/terminal.json"
 
 // Medium
+import mediumCircle from "./medium/circle.json"
 import mediumCross from "./medium/cross.json"
 import mediumHamburger from "./medium/hamburger.json"
 import mediumLeave from "./medium/leave.json"
@@ -62,7 +63,7 @@ interface transitEffect {
     duration?: number;
     ease?: string;
     delay?: number,
-    effect?: "fade-in" | "fade-out" | "shuffle"
+    effect?: "left-to-right" | "right-to-left" | "top-to-bottom" | "bottom-to-top" | "shuffle"
 }
 
 export default defineComponent ({
@@ -205,6 +206,7 @@ export default defineComponent ({
                 case "wrench":          this.icon = mediumWrench; break
                 case "close":           
                 case "cross":           this.icon = mediumCross; break
+                case "circle":          this.icon = mediumCircle; break
         
                 default: break
                 }
@@ -241,7 +243,7 @@ export default defineComponent ({
             duration: .4,
             delay: 0,
             ease: "",
-            effect: "" as "fade-in" | "fade-out" | "shuffle"
+            effect: "" as "left-to-right" | "right-to-left" | "top-to-bottom" | "bottom-to-top" | "shuffle"
         } as transitEffect) {
 
             if (this.transitions.length > 0) {
@@ -257,8 +259,14 @@ export default defineComponent ({
             let collection = this.originalGrid
             if (effect == "shuffle") {
                 collection = _.shuffle(this.originalGrid)
-            } else if (effect == "fade-out") {
+            } else if (effect == "top-to-bottom") {
+                collection = this.originalGrid
+            } else if (effect == "bottom-to-top") {
                 collection = _.reverse(this.originalGrid)
+            } else if (effect == "left-to-right") {
+                collection = _.sortBy(this.originalGrid, "x")
+            } else if (effect == "right-to-left") {
+                collection = _.reverse(_.sortBy(this.originalGrid, "x"))
             } 
 
             _.each(collection, (grid, index) => {
