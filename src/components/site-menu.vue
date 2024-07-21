@@ -303,6 +303,7 @@ export default defineComponent ({
         top: 2px;
         width: 64px;
         height: 64px;
+        right: -64px;
 
         svg {
             width: 26px;
