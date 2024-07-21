@@ -118,7 +118,7 @@
 <script lang="ts">
 import {defineComponent} from "vue"
 import _ from "lodash"
-import siteIcon from "@/components/site-icon/index.vue"
+import siteIcon from "@/components/site-icon/site-icon.vue"
 import {sentenceCase} from "change-case"
 interface Options {
     size: "small" | "medium" | "large"
@@ -137,7 +137,7 @@ export default defineComponent ({
             copied: false,
             options: {
                 size: "medium" as "small" | "medium" | "large",
-                name: "leave" as string,
+                name: "empty" as string,
                 duration: .48,
                 delay: 0.0024,
                 ease: "none" as string,
@@ -167,6 +167,7 @@ export default defineComponent ({
                 "terminal",
             ],
             mediumNames: [
+                "empty",
                 "cross",
                 "circle",
                 "hamburger",
@@ -439,6 +440,10 @@ export default defineComponent ({
         max-width: 512px;
         flex-flow: column;
         gap: 16px;
+        svg {
+            display: inline-block;
+            width: 100%;
+        }
     }
 
 </style>

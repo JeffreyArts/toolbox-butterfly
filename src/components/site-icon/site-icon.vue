@@ -37,6 +37,7 @@ import smallTerminal from "./small/terminal.json"
 // Medium
 import mediumCircle from "./medium/circle.json"
 import mediumCross from "./medium/cross.json"
+import mediumEmpty from "./medium/empty.json"
 import mediumHamburger from "./medium/hamburger.json"
 import mediumLeave from "./medium/leave.json"
 import mediumSpeechBubble from "./medium/speech-bubble.json"
@@ -190,6 +191,7 @@ export default defineComponent ({
                 switch (this.name) {
                 case "leave": 
                 case "exit":            this.icon = mediumLeave; break
+                case "empty":           this.icon = mediumEmpty; break
                 case "hamburger":       this.icon = mediumHamburger; break
                 case "speech-bubble":   this.icon = mediumSpeechBubble; break
                 case "settings":        
@@ -212,7 +214,7 @@ export default defineComponent ({
             const activeColor = this.activeColor ? this.activeColor : "#333"
             const inactiveColor = this.inactiveColor ? this.inactiveColor : "#efefef"
             
-            if (this.icon.length <= 0) {
+            if (this.icon.length <= 0 && this.custom) {
                 this.customGridToIcon()
             }
 

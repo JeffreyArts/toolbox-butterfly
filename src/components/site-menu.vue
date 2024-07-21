@@ -14,7 +14,7 @@
         
         
         <div class="site-menu-toggle-mobile" @click="toggleMenu()" :class="[isOpen ? '__isOpen': '']">
-            <span>─</span>
+            <site-icon :name="isOpen ? 'cross' : 'hamburger'" :transitEffect="{duration: .6, delay:.002, ease: 'step(1)', effect: 'left-to-right'  }" size="medium" activeColor="#fff" inactiveColor="rgba(0, 0, 0,.24)" />
         </div>
         <div class="site-menu-toggle" @click="toggleMenu()" :class="[showToggle ? '__isVisible': '']">›</div>
     </div>
@@ -23,11 +23,13 @@
 <script lang="ts">
 import { RouteRecord, RouteComponent } from "vue-router"
 import {defineComponent} from "vue"
+import siteIcon from "@/components/site-icon/site-icon.vue"
 import _ from "lodash"
 import gsap from "gsap"
 
 export default defineComponent ({
     name: "SiteMenu", 
+    components: {siteIcon},
     props: [],
     data() {
         return {
@@ -282,7 +284,7 @@ export default defineComponent ({
 .site-menu-toggle-mobile {
     position: absolute;
     right: -40px;
-    top: 0;
+    top: 1px;
     width: 40px;
     height: 40px;
     display: flex;
@@ -290,40 +292,20 @@ export default defineComponent ({
     align-items: center;
     z-index: 2024;
     font-size: 18px;
-    color: transparent;
-    transition: .4s all ease;
-
-    &:after,
-    &:before {
-        content: "";
-        position: absolute;
-        height: 2px;
-        width: 1em;
-        box-shadow: 0 0 3px rgba(0,0,0,.8), 0 0 8px rgba(0,0,0,1);
-        display: block;
-        background-color: #fff;
-        transition: .4s all ease;
-        transform-origin: center;
-    }
-    &:after {
-        bottom: 14px;
-    }
-    &:before {
-        top: 14px;
+    svg {
+        width: 13px;
     }
 
     &.__isOpen {
         right: 0;
-        background-color: transparent;
+    }
+    @media all and (min-width: 640px) { 
+        top: 2px;
+        width: 64px;
+        height: 64px;
 
-        &:before {
-            transform: rotate(45deg);
-            translate: 0 5px;
-        }
-
-        &:after {
-            transform: rotate(-45deg);
-            translate: 0 -5px;
+        svg {
+            width: 26px;
         }
     }
 
