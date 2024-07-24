@@ -1,14 +1,15 @@
 import Matter from "matter-js"
 
 export default {
-    init(canvasEl: HTMLElement) {
-        if (!canvasEl) {
-            throw new Error("renderCanvas ref can not be found")
+    init(domElement: HTMLElement) {
+        // NOTE: domElement can't be a canvas element
+        if (!domElement) {
+            throw new Error("Dom element can not be found")
         }
 
-        if (canvasEl.children.length > 0) {
-            for (let i=0; i < canvasEl.children.length; i++) {
-                canvasEl.children[i].remove()
+        if (domElement.children.length > 0) {
+            for (let i=0; i < domElement.children.length; i++) {
+                domElement.children[i].remove()
             }
         }
 
@@ -23,11 +24,11 @@ export default {
 
         // create runner
         const render = Matter.Render.create({
-            element: canvasEl,
+            element: domElement,
             engine: engine,
             options: {
-                width: canvasEl.clientWidth,
-                height: canvasEl.clientHeight,
+                width: domElement.clientWidth,
+                height: domElement.clientHeight,
                 showAngleIndicator: true,
                 showVelocity: true,
             }

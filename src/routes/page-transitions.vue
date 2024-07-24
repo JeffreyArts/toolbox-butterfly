@@ -18,6 +18,14 @@
                         <label for="options-duration">Duration</label>
                         <input type="number" id="options-duration" step="0.05" v-model="options.duration" />
                     </div>
+                    <div class="option" v-if="transition">
+                        <label for="options-effect">Select effect</label>
+                        <select v-model="options.effect" :selected="options.effect" id="options-effect">
+                            <option v-for="(effect, k) in transition.effects" :key="k" :value="effect">
+                                {{ effect }}
+                            </option>
+                        </select>
+                    </div>
                     <form class="option" @submit="startTransition">
                         <label for="options-reset">Start transition</label>
                         <button class="button" id="options-reset">Start</button>
@@ -37,11 +45,11 @@
 import {defineComponent} from "vue"
 import _ from "lodash"
 import Color from "color"
-import PageTransition, {PageTransitionEffect} from "@/models/page-transition"
+import PageTransition, {Effect} from "@/models/page-transition"
 
 interface Options {
     duration: number
-    effect?: PageTransitionEffect
+    effect: Effect
 }
 
 export default defineComponent ({ 
@@ -51,10 +59,10 @@ export default defineComponent ({
         return {
             transition: undefined as PageTransition | undefined,
             viewportColor: "#fff",
-            effects: [] as Array<PageTransitionEffect>,
+            effects: [] as Array<Effect>,
             options: {
                 duration: 1,
-                // effect: "",
+                effect: "slide-downwards",
             } as Partial<Options>,
             ignoreOptionsUpdate: true,
         }
@@ -115,11 +123,12 @@ export default defineComponent ({
         resetOptions(e:Event) {
             e.preventDefault()
             this.options = {
-                duration: 1,
+                duration: .48,
+                effect: "slide-downwards"
             }
         },
         updatePageTransition() {
-            this.transition = new PageTransition({duration: this.options.duration})
+            this.transition = new PageTransition({duration: this.options.duration, effect: this.options.effect})
         },
         startTransition(e:Event) {
             e.preventDefault()

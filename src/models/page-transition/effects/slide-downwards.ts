@@ -16,7 +16,7 @@ class slideDownwards  {
             throw new Error("Can't create context")
         }
         this.context = ctx
-
+        
         gsap.to(this, {
             y: this.canvas.clientHeight,
             duration: this.duration,

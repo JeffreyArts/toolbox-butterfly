@@ -1,8 +1,9 @@
 import _ from "lodash"
 import domtoimage from "dom-to-image"
 import effectSlideDownwards from "./effects/slide-downwards"
+import effectFallDownwards from "./effects/fall-downwards"
 
-export type Effect = "slide-downwards"
+export type Effect = "slide-downwards" | "fall-downwards"
 
 export interface PageTransitionEffect {
     canvas: HTMLCanvasElement,
@@ -84,6 +85,9 @@ class PageTransition  {
         case "slide-downwards":
             this.effectModel = new effectSlideDownwards(this.canvas, this.duration)
             break
+        case "fall-downwards":
+            this.effectModel = new effectFallDownwards(this.canvas, this.duration)
+            break
         
         default:
             break
@@ -103,7 +107,8 @@ class PageTransition  {
     constructor (options?: PageTransitionOptions) {
         
         this.effects = [
-            "slide-downwards"
+            "slide-downwards",
+            "fall-downwards"
         ] as Array<Effect>
 
         this.duration = options?.duration || 1
