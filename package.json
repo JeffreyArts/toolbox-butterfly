@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
-    "deploy": "NODE_ENV=staging bash deploy.sh",
+    "deploy": "NODE_ENV=staging bash ./scripts/deploy.sh",
+    "add-route": "bash ./scripts/add-route.sh",
     "preview": "vite preview"
   },
   "dependencies": {
