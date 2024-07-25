@@ -1,4 +1,5 @@
-import { PageTransitionEffect } from "@/models/page-transition"
+import { PageTransitionEffect, PageTransitionEffectOptions } from "@/models/page-transition"
+import _ from "lodash"
 import gsap from "gsap"
 
 interface slideDownwards extends PageTransitionEffect {
@@ -17,6 +18,10 @@ class slideDownwards  {
         }
         this.context = ctx
         
+        if (this.devMode) {
+            console.time("slide-downwards")
+        }
+        
         gsap.to(this, {
             y: this.canvas.clientHeight,
             duration: this.duration,
@@ -33,17 +38,22 @@ class slideDownwards  {
 
     finish() {
         this.finished = true
+        console.timeEnd("slide-downwards")
         this.canvas.remove()
     }
 
-    constructor (canvas: HTMLCanvasElement, duration: number) {
-        
+    constructor (canvas: HTMLCanvasElement, duration: number, options: PageTransitionEffectOptions) {
         this.canvas = canvas
-        this.duration = duration || .8
+        this.duration = duration || 1
         if (!canvas) {
             throw new Error("Missing canvas")
         }
+        this.devMode = false
 
+        if (options && !_.isUndefined(options.devMode)) {
+            this.devMode = options.devMode
+        }
+        
         this.x = 0
         this.y = 0
         return this

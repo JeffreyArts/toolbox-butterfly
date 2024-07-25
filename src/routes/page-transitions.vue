@@ -6,8 +6,7 @@
 
         <hr>
         <section class="viewport">
-            <div class="viewport-content" ratio="1x1" :style="{backgroundColor: viewportColor}">
-                {{ options.test }}
+            <div class="page-transition-previewer" :style="{backgroundColor: viewportColor}">
             </div>
         </section>
 
@@ -26,6 +25,55 @@
                             </option>
                         </select>
                     </div>
+                    
+
+                    <div class="option">
+                        <label>Fullscreen</label>
+                        <span>
+                            <input type="radio" id="options-fullscreen-true" :checked="options.fullscreen" v-on:input="options.fullscreen = true">
+                            <label for="options-fullscreen-true">
+                                Yes
+                            </label>
+                        </span>
+                        <span>
+                            <input type="radio" id="options-fullscreen-false" :checked="!options.fullscreen" v-on:input="options.fullscreen = false">
+                            <label for="options-fullscreen-false">
+                                No
+                            </label>
+                        </span>
+                    </div>
+
+                    <div class="option">
+                        <label>Dev mode</label>
+                        <span>
+                            <input type="radio" id="options-devmode-true" :checked="options.devMode" v-on:input="options.devMode = true">
+                            <label for="options-devmode-true">
+                                Yes
+                            </label>
+                        </span>
+                        <span>
+                            <input type="radio" id="options-devmode-false" :checked="!options.devMode" v-on:input="options.devMode = false">
+                            <label for="options-devmode-false">
+                                No
+                            </label>
+                        </span>
+                    </div>
+                    <div class="option" v-if="options.devMode">
+                        <label>Only show MatterJS</label>
+                        <span>
+                            <input type="radio" id="options-showMatterJS-true" :checked="options.showMatterJS" v-on:input="options.showMatterJS = true">
+                            <label for="options-showMatterJS-true">
+                                Yes
+                            </label>
+                        </span>
+                        <span>
+                            <input type="radio" id="options-showMatterJS-false" :checked="!options.showMatterJS" v-on:input="options.showMatterJS = false">
+                            <label for="options-showMatterJS-false">
+                                No
+                            </label>
+                        </span>
+                    </div>
+                    
                     <form class="option" @submit="startTransition">
                         <label for="options-reset">Start transition</label>
                         <button class="button" id="options-reset">Start</button>
@@ -50,6 +98,9 @@ import PageTransition, {Effect} from "@/models/page-transition"
 interface Options {
     duration: number
     effect: Effect
+    fullscreen: boolean
+    showMatterJS: boolean
+    devMode: boolean
 }
 
 export default defineComponent ({ 
@@ -62,6 +113,9 @@ export default defineComponent ({
             effects: [] as Array<Effect>,
             options: {
                 duration: 1,
+                showMatterJS: true,
+                fullscreen: false,
+                devMode: false,
                 effect: "slide-downwards",
             } as Partial<Options>,
             ignoreOptionsUpdate: true,
@@ -95,13 +149,34 @@ export default defineComponent ({
             },
             deep: true
         },
+        "options.showMatterJS": {
+            handler() {
+                let el = document.getElementById("pageTransitionMatterJS")
+                if (!el) {
+                    el = document.createElement("style")
+                    el.id = "pageTransitionMatterJS"
+                    document.head.appendChild(el)
+                }
+
+                el.innerText = `.page-transition-domElement-matter-js { opacity:${this.options.showMatterJS ? "1" : ".5"} !important;}`
+            },
+            immediate: true
+        }
     },
     mounted() {
         this.loadOptions()
         this.updatePageTransition()
+        this.resizePageTransitionPreviewer()
+        window.addEventListener("resize", this.resizePageTransitionPreviewer)
     },
     unmounted() {
-        //
+
+        const el = document.getElementById("app")
+        if (!el) {
+            throw new Error("Can't find #app")
+        }
+        el.style.backgroundColor = ""
+        window.removeEventListener("resize", this.resizePageTransitionPreviewer)
     },
     methods: {
         loadOptions() {
@@ -127,8 +202,20 @@ export default defineComponent ({
                 effect: "slide-downwards"
             }
         },
+        resizePageTransitionPreviewer() {
+            const ratio = window.innerHeight / window.innerWidth
+            const domElement = this.$el.querySelector(".page-transition-previewer") 
+            domElement.style.width = "100%"
+            domElement.style.height = `${domElement.clientWidth * ratio}px`
+
+        },
         updatePageTransition() {
-            this.transition = new PageTransition({duration: this.options.duration, effect: this.options.effect})
+            this.transition = new PageTransition({
+                duration: this.options.duration,
+                targetElement: this.options.fullscreen ? undefined :  this.$el.querySelector(".page-transition-previewer") ,
+                devMode: this.options.devMode,
+                effect: this.options.effect
+            })
         },
         startTransition(e:Event) {
             e.preventDefault()
@@ -140,10 +227,16 @@ export default defineComponent ({
                 this.updatePageTransition()
             }
 
-            if (this.transition) {
+            if (this.transition) {  
                 this.transition.start().then(() => {
                     setTimeout(() => {
-                        this.viewportColor = Color.rgb(Math.random() * 255, Math.random() * 255, Math.random() * 255).hex()
+                        const el = document.getElementById("app")
+                        if (!el) {
+                            throw new Error("Can't find #app")
+                        }
+                        if (this.options.fullscreen) {
+                            el.style.backgroundColor = Color.rgb(Math.random() * 255, Math.random() * 255, Math.random() * 255).hex()
+                        }
                     })
                 })
             }
@@ -154,4 +247,10 @@ export default defineComponent ({
 
 
 <style lang="scss" scoped>
+.page-transition-previewer {
+    overflow: hidden;
+    @media all and (min-width: 640px) {
+        margin-top: 32px;
+    }
+}
 </style>

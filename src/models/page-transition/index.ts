@@ -5,14 +5,21 @@ import effectFallDownwards from "./effects/fall-downwards"
 
 export type Effect = "slide-downwards" | "fall-downwards"
 
+export interface PageTransitionEffectOptions {
+    devMode: boolean
+}
+
 export interface PageTransitionEffect {
     canvas: HTMLCanvasElement,
     duration: number,
+    scale: number,
     init:  () => void,
     start: () => Promise<true> | void,
     draw:  () => void,
     loop:  () => void,
-    finished: boolean
+    finished: boolean,
+    devMode: boolean,
+    targetElement?: HTMLElement
 }
 
 interface PageTransition {
@@ -20,18 +27,24 @@ interface PageTransition {
     effect: Effect
     effects: Array<Effect>,
     effectModel: any,
+    scale: number,
+    devMode: boolean,
+    applyScaling: boolean,
+    sourceElement: HTMLElement,
     targetElement: HTMLElement,
     canvas: HTMLCanvasElement,
+    originalTargetOverflow: string
 }
 
 interface PageTransitionOptions {
     duration?: number,
     effect?: Effect,
-    targetElement?: HTMLElement,
+    devMode?: boolean,
+    sourceElement?: HTMLElement,
+    targetElement?: HTMLElement
 }
 
 class PageTransition  {
-
     createSnapshot (domElement = document.body) {
         return new Promise<string>((resolve, reject) => {
             if (!domElement) {
@@ -60,7 +73,14 @@ class PageTransition  {
         if (this.effectModel && typeof this.effectModel.draw === "function") {
             this.effectModel.draw()
 
+            // Scale canvas
+            if (this.applyScaling) {
+                this.canvas.style.transformOrigin = "0 0"
+                this.canvas.style.scale = `${this.scale}`
+            }
+
             if (this.effectModel.finished) {
+                this.targetElement.style.overflow = this.originalTargetOverflow
                 return
             }
         }
@@ -78,15 +98,17 @@ class PageTransition  {
         }
         requestAnimationFrame(() => this.loop())
     }
-    
 
     createEffectModel() {
+        const options = {
+            devMode: this.devMode
+        }
         switch (this.effect) {
         case "slide-downwards":
-            this.effectModel = new effectSlideDownwards(this.canvas, this.duration)
+            this.effectModel = new effectSlideDownwards(this.canvas, this.duration, options)
             break
         case "fall-downwards":
-            this.effectModel = new effectFallDownwards(this.canvas, this.duration)
+            this.effectModel = new effectFallDownwards(this.canvas, this.duration, options)
             break
         
         default:
@@ -95,7 +117,11 @@ class PageTransition  {
     }
 
     start() {
-        return this.createSnapshot(this.targetElement).then(() => {
+        // -191px
+        this.scale = this.targetElement.clientWidth / this.sourceElement.clientWidth 
+        this.originalTargetOverflow = this.targetElement.style.overflow
+        return this.createSnapshot(this.sourceElement).then(() => {
+            this.targetElement.style.overflow = "hidden"
             this.createEffectModel()
             this.effectModel.start()
             this.draw()
@@ -113,26 +139,39 @@ class PageTransition  {
 
         this.duration = options?.duration || 1
         this.effect = options?.effect || this.effects[0]
-        this.targetElement = options?.targetElement || document.body
+        this.sourceElement = options?.sourceElement || document.body
+        this.targetElement = options?.targetElement || this.sourceElement.parentElement || this.sourceElement
+        this.devMode = false
+
+        let target = this.sourceElement
+        if (options && options.targetElement) {
+            target = options.targetElement
+            this.applyScaling = true
+        }
+        if (options && !_.isUndefined(options.devMode)) {
+            this.devMode = options.devMode
+        }
+
 
         this.canvas = document.createElement("canvas")
         this.canvas.width = window.innerWidth
         this.canvas.height = window.innerHeight
         this.canvas.classList.add("page-transition-canvas")
-        this.canvas.style.position = "fixed"
+        this.canvas.style.position = "absolute"
         this.canvas.style.top = "0"
         this.canvas.style.left = "0"
         this.canvas.style.bottom = "0"
         this.canvas.style.right = "0"
         this.canvas.style.zIndex = "3141592653"
         this.canvas.style.pointerEvents = "none"
-        const style = getComputedStyle(this.targetElement)
+        const style = getComputedStyle(target)
         if (style) {
             if (style.position != "relative" && style.position != "absolute" && style.position != "fixed") {
-                this.targetElement.style.position = "relative"
+                target.style.position = "relative"
             }
         }
-        this.targetElement.append(this.canvas)    
+
+        target.append(this.canvas)    
             
         return this
     }

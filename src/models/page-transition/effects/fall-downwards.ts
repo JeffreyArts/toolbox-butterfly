@@ -1,7 +1,7 @@
-import { PageTransitionEffect } from "@/models/page-transition"
+import { PageTransitionEffect, PageTransitionEffectOptions } from "@/models/page-transition"
 import Matter from "matter-js"
 import MatterService from "@/services/matter-js"
-import gsap from "gsap"
+import _ from "lodash"
 
 interface slideDownwards extends PageTransitionEffect {
     duration: number
@@ -20,61 +20,86 @@ class slideDownwards  {
         if (!ctx) {
             throw new Error("Can't create context")
         }
+        
         this.context = ctx
-
         this.matterElement = document.createElement("div")
         this.matterElement.style.width = window.innerWidth + "px"
         this.matterElement.style.height = window.innerHeight + "px"
         this.matterElement.classList.add("page-transition-domElement-matter-js")
-        this.matterElement.style.position = "fixed"
+        this.matterElement.style.position = "absolute"
         this.matterElement.style.top = "0"
         this.matterElement.style.left = "0"
         this.matterElement.style.bottom = "0"
         this.matterElement.style.right = "0"
         this.matterElement.style.zIndex = "3141592654"
         this.matterElement.style.pointerEvents = "none"
-        this.matterElement.style.opacity = "0" // CHANGE THIS VARIABLE TO DISPLAY MATTER JS CANVAS FOR DEVELOPMENT
+        
+        if (this.devMode) {
+            console.time("fall-downwards")
+            this.canvas.parentNode?.append(this.matterElement)
+        }
 
-        this.canvas.parentNode?.append(this.matterElement)
 
         const mjs = MatterService.init(this.matterElement)
         this.mWorld = mjs.world
         this.mEngine = mjs.engine
         this.mRunner = mjs.runner
-        const ratio = window.innerWidth / window.innerHeight > 1 ? window.innerHeight / window.innerWidth : window.innerWidth / window.innerHeight
-        const height = 100
-        const width = height * ratio
+
+        // This variable is used as the "basis", this value will make the animation take 1 second, when duration = 1
+        const timeScaleOffset = 1.44
+        if (this.duration >= 1) {
+            this.mEngine.timing.timeScale = timeScaleOffset / this.duration
+        } else {
+            this.mEngine.timing.timeScale = timeScaleOffset / this.duration
+        }
+
+        if (this.mEngine.timing.timeScale >= 29) {
+            this.mEngine.timing.timeScale = 28.999
+        }
+
+        const height = this.canvas.clientHeight
+        const width = this.canvas.clientWidth
         this.mEngine.gravity.y = this.mEngine.gravity.y * this.duration
 
-        this.rectangle = Matter.Bodies.rectangle(window.innerWidth/2 - width/2, window.innerHeight, width, height)
+        this.rectangle = Matter.Bodies.rectangle(width/2, height/2, width, height)
         // Matter.Body.setVelocity(this.rectangle, {x : 0, y: -5 * this.duration})
         // const circle = Matter.Bodies.circle(window.innerWidth/2 - width/2 - offset * .2, window.innerHeight, offset, {isStatic: true})
         Matter.World.add(this.mWorld, [this.rectangle] )
-        console.log(this.rectangle)
     }
 
     draw() {
         if (this.rectangle) {
-            this.canvas.style.translate = `0px ${this.rectangle.position.y - window.innerHeight}px`
+            this.canvas.style.top = ` ${this.rectangle.position.y - window.innerHeight/2}px`
             this.canvas.style.rotate = `${this.rectangle.angle}rad`
         }
     }
 
     loop() {
+        if (this.devMode) {
+            this.matterElement.style.opacity = "0.5" // CHANGE THIS VARIABLE TO DISPLAY MATTER JS CANVAS FOR DEVELOPMENT
+            this.matterElement.style.transformOrigin = this.canvas?.style.transformOrigin
+            this.matterElement.style.scale = this.canvas?.style.scale
+        }
+        
         if (this.rectangle) {
-            const y = parseInt(this.canvas.style.translate.split(" ")[1], 10)
-            console.log(y)
-            if (y > window.innerHeight) {
+            const parent = this.canvas.parentElement
+            if (!parent) {
+                return
+            }
+            
+            if (this.canvas.offsetTop + this.canvas.clientHeight/2 > this.canvas.clientHeight  * 1.5) {
                 this.finish()
             }
-            // this.canvas.style.translate = `${this.rectangle.position.x - window.innerWidth/2}px ${this.rectangle.position.y - window.innerHeight + 100}px`
-            // this.canvas.style.rotate = `${this.rectangle.angle}rad`
         }
     }
 
     finish() {
         this.finished = true
-        
+
+        if (this.devMode) {
+            console.timeEnd("fall-downwards")
+        }
+
         this.mWorld = null
         if (this.mRunner && this.mEngine) {
             MatterService.destroy(this.mRunner, this.mEngine)
@@ -84,15 +109,19 @@ class slideDownwards  {
         this.canvas.remove()
     }
 
-    constructor (canvas: HTMLCanvasElement, duration: number) {
-        
+    constructor (canvas: HTMLCanvasElement, duration: number, options: PageTransitionEffectOptions) {
         this.canvas = canvas
-        this.duration = duration || .8
+        this.duration = duration || 1
         if (!canvas) {
             throw new Error("Missing canvas")
         }
+        this.devMode = false
 
+        if (options && !_.isUndefined(options.devMode)) {
+            this.devMode = options.devMode
+        }
         return this
     }
 }
+
 export default slideDownwards
