@@ -3,18 +3,33 @@ import Matter from "matter-js"
 import MatterService from "@/services/matter-js"
 import _ from "lodash"
 
-interface slideDownwards extends PageTransitionEffect {
+interface splitInHalf extends PageTransitionEffect {
     duration: number
     mWorld: Matter.World | null,
     mRunner: Matter.Runner,
     mEngine: Matter.Engine,
-    image: HTMLCanvasElement
+    imageLeft: HTMLCanvasElement
+    imageRight: HTMLCanvasElement
+    rectangleLeft: Matter.Body | undefined
+    rectangleRight: Matter.Body | undefined,
+    opacity: number
     context: CanvasRenderingContext2D
     matterElement: HTMLElement
-    rectangle: Matter.Body | undefined
 }
 
-class slideDownwards  {
+class splitInHalf  {
+
+    _DEV_addCanvasToBody(canvas: HTMLCanvasElement, name="test") {
+        if (!this.devMode) {
+            return
+        }
+        canvas.className = name
+        const oldcanvas = document.querySelector("." + name) 
+        if (oldcanvas) {
+            oldcanvas.remove()
+        }
+        document.body.append(canvas)
+    }
 
     rotateImageData(canvas: HTMLCanvasElement, angle: number) {
         const offscreenCanvas = document.createElement("canvas")
@@ -32,21 +47,28 @@ class slideDownwards  {
         offscreenCtx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2)
         return offscreenCanvas
     }
+
+    createSubImage(x:number,y:number,w:number,h:number) {
+
+        const image = document.createElement("canvas")
+        image.width = w
+        image.height = h
+        const imageContext = image.getContext("2d")
+        if (!imageContext) {
+            throw new Error("can't make context out of canvas")
+        }
+        imageContext.drawImage(this.canvas, -x, -y)
+        
+        return image
+    }
       
     start() {
         const ctx = this.canvas.getContext("2d")
         if (!ctx) {
             throw new Error("Can't create context")
         }
-
-        const original = document.createElement("canvas")
-        original.width = this.canvas.width
-        original.height = this.canvas.height
-        const originalContext = original.getContext("2d")
-        if (originalContext) {
-            originalContext.drawImage(this.canvas, 0, 0)
-            this.image = original
-        }
+        this.imageLeft = this.createSubImage(0,0,this.canvas.width/2, this.canvas.height)
+        this.imageRight = this.createSubImage(this.canvas.width/2,0,this.canvas.width/2, this.canvas.height)
 
         let position = "absolute"
         if (this.canvas.parentElement) {
@@ -68,7 +90,7 @@ class slideDownwards  {
         this.matterElement.style.pointerEvents = "none"
         
         if (this.devMode) {
-            console.time("fall-downwards")
+            console.time("split-in-half")
             this.canvas.parentNode?.append(this.matterElement)
         }
 
@@ -91,21 +113,28 @@ class slideDownwards  {
         }
 
         const height = this.canvas.clientHeight
-        const width = this.canvas.clientWidth
+        const width = this.canvas.clientWidth / 2
         this.mEngine.gravity.y = this.mEngine.gravity.y * this.duration
 
-        this.rectangle = Matter.Bodies.rectangle(width/2, height/2, width, height)
+        this.rectangleLeft = Matter.Bodies.rectangle(width/2, height/2, width, height)
+        this.rectangleRight = Matter.Bodies.rectangle(width + width/2, height/2, width, height)
         // Matter.Body.setVelocity(this.rectangle, {x : 0, y: -5 * this.duration})
-        // const circle = Matter.Bodies.circle(window.innerWidth/2 - width/2 - 100 * .2, window.innerHeight, 100, {isStatic: true})
-        // Matter.World.add(this.mWorld, [circle] )
-        Matter.World.add(this.mWorld, [this.rectangle] )
+        const circleSize = 128
+        const circle = Matter.Bodies.circle(this.canvas.width/2, this.canvas.height + circleSize, circleSize, {isStatic: true})
+        Matter.World.add(this.mWorld, circle )
+        Matter.World.add(this.mWorld, this.rectangleLeft )
+        Matter.World.add(this.mWorld, this.rectangleRight )
     }
 
     draw() {
-        if (this.image && this.rectangle) {
+        if (this.imageLeft && this.imageRight && this.rectangleLeft && this.rectangleRight) {
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
-            const image = this.rotateImageData(this.image, this.rectangle.angle)
-            this.context.drawImage(image, this.rectangle.position.x - image.width / 2, this.rectangle.position.y - image.height / 2)
+            this.context.fillStyle = `rgba(0,0,0,${this.opacity})`
+            this.context.fillRect(0, 0, this.canvas.width, this.canvas.height)
+            const imageLeft = this.rotateImageData(this.imageLeft, this.rectangleLeft.angle)
+            const imageRight = this.rotateImageData(this.imageRight, this.rectangleRight.angle)
+            this.context.drawImage(imageLeft, this.rectangleLeft.position.x - imageLeft.width / 2, this.rectangleLeft.position.y - imageLeft.height / 2)
+            this.context.drawImage(imageRight, this.rectangleRight.position.x - imageRight.width / 2, this.rectangleRight.position.y - imageRight.height / 2)
         }
     }
 
@@ -116,14 +145,17 @@ class slideDownwards  {
             this.matterElement.style.scale = this.canvas?.style.scale
         }
         
-        if (this.rectangle) {
+        if (this.rectangleLeft && this.rectangleRight) {
             const parent = this.canvas.parentElement
             if (!parent) {
                 this.remove()
                 return
             }
+
+            this.opacity = 1-(.8 * this.rectangleLeft.position.y / this.canvas.clientHeight)
             
-            if (this.rectangle.position.y > this.canvas.clientHeight * 2) {
+            if (this.rectangleLeft.position.y > this.canvas.clientHeight * 2 &&
+                this.rectangleRight.position.y > this.canvas.clientHeight * 2) {
                 this.finish()
             }
         } else {
@@ -150,7 +182,7 @@ class slideDownwards  {
         this.canvas.remove()
 
         if (this.devMode) {
-            console.timeEnd("fall-downwards")
+            console.timeEnd("split-in-half")
         }
     }
 
@@ -161,6 +193,8 @@ class slideDownwards  {
             throw new Error("Missing canvas")
         }
         this.devMode = false
+        
+        this.opacity = .8
 
         if (options && !_.isUndefined(options.devMode)) {
             this.devMode = options.devMode
@@ -169,4 +203,4 @@ class slideDownwards  {
     }
 }
 
-export default slideDownwards
+export default splitInHalf

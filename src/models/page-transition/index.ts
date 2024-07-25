@@ -2,8 +2,9 @@ import _ from "lodash"
 import domtoimage from "dom-to-image"
 import effectSlideDownwards from "./effects/slide-downwards"
 import effectFallDownwards from "./effects/fall-downwards"
+import effectSplitInHalf from "./effects/split-in-half"
 
-export type Effect = "slide-downwards" | "fall-downwards"
+export type Effect = "slide-downwards" | "fall-downwards" | "split-in-half"
 
 export interface PageTransitionEffectOptions {
     devMode: boolean
@@ -114,14 +115,16 @@ class PageTransition  {
         case "fall-downwards":
             this.effectModel = new effectFallDownwards(this.canvas, this.duration, options)
             break
-        
+        case "split-in-half":
+            this.effectModel = new effectSplitInHalf(this.canvas, this.duration, options)
+            break
+                            
         default:
             break
         }
     }
 
     start() {
-        // -191px
         this.scale = this.targetElement.clientWidth / this.sourceElement.clientWidth 
         this.originalTargetOverflow = this.targetElement.style.overflow
         return this.createSnapshot(this.sourceElement).then(() => {
@@ -133,12 +136,12 @@ class PageTransition  {
         })
     }
 
-
     constructor (options?: PageTransitionOptions) {
         
         this.effects = [
+            "fall-downwards",
             "slide-downwards",
-            "fall-downwards"
+            "split-in-half",
         ] as Array<Effect>
 
         this.duration = options?.duration || 1
