@@ -8,25 +8,57 @@ interface slideDownwards extends PageTransitionEffect {
     mWorld: Matter.World | null,
     mRunner: Matter.Runner,
     mEngine: Matter.Engine,
-    image: ImageData
+    image: HTMLCanvasElement
     context: CanvasRenderingContext2D
     matterElement: HTMLElement
     rectangle: Matter.Body | undefined
 }
 
 class slideDownwards  {
+
+    rotateImageData(canvas: HTMLCanvasElement, angle: number) {
+        const offscreenCanvas = document.createElement("canvas")
+        offscreenCanvas.width = canvas.width*2    
+        offscreenCanvas.height = canvas.height*2
+        const offscreenCtx = offscreenCanvas.getContext("2d")
+        if (!offscreenCtx) {
+            throw new Error("Can't create context of canvas")
+        }
+
+        offscreenCtx.rotate(angle)
+        offscreenCtx.drawImage(canvas, canvas.width/2, canvas.height/2)
+
+        offscreenCtx.setTransform(1, 0, 0, 1, 0, 0)
+        return offscreenCanvas
+    }
+      
     start() {
         const ctx = this.canvas.getContext("2d")
         if (!ctx) {
             throw new Error("Can't create context")
         }
+
+        const original = document.createElement("canvas")
+        original.width = this.canvas.width
+        original.height = this.canvas.height
+        const originalContext = original.getContext("2d")
+        if (originalContext) {
+            originalContext.drawImage(this.canvas, 0, 0)
+            this.image = original
+        }
+
+        let position = "absolute"
+        if (this.canvas.parentElement) {
+            position = this.canvas.parentElement.nodeName === "body" ? "fixed" : "absolute"
+        }
         
         this.context = ctx
         this.matterElement = document.createElement("div")
+        this.matterElement.id = "ME-" + Math.floor(Math.random()*10000)
         this.matterElement.style.width = window.innerWidth + "px"
         this.matterElement.style.height = window.innerHeight + "px"
         this.matterElement.classList.add("page-transition-domElement-matter-js")
-        this.matterElement.style.position = "absolute"
+        this.matterElement.style.position = position
         this.matterElement.style.top = "0"
         this.matterElement.style.left = "0"
         this.matterElement.style.bottom = "0"
@@ -63,14 +95,16 @@ class slideDownwards  {
 
         this.rectangle = Matter.Bodies.rectangle(width/2, height/2, width, height)
         // Matter.Body.setVelocity(this.rectangle, {x : 0, y: -5 * this.duration})
-        // const circle = Matter.Bodies.circle(window.innerWidth/2 - width/2 - offset * .2, window.innerHeight, offset, {isStatic: true})
+        // const circle = Matter.Bodies.circle(window.innerWidth/2 - width/2 - 100 * .2, window.innerHeight, 100, {isStatic: true})
+        // Matter.World.add(this.mWorld, [circle] )
         Matter.World.add(this.mWorld, [this.rectangle] )
     }
 
     draw() {
-        if (this.rectangle) {
-            this.canvas.style.top = ` ${this.rectangle.position.y - window.innerHeight/2}px`
-            this.canvas.style.rotate = `${this.rectangle.angle}rad`
+        if (this.image && this.rectangle) {
+            this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
+            const image = this.rotateImageData(this.image, this.rectangle.angle)
+            this.context.drawImage(image, this.rectangle.position.x - image.width / 2, this.rectangle.position.y - image.height / 2)
         }
     }
 
@@ -84,29 +118,39 @@ class slideDownwards  {
         if (this.rectangle) {
             const parent = this.canvas.parentElement
             if (!parent) {
+                this.remove()
                 return
             }
             
-            if (this.canvas.offsetTop + this.canvas.clientHeight/2 > this.canvas.clientHeight  * 1.5) {
+            if (this.rectangle.position.y > this.canvas.clientHeight * 2) {
                 this.finish()
             }
+        } else {
+            this.remove()
         }
     }
 
     finish() {
         this.finished = true
+        this.remove()
+    }
 
-        if (this.devMode) {
-            console.timeEnd("fall-downwards")
-        }
-
+    remove() {
         this.mWorld = null
         if (this.mRunner && this.mEngine) {
             MatterService.destroy(this.mRunner, this.mEngine)
         }
         
+        const el = document.querySelector(".page-transition-domElement-matter-js")
+        if (el) {
+            el.remove()
+        }
         this.matterElement.remove()
         this.canvas.remove()
+
+        if (this.devMode) {
+            console.timeEnd("fall-downwards")
+        }
     }
 
     constructor (canvas: HTMLCanvasElement, duration: number, options: PageTransitionEffectOptions) {

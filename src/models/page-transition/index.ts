@@ -55,11 +55,15 @@ class PageTransition  {
                 image.onload = () => {
                     const overlayContext = this.canvas.getContext("2d")
                     if  (overlayContext) {
-                        overlayContext.drawImage(image, domElement.offsetTop, domElement.offsetLeft)
+                        const parent = domElement.parentElement
+                        const offsetY = parent ? parent.scrollTop : domElement.offsetTop
+                        const offsetX = parent ? parent.scrollLeft : domElement.offsetLeft
+                        
+                        overlayContext.drawImage(image, -offsetX, -offsetY)
                     }
+                    resolve(dataUrl)
                 }
                 image.src = dataUrl
-                resolve(dataUrl)
             }).catch((err)=> {
                 console.error(err)
                 reject(err)
@@ -91,7 +95,7 @@ class PageTransition  {
     loop(){
         if (this.effectModel && typeof this.effectModel.loop === "function") {
             this.effectModel.loop()
-
+            
             if (this.effectModel.finished) {
                 return
             }
@@ -152,18 +156,23 @@ class PageTransition  {
             this.devMode = options.devMode
         }
 
+        let position = "absolute"
+        if (target.parentElement) {
+            position = target.parentElement.nodeName === "body" ? "fixed" : "absolute"
+        }
 
         this.canvas = document.createElement("canvas")
         this.canvas.width = window.innerWidth
         this.canvas.height = window.innerHeight
         this.canvas.classList.add("page-transition-canvas")
-        this.canvas.style.position = "absolute"
+        this.canvas.style.position = position
         this.canvas.style.top = "0"
         this.canvas.style.left = "0"
         this.canvas.style.bottom = "0"
         this.canvas.style.right = "0"
         this.canvas.style.zIndex = "3141592653"
         this.canvas.style.pointerEvents = "none"
+        
         const style = getComputedStyle(target)
         if (style) {
             if (style.position != "relative" && style.position != "absolute" && style.position != "fixed") {

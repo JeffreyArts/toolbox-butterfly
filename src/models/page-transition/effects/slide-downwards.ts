@@ -6,7 +6,7 @@ interface slideDownwards extends PageTransitionEffect {
     duration: number
     x: number
     y: number
-    image: ImageData
+    image: HTMLCanvasElement
     context: CanvasRenderingContext2D
 }
 
@@ -22,6 +22,15 @@ class slideDownwards  {
             console.time("slide-downwards")
         }
         
+        const original = document.createElement("canvas")
+        original.width = this.canvas.width
+        original.height = this.canvas.height
+        const originalContext = original.getContext("2d")
+        if (originalContext) {
+            originalContext.drawImage(this.canvas, 0, 0)
+            this.image = original
+        }
+        
         gsap.to(this, {
             y: this.canvas.clientHeight,
             duration: this.duration,
@@ -33,7 +42,10 @@ class slideDownwards  {
     }
 
     draw() {
-        this.canvas.style.marginTop = `${this.y}px`
+        if (this.image) {
+            this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
+            this.context.drawImage(this.image, 0, this.y)
+        }
     }
 
     finish() {
