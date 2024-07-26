@@ -3,7 +3,7 @@ import Matter from "matter-js"
 import MatterService from "@/services/matter-js"
 import _ from "lodash"
 
-interface splitInHalf extends PageTransitionEffect {
+interface splitInMultipleParts extends PageTransitionEffect {
     duration: number
     mWorld: Matter.World | null,
     mRunner: Matter.Runner,
@@ -18,7 +18,7 @@ interface splitInHalf extends PageTransitionEffect {
     matterElement: HTMLElement
 }
 
-class splitInHalf  {
+class splitInMultipleParts  {
 
     _DEV_addCanvasToBody(canvas: HTMLCanvasElement, name="test") {
         if (!this.devMode) {
@@ -228,4 +228,4 @@ class splitInHalf  {
     }
 }
 
-export default splitInHalf
+export default splitInMultipleParts

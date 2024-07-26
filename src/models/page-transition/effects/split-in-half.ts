@@ -5,13 +5,14 @@ import _ from "lodash"
 
 interface splitInHalf extends PageTransitionEffect {
     duration: number
-    mWorld: Matter.World | null,
-    mRunner: Matter.Runner,
-    mEngine: Matter.Engine,
+    mWorld: Matter.World | null
+    mRunner: Matter.Runner
+    mEngine: Matter.Engine
     imageLeft: HTMLCanvasElement
     imageRight: HTMLCanvasElement
-    rectangleLeft: Matter.Body | undefined
-    rectangleRight: Matter.Body | undefined,
+    rectangleLeft?: Matter.Body
+    rectangleRight?: Matter.Body
+    circle?: Matter.Body
     opacity: number
     context: CanvasRenderingContext2D
     matterElement: HTMLElement
@@ -120,8 +121,8 @@ class splitInHalf  {
         this.rectangleRight = Matter.Bodies.rectangle(width + width/2, height/2, width, height)
         // Matter.Body.setVelocity(this.rectangle, {x : 0, y: -5 * this.duration})
         const circleSize = 128
-        const circle = Matter.Bodies.circle(this.canvas.width/2, this.canvas.height + circleSize, circleSize, {isStatic: true})
-        Matter.World.add(this.mWorld, circle )
+        this.circle = Matter.Bodies.circle(this.canvas.width/2, this.canvas.height + circleSize, circleSize, {isStatic: true})
+        Matter.World.add(this.mWorld, this.circle )
         Matter.World.add(this.mWorld, this.rectangleLeft )
         Matter.World.add(this.mWorld, this.rectangleRight )
     }
@@ -145,6 +146,10 @@ class splitInHalf  {
             this.matterElement.style.scale = this.canvas?.style.scale
         }
         
+        if (this.circle) {
+            // this.circle.position.y += .01
+        }
+
         if (this.rectangleLeft && this.rectangleRight) {
             const parent = this.canvas.parentElement
             if (!parent) {

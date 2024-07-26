@@ -5,7 +5,7 @@ import effectFallDownwards from "./effects/fall-downwards"
 import effectSplitInHalf from "./effects/split-in-half"
 import effectSplitInMultipleParts from "./effects/split-in-multiple-parts"
 
-export type Effect = "slide-downwards" | "fall-downwards" | "split-in-half"
+export type Effect = "slide-downwards" | "fall-downwards" | "split-in-half" | "split-in-multiple-parts"
 
 export interface PageTransitionEffectOptions {
     devMode: boolean
