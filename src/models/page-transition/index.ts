@@ -166,7 +166,12 @@ class PageTransition  {
 
         let position = "absolute"
         if (target.parentElement) {
-            position = target.parentElement.nodeName === "body" ? "fixed" : "absolute"
+            if (
+                target.parentElement.nodeName.toLowerCase() === "body" ||
+                target.parentElement.nodeName.toLowerCase() === "html"
+            ) {
+                position = "fixed"
+            }
         }
 
         this.canvas = document.createElement("canvas")

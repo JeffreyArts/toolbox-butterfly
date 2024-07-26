@@ -14,7 +14,6 @@ interface splitInHalf extends PageTransitionEffect {
         body?: Matter.Body
     }>
     opacity: number
-    circle: Matter.Body
     context: CanvasRenderingContext2D
     matterElement: HTMLElement
 }
@@ -73,9 +72,8 @@ class splitInHalf  {
             this.parts.push({
                 canvas: this.createSubImage(index * this.canvas.width/this.amountOfParts,0,this.canvas.width/this.amountOfParts, this.canvas.height)
             })
-            
         }
-
+            
         let position = "absolute"
         if (this.canvas.parentElement) {
             position = this.canvas.parentElement.nodeName === "body" ? "fixed" : "absolute"
@@ -123,21 +121,18 @@ class splitInHalf  {
         _.each(this.parts, (part, index) => {
             const height = this.canvas.height
             const width = this.canvas.width/this.amountOfParts
-            const x = this.canvas.width/this.amountOfParts * index - width/2
+            const x = this.canvas.width/this.amountOfParts * index + width/2
             const y = height/2
             part.body = Matter.Bodies.rectangle(x,y,width,height)
             if (!this.mWorld) {
                 throw new Error("Missing mWorld")
             }
+            
+            // Matter.Body.setAngle(part.body, 1)
+            Matter.Body.setAngularVelocity(part.body, Math.random() * .001 - .0005)
+            Matter.Body.setVelocity(part.body, {x : 0 + index * .1, y: Math.random() * -1})
             Matter.World.add(this.mWorld, part.body )
         })
-            
-            
-
-        // Matter.Body.setVelocity(this.rectangle, {x : 0, y: -5 * this.duration})
-        const circleSize = this.canvas.width
-        this.circle = Matter.Bodies.circle(this.canvas.width/2, this.canvas.height + circleSize, circleSize, {isStatic: true})
-        Matter.World.add(this.mWorld, this.circle )
     }
 
     draw() {
@@ -163,10 +158,6 @@ class splitInHalf  {
         }
 
         let sumY = 0
-        if (this.circle && this.circle.circleRadius ) {
-            this.circle.position.y -= 1
-            this.circle.circleRadius -= this.circle.circleRadius*0.01
-        }
         
         if (this.parts.length > 0) {
             const parent = this.canvas.parentElement
@@ -180,12 +171,15 @@ class splitInHalf  {
                 }
             })
             sumY = sumY/this.parts.length
-            const firstBody = this.parts[0].body
-            if (firstBody) {
-                this.opacity = 1-(.8 * firstBody.position.y / this.canvas.clientHeight)
+            const lastBody = _.minBy(this.parts, part => {
+                return part.body?.position.y
+            })
+            const middleBody = this.parts[Math.round(this.parts.length/2)].body
+            if (lastBody?.body) {
+                this.opacity = 1-(.8 * lastBody.body.position.y / this.canvas.clientHeight)
             }
             
-            if (sumY> this.canvas.clientHeight * 2) {
+            if (lastBody?.body && lastBody.body.position.y > this.canvas.clientHeight * 2) {
                 this.finish()
             }
         } else {
