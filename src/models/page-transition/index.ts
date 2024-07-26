@@ -3,6 +3,7 @@ import domtoimage from "dom-to-image"
 import effectSlideDownwards from "./effects/slide-downwards"
 import effectFallDownwards from "./effects/fall-downwards"
 import effectSplitInHalf from "./effects/split-in-half"
+import effectSplitInMultipleParts from "./effects/split-in-multiple-parts"
 
 export type Effect = "slide-downwards" | "fall-downwards" | "split-in-half"
 
@@ -118,6 +119,9 @@ class PageTransition  {
         case "split-in-half":
             this.effectModel = new effectSplitInHalf(this.canvas, this.duration, options)
             break
+        case "split-in-multiple-parts":
+            this.effectModel = new effectSplitInMultipleParts(this.canvas, this.duration, options)
+            break
                             
         default:
             break
@@ -142,6 +146,7 @@ class PageTransition  {
             "fall-downwards",
             "slide-downwards",
             "split-in-half",
+            "split-in-multiple-parts",
         ] as Array<Effect>
 
         this.duration = options?.duration || 1
