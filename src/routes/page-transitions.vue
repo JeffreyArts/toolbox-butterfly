@@ -76,7 +76,7 @@
                     
                     <form class="option" @submit="startTransition">
                         <label for="options-reset">Start transition</label>
-                        <button class="button" id="options-reset">Start</button>
+                        <button class="button" @click="startTransition" id="options-reset">Start</button>
                     </form>
                     <form class="option" @submit="resetOptions">
                         <label for="options-reset">Reset options</label>
@@ -228,7 +228,8 @@ export default defineComponent ({
             }
 
             if (this.transition) {  
-                this.transition.start().then(() => {
+                const startingTarget = e.target as HTMLElement
+                this.transition.start(startingTarget).then(() => {
                     setTimeout(() => {
                         const el = document.getElementById("app")
                         if (!el) {

@@ -4,9 +4,10 @@ import effectSlideDownwards from "./effects/slide-downwards"
 import effectFallDownwards from "./effects/fall-downwards"
 import effectSplitInHalf from "./effects/split-in-half"
 import effectShootingBubble from "./effects/shooting-bubble"
+import effectBubbleFromClick from "./effects/bubble-from-click"
 import effectSplitInMultipleParts from "./effects/split-in-multiple-parts"
 
-export type Effect = "slide-downwards" | "fall-downwards" | "split-in-half" | "split-in-multiple-parts" | "shooting-bubble"
+export type Effect = "slide-downwards" | "fall-downwards" | "split-in-half" | "split-in-multiple-parts" | "shooting-bubble" | "bubble-from-click"
 
 export interface PageTransitionEffectOptions {
     devMode: boolean
@@ -17,7 +18,7 @@ export interface PageTransitionEffect {
     duration: number,
     scale: number,
     init:  () => void,
-    start: () => Promise<true> | void,
+    start: (domElement?: HTMLElement) => Promise<true> | void
     draw:  () => void,
     loop:  () => void,
     finished: boolean,
@@ -126,6 +127,9 @@ class PageTransition  {
         case "shooting-bubble":
             this.effectModel = new effectShootingBubble(this.canvas, this.duration, options)
             break
+        case "bubble-from-click":
+            this.effectModel = new effectBubbleFromClick(this.canvas, this.duration, options)
+            break
                             
         default:
             break
@@ -140,13 +144,8 @@ class PageTransition  {
         return this.createSnapshot(this.sourceElement).then(() => {
             this.targetElement.style.overflow = "hidden"
             this.createEffectModel()
-
             if (startingTarget) {
-                const t = startingTarget.getBoundingClientRect()
-                this.effectModel.start({
-                    x: t.x,
-                    y: t.y
-                })
+                this.effectModel.start(startingTarget)
             } else {
                 this.effectModel.start()
             }
@@ -158,11 +157,12 @@ class PageTransition  {
     constructor (options?: PageTransitionOptions) {
         
         this.effects = [
+            "bubble-from-click",
             "fall-downwards",
+            "shooting-bubble",
             "slide-downwards",
             "split-in-half",
             "split-in-multiple-parts",
-            "shooting-bubble",
         ] as Array<Effect>
 
         this.duration = options?.duration || 1
