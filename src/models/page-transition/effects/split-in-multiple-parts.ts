@@ -73,10 +73,15 @@ class splitInMultipleParts  {
                 canvas: this.createSubImage(index * this.canvas.width/this.amountOfParts,0,this.canvas.width/this.amountOfParts, this.canvas.height)
             })
         }
-            
+
         let position = "absolute"
         if (this.canvas.parentElement) {
-            position = this.canvas.parentElement.nodeName === "body" ? "fixed" : "absolute"
+            if (
+                this.canvas.parentElement.nodeName.toLowerCase() === "body" ||
+                this.canvas.parentElement.nodeName.toLowerCase() === "html"
+            ) {
+                position = "fixed"
+            }
         }
         
         this.context = ctx

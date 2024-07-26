@@ -3,9 +3,10 @@ import domtoimage from "dom-to-image"
 import effectSlideDownwards from "./effects/slide-downwards"
 import effectFallDownwards from "./effects/fall-downwards"
 import effectSplitInHalf from "./effects/split-in-half"
+import effectShootingBubble from "./effects/shooting-bubble"
 import effectSplitInMultipleParts from "./effects/split-in-multiple-parts"
 
-export type Effect = "slide-downwards" | "fall-downwards" | "split-in-half" | "split-in-multiple-parts"
+export type Effect = "slide-downwards" | "fall-downwards" | "split-in-half" | "split-in-multiple-parts" | "shooting-bubble"
 
 export interface PageTransitionEffectOptions {
     devMode: boolean
@@ -122,6 +123,9 @@ class PageTransition  {
         case "split-in-multiple-parts":
             this.effectModel = new effectSplitInMultipleParts(this.canvas, this.duration, options)
             break
+        case "shooting-bubble":
+            this.effectModel = new effectShootingBubble(this.canvas, this.duration, options)
+            break
                             
         default:
             break
@@ -147,6 +151,7 @@ class PageTransition  {
             "slide-downwards",
             "split-in-half",
             "split-in-multiple-parts",
+            "shooting-bubble",
         ] as Array<Effect>
 
         this.duration = options?.duration || 1
