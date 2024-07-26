@@ -3,20 +3,18 @@ import Matter from "matter-js"
 import MatterService from "@/services/matter-js"
 import _ from "lodash"
 
-interface splitInMultipleParts extends PageTransitionEffect {
+interface ShootingBubble extends PageTransitionEffect {
     duration: number
     mWorld: Matter.World | null,
     mRunner: Matter.Runner,
     mEngine: Matter.Engine,
-    amountOfParts: number
     bubble?: Matter.Body
     image: HTMLCanvasElement
-    opacity: number
     context: CanvasRenderingContext2D
     matterElement: HTMLElement
 }
 
-class splitInMultipleParts  {
+class ShootingBubble  {
 
     _DEV_addCanvasToBody(canvas: HTMLCanvasElement, name="test") {
         if (!this.devMode) {
@@ -207,9 +205,6 @@ class splitInMultipleParts  {
             throw new Error("Missing canvas")
         }
         this.devMode = false
-        
-        this.parts = []
-        this.amountOfParts = 8
 
         if (options && !_.isUndefined(options.devMode)) {
             this.devMode = options.devMode
@@ -218,4 +213,4 @@ class splitInMultipleParts  {
     }
 }
 
-export default splitInMultipleParts
+export default ShootingBubble

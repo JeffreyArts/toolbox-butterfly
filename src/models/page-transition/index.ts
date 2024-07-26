@@ -132,13 +132,24 @@ class PageTransition  {
         }
     }
 
-    start() {
+    start(startingTarget?: HTMLElement) {
         this.scale = this.targetElement.clientWidth / this.sourceElement.clientWidth 
         this.originalTargetOverflow = this.targetElement.style.overflow
+
+        
         return this.createSnapshot(this.sourceElement).then(() => {
             this.targetElement.style.overflow = "hidden"
             this.createEffectModel()
-            this.effectModel.start()
+
+            if (startingTarget) {
+                const t = startingTarget.getBoundingClientRect()
+                this.effectModel.start({
+                    x: t.x,
+                    y: t.y
+                })
+            } else {
+                this.effectModel.start()
+            }
             this.draw()
             this.loop()
         })
