@@ -27,7 +27,7 @@ interface Eye {
     isBlinking: boolean
     blinkInterval: number
     blinked: number
-    autoBlink: undefined | number | boolean 
+    autoBlink: undefined | number | boolean | NodeJS.Timeout
 }
 
 class Eye  {

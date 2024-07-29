@@ -131,7 +131,7 @@ export default defineComponent ({
             isBlinking: false,
             blinks: 0,
             blinkInterval: true,
-            blinkTimeout: 0,
+            blinkTimeout: 0 as number | NodeJS.Timeout,
             paperJS: {
                 // points: [] as Array<paper.Point>
                 paths: [] as Array<paper.Path>,
