@@ -439,31 +439,6 @@ export default defineComponent ({
             if (!this.mEngine) {
                 return
             }
-            // Matter.Events.on(this.mEngine, "collisionStart", (event) => {
-            //     _.each(event.pairs, collision => {
-            //         let ground = null
-            //         let body = null
-                    
-            //         if (collision.bodyA.label === "ground") {
-            //             ground = collision.bodyA
-            //             body = collision.bodyB
-            //         } else if (collision.bodyB.label === "ground") {
-            //             ground = collision.bodyB
-            //             body = collision.bodyA
-            //         }
-            //         if (body) {
-            //             this.catterPillar.grounded = true 
-            //             this.catterPillar.groundedTimeout = setTimeout(() => {
-            //                 this.catterPillar.grounded = false
-            //                 console.log("grounded reset", this.catterPillar.grounded)
-                            
-            //             }, 100)
-            //             console.log("grounded", this.catterPillar.grounded)
-            //         } else {
-            //             clearTimeout(this.catterPillar.groundedTimeout)
-            //         }
-            //     })
-            // }) 
         },
         removeCatterpillar() {
             if (!this.mWorld) {

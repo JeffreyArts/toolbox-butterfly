@@ -69,10 +69,12 @@ interface Catterpillar {
     x: number
     y: number
     head: Matter.Body
+    belly: Matter.Body
     butt: Matter.Body
     body: Array<Matter.Body>
     bodyPart: BodyPartOptions
     bodyParts: Array<BodyPart>
+    direction: "left" | "right" | ""
     stiffness: number
     bodyLength: number
     damping: number
@@ -81,8 +83,10 @@ interface Catterpillar {
     floppiness: number
     composite: Matter.Composite
     spine: Matter.Constraint
+    switchingPosition: boolean | ((value: boolean | PromiseLike<boolean>) => void)
     isMoving: boolean
     mouthRecovering: boolean
+    switchVelocity: number
     scared: number | NodeJS.Timeout
     scaredAction: number | NodeJS.Timeout
 }
@@ -122,6 +126,8 @@ class Catterpillar  {
 
         const bodyParts = Matter.Composites.stack(this.x, this.y, this.bodyLength, 1, this.bodyPart.size + 1, 0, (x:number, y:number) => {
             const bodyPart = this.#createBodyPart()
+            bodyPart.body.mass = 10
+
             this.bodyParts.unshift(bodyPart)
             return bodyPart.body
         })
@@ -186,9 +192,36 @@ class Catterpillar  {
         })
     }
 
+    relax(constraint: Matter.Constraint | Array<Matter.Constraint>) {
+        return new Promise((resolve) => {
+            const duration = 1
+            gsap.to(this.spine, {
+                length: (this.bodyLength * this.bodyPart.size) * .5,
+                onComplete: () => {
+                    gsap.to(this.spine, {
+                        length: (this.bodyLength * this.bodyPart.size),
+                        onComplete: () => {
+                            setTimeout(() => {
+                                if (this.world) {
+                                    Matter.Composite.remove(this.world, constraint)
+                                    this.isMoving = false
+                                    resolve(true)
+                                }
+                            }, 320)
+                        },
+                        ease: "back.out",
+                        duration: duration/2
+                    })
+                },
+                ease: "back.out",
+                duration: duration
+            })
+        })
+    }
+
     move(direction: "left" | "right") : Promise<boolean> {
         return new Promise((resolve, reject) => {
-            
+            this.direction = direction
         
             if (!this.world) {
                 return reject(new Error("Missing required variables mWorld | ground | catterPillar.composite"))
@@ -219,7 +252,7 @@ class Catterpillar  {
             
             const head = this.head
             const butt = this.butt
-            const belly = this.bodyParts[Math.floor((this.bodyParts.length-1)/2)]
+            
             const duration = .8
             const newLength = (this.bodyLength * this.bodyPart.size)*.8
             const yOffset = (collision.bounds.max.y - collision.bounds.min.y) / 2
@@ -234,7 +267,7 @@ class Catterpillar  {
                 bodyB: collision,
                 length: 1,
                 stiffness: .8,
-                label: "bodyPartConnection",
+                label: "buttConstraint",
                 render: {
                     strokeStyle: "#9f0",
                     type:"line",
@@ -246,56 +279,25 @@ class Catterpillar  {
             if ((direction == "left" && head.position.x > butt.position.x) ||
                 (direction == "right" && head.position.x < butt.position.x)) {
 
-            
                 // Kick head to opposite side
-                Matter.Body.setVelocity( head, {
-                    x: 0,
-                    y: (this.bodyLength * this.bodyPart.size),
-                })
+                this.switchingPosition = resolve
                 // Fix belly to ground
-                const bellyConstaint = Matter.Constraint.create({
-                    bodyA: belly.body,
-                    pointA: { x: 0, y: this.bodyPart.size/2 },
-                    pointB: { x: belly.body.position.x - collision.bounds.max.x/2, y: -yOffset },
-                    bodyB: collision,
-                    length: 1,
-                    stiffness: .8,
-                    label: "bodyPartConnection",
-                    render: {
-                        strokeStyle: "#9f0",
-                        type:"line",
-                    }
-                })
-                Matter.Composite.add(this.world, bellyConstaint)
-            
-                setTimeout(() => {
-                    if (this.world) {
-                        Matter.Composite.remove(this.world,[bellyConstaint])
-                    }
-                }, 100)
-
-                gsap.to(this.spine, {
-                    length: (this.bodyLength * this.bodyPart.size) * .6,
-                    onComplete: () => {
-                        gsap.to(this.spine, {
-                            length: (this.bodyLength * this.bodyPart.size),
-                            onComplete: () => {
-                                setTimeout(() => {
-                                    if (this.world) {
-                                        Matter.Composite.remove(this.world,[buttConstraint])
-                                        this.isMoving = false
-                                        resolve(true)
-                                    }
-                                }, 320)
-                            },
-                            ease: "back.out",
-                            duration: duration/2
-                        })
-                    },
-                    ease: "back.out",
-                    duration: duration/2
-                })
-
+                if (this.belly) {
+                    const bellyConstaint = Matter.Constraint.create({
+                        bodyA: this.belly,
+                        pointA: { x: 0, y: this.bodyPart.size/2 },
+                        pointB: { x: this.belly.position.x - collision.bounds.max.x/2, y: -yOffset },
+                        bodyB: collision,
+                        length: 1,
+                        stiffness: .8,
+                        label: "bellyConstraint",
+                        render: {
+                            strokeStyle: "#9f0",
+                            type:"line",
+                        }
+                    })
+                    Matter.Composite.add(this.world, bellyConstaint)
+                }
             } else {
             // Fix head to ground
                 headConstaint = Matter.Constraint.create({
@@ -362,7 +364,6 @@ class Catterpillar  {
                     })
                 }
 
-
                 // Make body curl
                 const centerIndex = Math.floor(this.bodyParts.length/2)
                 const maxVelocity  = this.maxVelocity
@@ -375,7 +376,6 @@ class Catterpillar  {
                             y: -velocity * (centerIndex - Math.abs(index - centerIndex))/2,
                         })
                     } else {
-                        bodyPart.body.mass = 1000
                         bodyPart.body.friction = 1
                         Matter.Body.setVelocity( bodyPart.body, {
                             x: 0,
@@ -418,9 +418,60 @@ class Catterpillar  {
     }
 
     #loop(){
+        if (this.bodyLength <= 0) {
+            return
+        }
+        
         const velocity = Math.abs(this.head.velocity.x) + Math.abs(this.head.velocity.y) 
-        if (velocity > 20 && !this.isMoving) {
 
+        if (this.switchingPosition) {
+            this.switchVelocity += 0.01
+            const bellyConstraint = _.find(this.world.constraints, (constraint) => {
+                return constraint.label === "bellyConstraint"
+            })
+            
+            // const xVelocity = 8 + this.switchVelocity
+            // const centerPointY = (this.bodyLength * this.bodyPart.size)
+            const centerPointX = (this.bodyLength * this.bodyPart.size)
+            const angle = this.switchVelocity + 100
+            const xVelocity = centerPointX + ( centerPointX * Math.cos(angle * Math.PI/180)) * 6.4
+            const yVelocity = 4 + this.bodyPart.size * .5
+            // const xVelocity = center.y + (radius * Math.sin(angle*i*Math.PI/180)) * this.options.size/100
+            Matter.Body.setVelocity( this.head, {
+                // x: (this.head.position.x - this.butt.position.x),
+                x: this.direction === "right" ? -xVelocity : xVelocity ,
+                y: -yVelocity,
+            })
+            if ((this.direction === "right" && this.head.position.x > this.belly.position.x + this.bodyPart.size * 3) ||
+                this.direction === "left" && this.head.position.x < this.belly.position.x - this.bodyPart.size * 3) {
+                
+                const buttConstraint = _.find(this.world.constraints, (constraint) => {
+                    return constraint.label === "buttConstraint"
+                })
+
+                if (this.world && bellyConstraint && buttConstraint) {
+
+                    Matter.Composite.remove(this.world, bellyConstraint)
+                    Matter.Body.setVelocity( this.head, {
+                        x: this.direction === "right" ? - xVelocity * 1 : xVelocity * 1,
+                        y: yVelocity * 2,
+                    })
+                    this.switchVelocity = 0
+
+                    setTimeout(() => {
+                        Matter.Composite.remove(this.world,[bellyConstraint, buttConstraint])
+                        this.isMoving = false
+                        if (typeof this.switchingPosition === "function") {
+                            this.switchingPosition(true)
+                        }
+                        this.switchingPosition = false
+                    },300)
+                }
+            }
+        }        
+
+
+        if (velocity > 20 && !this.isMoving && (Math.abs(this.head.position.y - this.butt.position.y) > this.bodyPart.size)) {
             if (this.scared) {
                 clearTimeout(this.scared)
                 clearTimeout(this.scaredAction)
@@ -432,18 +483,6 @@ class Catterpillar  {
             
             this.scared = setTimeout(() => {
                 this.scared = 0
-                
-                // this.eye.left.width = this.eye.left.width * 1.5
-                // this.eye.left.height = this.eye.left.height * 1.5
-
-                // this.eye.right.width = this.eye.right.width * 1.5
-                // this.eye.right.height = this.eye.right.height * 1.5
-
-                // gsap.to(this.eye.right, {
-                //     width: this.eye.right.width * 1.5,
-                //     height:this.eye.right.height * 1.5,
-                //     duration: .4
-                // })
                 this.scaredAction = setTimeout(() => {
                     this.eye.left.blink()
                     this.eye.right.blink()
@@ -496,6 +535,9 @@ class Catterpillar  {
         this.world = world
         this.bodyParts = []
         this.isMoving = false
+        this.switchingPosition = false
+        this.direction      = ""
+        this.switchVelocity = 0
         this.x              = options.x             ? options.x : 0
         this.y              = options.y             ? options.y : 0
         this.color          = options.color         ? options.color : "#58f208"
@@ -521,6 +563,7 @@ class Catterpillar  {
         const t = this.#createBodyParts()
         this.composite = t.composite
         this.head = t.head
+        this.belly = t.composite.bodies[Math.floor((this.bodyParts.length-1)/2)]
         this.butt = t.butt
         this.body = []
         
@@ -584,19 +627,6 @@ class Catterpillar  {
         })
         this.isMoving = false
     }
-
-    // recoverMouth() {
-    //     if (this.mouthRecovering) {
-    //         return
-    //     }
-    //     this.eye.left.blink()
-    //     this.eye.right.blink()
-    //     this.mouthRecovering = true
-    //     setTimeout(() => {
-    //         this.mouth.switchState("🙂", 12.4)
-    //         this.mouthRecovering = false
-    //     },2400)
-    // }
     
     moveLeft() {
         return this.move("left")

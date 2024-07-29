@@ -28,7 +28,6 @@
 
         <aside class="sidebar">
             <div class="options">
-
                 <div class="option-group" name="Body" v-if="options.length">
                     <table>
                         <tr>
@@ -149,6 +148,7 @@ export default defineComponent ({
             mObject: [] as Array<Matter.Body>,
             stats: null as null | Stats,   
             ground: null as null | Matter.Body, 
+            allowClick: true,
             mouseDown: false,
             mousePos: {x: 0, y:0},
             mouseTarget: null as null | Matter.Body,
@@ -263,6 +263,12 @@ export default defineComponent ({
             this.mouseTarget = null
         },
         mouseClickEvent(e: MouseEvent) {
+            if (!this.allowClick) {
+                return
+            }
+
+            this.allowClick = false
+            
             if (!this.mWorld || !this.catterPillar?.composite ) {
                 return
             }
@@ -278,6 +284,7 @@ export default defineComponent ({
                 this.catterPillar.isMoving = false
                 return
             }
+            
 
             if (!this.catterPillar.isMoving) {
                 this.catterPillar.isMoving = true
@@ -357,11 +364,14 @@ export default defineComponent ({
                 color:          color,
                 length:         14 + Math.floor(Math.random() * 8 - 4),
                 maxVelocity:    3.2 + Math.random() * 1.6 - 0.8,
+                // stiffness:      1,
                 stiffness:      .16 + Math.random() * 0.40 - 0.08, 
+                // restitution:    .72,
                 restitution:    .72 + Math.random() * 0.16 - 0.08,
                 bodyPart: {
                     size:        12 + Math.floor(Math.random() * 12 - 6),
-                    stiffness:   .2 + Math.random() * .8 - .04,
+                    // stiffness:   .2,
+                    stiffness:   .4 + Math.random() * .1,
                     damping:    0,
                     restitution: .5 + Math.random() * .6 - .3,
                 }
@@ -415,11 +425,15 @@ export default defineComponent ({
                         const head = bodies[0]
                         if ((direction == "left" && head.position.x > this.mousePos.x) ||
                         direction == "right" && head.position.x < this.mousePos.x) {
-                            this.catterPillarMove(bodies, direction)
+                            this.catterPillarMove(bodies, direction, recursive)
                         } else {
                             this.mousePos = {x:0, y:0}
+                            this.allowClick = true
                         }
                     }, 240)
+                } else {
+                    this.mousePos = {x:0, y:0}
+                    this.allowClick = true
                 }
             })
         },
@@ -454,7 +468,7 @@ export default defineComponent ({
         },
         generateCatterpillar() {
             const el = this.$el.querySelector(".scroll-container")
-
+            this.allowClick = true
             if (!el || !this.mWorld) {
                 return
             }
