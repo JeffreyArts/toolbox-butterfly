@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
-    "deploy": "NODE_ENV=staging bash deploy.sh",
+    "deploy": "NODE_ENV=staging bash ./scripts/deploy.sh",
+    "add-route": "bash ./scripts/add-route.sh",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -29,6 +30,7 @@
     "@types/dom-to-image": "^2.6.7",
     "@types/lodash": "^4.14.191",
     "@types/matter-js": "^0.19.6",
+    "@types/node": "^20.14.12",
     "@types/stats.js": "^0.17.3",
     "@typescript-eslint/eslint-plugin": "^5.34.0",
     "@typescript-eslint/parser": "^5.34.0",

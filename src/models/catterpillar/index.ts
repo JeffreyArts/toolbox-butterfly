@@ -83,8 +83,8 @@ interface Catterpillar {
     spine: Matter.Constraint
     isMoving: boolean
     mouthRecovering: boolean
-    scared: number
-    scaredAction: number
+    scared: number | NodeJS.Timeout
+    scaredAction: number | NodeJS.Timeout
 }
 
 class Catterpillar  {
