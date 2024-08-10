@@ -33,6 +33,8 @@ import smallOff from "./small/off.json"
 import smallOn from "./small/on.json"
 import smallSmileyFace from "./small/smiley-face.json"
 import smallTerminal from "./small/terminal.json"
+import smallForbidden from "./small/forbidden.json"
+import smallUser from "./small/user.json"
 
 // Medium
 import mediumCircle from "./medium/circle.json"
@@ -42,6 +44,8 @@ import mediumHamburger from "./medium/hamburger.json"
 import mediumLeave from "./medium/leave.json"
 import mediumSpeechBubble from "./medium/speech-bubble.json"
 import mediumWrench from "./medium/wrench.json"
+import mediumUser from "./medium/user.json"
+import mediumForbidden from "./medium/forbidden.json"
 
 // Large
 import largeCross from "./large/cross.json"
@@ -188,6 +192,9 @@ export default defineComponent ({
                 case "heart-outline":   this.icon = smallHeartOutline; break
                 case "on":              this.icon = smallOn; break
                 case "off":             this.icon = smallOff; break
+                case "forbidden":           
+                case "disallowed":      this.icon = smallForbidden; break
+                case "user":            this.icon = smallUser; break
         
                 default: this.icon = []; break
                 }
@@ -202,6 +209,9 @@ export default defineComponent ({
                 case "wrench":          this.icon = mediumWrench; break
                 case "close":           
                 case "cross":           this.icon = mediumCross; break
+                case "forbidden":           
+                case "disallowed":      this.icon = mediumForbidden; break
+                case "user":            this.icon = mediumUser; break
                 case "circle":          this.icon = mediumCircle; break
                 
                 default: this.icon = []; break
@@ -214,7 +224,6 @@ export default defineComponent ({
                 default: this.icon = []; break
                 }
             }
-                
             
             this.originalGrid = []
             const activeColor = this.activeColor ? this.activeColor : "#333"
