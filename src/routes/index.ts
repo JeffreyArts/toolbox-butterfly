@@ -13,6 +13,7 @@ import DoorV2 from "./door-v2.vue"
 import FlagColors from "./flag-colors.vue"
 import Home from "./home/home.vue"
 import IconRoute from "./icon.vue"
+import LayoutRoute from "./layout-route.vue"
 import Mouth from "./mouth.vue"
 import OptionsOverview from "./options-overview/options-overview.vue"
 import PageTransitions from "./page-transitions.vue"
@@ -97,6 +98,11 @@ const routes = [
         path: "/flag-colors",
         name: "Flag colors",
         component: FlagColors
+    },
+    {
+        path: "/layout",
+        name: "Layout",
+        component: LayoutRoute
     },
     {
         path: "/mouth",
