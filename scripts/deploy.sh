@@ -75,15 +75,21 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-
-# Define Environment variable
-if [ -z "$1" ]; then
-  ENVIRONMENT_VAR=$NODE_ENV
-  echo -e "\033[33mNo environment selected explicitly, using NODE_ENV:$NODE_ENV\033[0m"
+# Prioritize using GitHub environment variables
+if [ -z "$GITHUB_ENVIRONMENT" ]; then
+  # Define Environment variable
+  if [ -z "$1" ]; then
+    ENVIRONMENT_VAR=$NODE_ENV
+    echo -e "\033[33mNo environment selected explicitly, using NODE_ENV: $NODE_ENV\033[0m"
+  else
+    ENVIRONMENT_VAR=$1
+  fi
 else
-  ENVIRONMENT_VAR=$1
+  ENVIRONMENT_VAR=$GITHUB_ENVIRONMENT
+  echo -e "\033[32mUsing GitHub environment variable GITHUB_ENVIRONMENT: $GITHUB_ENVIRONMENT\033[0m"
 fi
 
+# Set environment and corresponding .env file
 if [ "$ENVIRONMENT_VAR" = "production" ]; then
   export NODE_ENV=production
   ENV_FILE=".env.production"
