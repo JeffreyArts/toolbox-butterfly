@@ -123,7 +123,18 @@ export default defineComponent ({
             immediate: true
         },
         "options.layoutSize": {
-            handler: "updateLayout",
+            handler() {
+                //
+                this.options.blocks?.forEach(block => {
+                    if (!this.options.layoutSize) {
+                        return
+                    }
+                    if (block.size  > this.options.layoutSize) {
+                        block.size = this.options.layoutSize
+                    }
+                })
+                this.updateLayout()   
+            },
             immediate: true
         },
         "options.blocks": {
@@ -259,7 +270,8 @@ export default defineComponent ({
                 this.calculateBlocks(nodes, {
                     maxSize,
                     gap: gap,
-                    parentWidth: parseInt(layoutDimensions.width) 
+                    parentWidth:  parseInt(layoutDimensions.width) - gap
+                    // parentWidth:  Math.round((parseInt(layoutDimensions.width) - gap) / 8) * 8
                 })
             })
 
@@ -286,7 +298,7 @@ export default defineComponent ({
                 opts.gap = 40
             }
             
-            const layout = new Packer(opts.parentWidth, opts.parentWidth * 6, {algorithm: "JEF"})
+            const layout = new Packer(opts.parentWidth, 0, {algorithm: "JEF"})
             const layoutRatio = opts.parentWidth/opts.maxSize
             const blocks = _.map(nodes, (node, index) => {
                 const block = node as HTMLElement
@@ -300,8 +312,9 @@ export default defineComponent ({
                 
                 
                 let newWidth = size * layoutRatio
-                newWidth = Math.round((newWidth) / 8) * 8
-                newWidth -= opts.gap/2
+                newWidth = Math.floor(newWidth)
+                // newWidth = Math.round((newWidth) / 8) * 8
+                // newWidth -= opts.gap
                 block.style.width = `${newWidth - opts.gap}px`
                 const updatedBlock = window.getComputedStyle(block)
                 const newHeight = parseInt(updatedBlock.height) + opts.gap
@@ -348,13 +361,18 @@ export default defineComponent ({
                     return
                 }
                 
+                
                 block.el.style.position = "absolute"
                 block.el.style.display = "block"
                 block.el.style.left = `${block.left + gap}px`
                 block.el.style.top = `${block.top + gap}px`
+                block.el.style.paddingBottom = ""
             })
             
-            const lastBlock = _.reverse(_.sortBy(blocks, "y"))[0]
+            const lastBlock = _.reverse(_.sortBy(blocks, block => {
+                const style = window.getComputedStyle(block.el)
+                return parseFloat(style.top) + parseFloat(style.height)
+            }))[0]
             lastBlock.el.style.paddingBottom = `${gap}px`
         },
         removeBlock(id: number) {
