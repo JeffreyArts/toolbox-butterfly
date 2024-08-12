@@ -1,0 +1,31 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+
+    - name: Install dependencies
+      run: yarn install
+
+    - name: Run Deploy Script
+      env:
+        NODE_ENV: staging
+        DEPLOYMENT_USER: ${{ secrets.DEPLOYMENT_USER }}
+        DEPLOYMENT_HOST: ${{ secrets.DEPLOYMENT_HOST }}
+        DEPLOYMENT_PATH: ${{ secrets.DEPLOYMENT_PATH }}
+        MAX_BACKUPS: ${{ secrets.MAX_BACKUPS }}
+      run: bash ./scripts/deploy.sh
