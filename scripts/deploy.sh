@@ -106,13 +106,15 @@ fi
 
 echo "ENV_FILE: $ENV_FILE"
 echo "GITHUB_ACTION: $GITHUB_ACTION"
+echo "DEPLOYMENT_HOST: $DEPLOYMENT_HOST"
+echo "DEPLOYMENT_USER: $DEPLOYMENT_USER"
+echo "DEPLOYMENT_PATH: $DEPLOYMENT_PATH"
 # Set MAX BACKUPS to 8 when not set
 : ${MAX_BACKUPS:=8}
 
 # Validate environment variables
 missing_var_flag=0
 {
-
   if [ -z "${DEPLOYMENT_HOST-}" ]; then
     echo "Missing DEPLOYMENT_HOST variable <user>@<host>"
     missing_var_flag=1
