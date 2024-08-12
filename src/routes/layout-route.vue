@@ -24,13 +24,9 @@
                         <label for="options-layoutGap">Layout gap</label>
                         <input type="number" min="0" id="options-layoutGap" step="4" v-model="options.layoutGap" />
                     </div>
-                    <!-- <form class="option" @submit="resetOptions">
-                        <label for="options-reset">Reset options</label>
-                        <button class="button" id="options-reset">Reset</button>
-                    </form> -->
                 </div>
+                
                 <div class="option-group" name="Blocks" >
-                    
                     <div class="option" :block-size="block.size" v-for="block,key in options.blocks" :key="key">
                         <div class="option __isRow">
                             <div class="pattern-thumbnail-wrapper">
@@ -60,6 +56,13 @@
                         <label for="options-reset">Reset options</label>
                         <button class="button" id="options-reset">Reset</button>
                     </form> -->
+                </div>
+
+                <div class="option-group" name="Reset" >
+
+                    <form class="option" @submit="resetOptions">
+                        <button class="button" id="options-reset">Reset</button>
+                    </form>
                 </div>
             </div>
         </aside>
@@ -269,7 +272,7 @@ export default defineComponent ({
                 this.calculateBlocks(nodes, {
                     maxSize,
                     gap: gap,
-                    parentWidth:  parseInt(layoutDimensions.width) - gap
+                    parentWidth:  Math.ceil(parseFloat(layoutDimensions.width))
                     // parentWidth:  Math.round((parseInt(layoutDimensions.width) - gap) / 8) * 8
                 })
             })
@@ -298,7 +301,7 @@ export default defineComponent ({
             }
             
             const layout = new Packer(opts.parentWidth, 0, {algorithm: "JEF"})
-            const layoutRatio = opts.parentWidth/opts.maxSize
+            const layoutRatio = (opts.parentWidth - opts.gap)/opts.maxSize
             const blocks = _.map(nodes, (node, index) => {
                 const block = node as HTMLElement
 
@@ -311,7 +314,7 @@ export default defineComponent ({
                 
                 
                 let newWidth = size * layoutRatio
-                newWidth = Math.floor(newWidth)
+                newWidth = newWidth
                 // newWidth = Math.round((newWidth) / 8) * 8
                 // newWidth -= opts.gap
                 block.style.width = `${newWidth - opts.gap}px`
