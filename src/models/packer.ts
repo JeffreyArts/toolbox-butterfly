@@ -9,6 +9,8 @@ type Position = {
     y: number;
     width: number;
     height: number;
+    sourceId?: string | number;
+    position?: "right" | "left" | "bottom"
     id?: string | number;
 };
 import _ from "lodash"
@@ -248,7 +250,10 @@ export default class Packer {
                 left: 3
             }
 
-            function rectanglesOverlap(r1:Position, r2:Position) {
+            function rectanglesOverlap(r1:Position | undefined, r2:Position | undefined) {
+                if (!r1 || !r2) {
+                    return undefined
+                }
                 return !(r2.x >= r1.x + r1.width ||
                          r2.x + r2.width <= r1.x ||
                          r2.y >= r1.y + r1.height ||
@@ -257,10 +262,9 @@ export default class Packer {
               
             const options = _.map(result, tb => {
                 const data = getOptions(tb)
-                
-                const temp =  _.chain([...data.optionsBottom, ...data.optionsLeft, ...data.optionsRight])
+                const temp  =  _.chain([...data.optionsBottom, ...data.optionsLeft, ...data.optionsRight] as Array<Position | undefined>)
                     .orderBy(
-                        ["y", item => positionOrder[item.position]],
+                        ["y", item => positionOrder[item?.position || "right"]],
                         ["asc", "desc"]
                     )
                     .without(undefined)
@@ -276,12 +280,12 @@ export default class Packer {
 
             const nextBlockOptions = _.chain(_.flatten(options))
                 .orderBy(
-                    ["y", item => positionOrder[item.position]],
+                    ["y", item => positionOrder[item?.position || "right"]],
                     ["asc", "desc"]
                 )
                 .without(undefined)
                 .take(1)
-                .value()
+                .value() as  Array<Position>
                 
             let nextBlock = nextBlockOptions[0]
             if (!nextBlock) {
