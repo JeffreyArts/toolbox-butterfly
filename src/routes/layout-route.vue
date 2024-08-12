@@ -169,7 +169,6 @@ export default defineComponent ({
                         newOptions[key] = value
                     }
                 })
-                console.log("newOptions", newOptions)
                 localStorage.setItem("options", JSON.stringify(newOptions))
             },
             deep: true
@@ -318,12 +317,12 @@ export default defineComponent ({
                 block.style.width = `${newWidth - opts.gap}px`
                 const updatedBlock = window.getComputedStyle(block)
                 const newHeight = parseInt(updatedBlock.height) + opts.gap
-                const bin = {width: newWidth, height: newHeight, id: index}
+                const newBlock = {width: newWidth, height: newHeight, id: index}
                 
                 // For dev:
                 block.style.display = "none"
 
-                return bin
+                return newBlock
             })
             
             layout.setBlocks(blocks)

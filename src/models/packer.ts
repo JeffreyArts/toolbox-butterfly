@@ -16,16 +16,16 @@ import _ from "lodash"
 type Algorithm = "FBL" | "NF" | "BF" | "JEF";
 
 export default class Packer {
-    private canvasWidth: number
-    private canvasHeight: number
+    private layoutWidth: number
+    private layoutHeight: number
     private blocks: Block[]
     private output: Position[]
     private autoResize?: "width" | "height"
     private algorithm?: Algorithm
     
-    constructor(canvasWidth: number, canvasHeight: number, options?: { autoResize?: "width" | "height", algorithm?: Algorithm}) {
-        this.canvasWidth = canvasWidth
-        this.canvasHeight = canvasHeight
+    constructor(layoutWidth: number, layoutHeight: number, options?: { autoResize?: "width" | "height", algorithm?: Algorithm}) {
+        this.layoutWidth = layoutWidth
+        this.layoutHeight = layoutHeight
         this.blocks = []
         this.output = []
         this.algorithm = options?.algorithm || "JEF"
@@ -33,8 +33,8 @@ export default class Packer {
     }
 
     public setDimensions(width: number, height: number) {
-        this.canvasWidth = width
-        this.canvasHeight = height
+        this.layoutWidth = width
+        this.layoutHeight = height
         this.updateLayout()
     }
 
@@ -85,7 +85,6 @@ export default class Packer {
         let done = false
         
         while (!done) {
-
             if (result.length === 0) {
                 // const firstBlock = _.reverse(_.sortBy(inputBlocks, "width"))[0] // Get and remove the first block
                 const firstBlock = inputBlocks[0] // Get and remove the first block
@@ -108,7 +107,7 @@ export default class Packer {
                 const optionsRight = _.without(_.map(inputBlocks, inputBlock => {
                     
                     // If it can't fit right to targetBlock escape immediately
-                    if (targetBlock.x + targetBlock.width + inputBlock.width > this.canvasWidth) {
+                    if (targetBlock.x + targetBlock.width + inputBlock.width > this.layoutWidth) {
                         return
                     }
 
@@ -123,21 +122,25 @@ export default class Packer {
                         }
 
                         // Validate if inputBlock is within canvas
-                        if (resBlock.x + resBlock.width + inputBlock.width > this.canvasWidth) {
+                        if (resBlock.x + resBlock.width + inputBlock.width > this.layoutWidth) {
                             return
                         }
-                        if (targetBlock.x + targetBlock.width + inputBlock.width > this.canvasWidth) {
+                        if (targetBlock.x + targetBlock.width + inputBlock.width > this.layoutWidth) {
                             return
                         }
                         
-                        // Prevent overlap with other items
-                        const a = _.without(_.map(result, b => {
-                            return targetBlock.y + inputBlock.height < b.y + b.height
-                        }), false)
-                    
-                        if (a.length > 0) {
+                        if (targetBlock.y  + inputBlock.height  < resBlock.y + resBlock.height) {
                             return
                         }
+                        
+                        // // Prevent overlap with other items
+                        // const a = _.without(_.map(result, b => {
+                        //     return targetBlock.y + inputBlock.height < b.y + b.height
+                        // }), false)
+                    
+                        // if (a.length > 0) {
+                        //     return
+                        // }
 
 
                         return {
@@ -156,7 +159,7 @@ export default class Packer {
                         return _.sortBy(possibleOptions, "y")[0]
                     }
 
-                    if (targetBlock.x + targetBlock.width + inputBlock.width < this.canvasWidth ){
+                    if (targetBlock.x + targetBlock.width + inputBlock.width < this.layoutWidth ){
                         // return inputBlock
                         return {
                             x: targetBlock.x + targetBlock.width,
@@ -183,13 +186,10 @@ export default class Packer {
                             return
                         }
                         
-                        const a = _.without(_.map(result, b => {
-                            return targetBlock.y  < b.y + b.height
-                        }), false)
-                        
-                        if (a.length > 0) {
+                        if (targetBlock.y  < resBlock.y + resBlock.height) {
                             return
                         }
+                        
                         
                         return {
                             y: resBlock.y,
@@ -209,14 +209,15 @@ export default class Packer {
 
                 // Check bottom 
                 const optionsBottom = _.without(_.map(inputBlocks, inputBlock => {
-
                     const possibleOptions = _.without(_.map(result, resBlock => {
-                       
-                        // This one uses target block, since it doesn't go t
-                        if (inputBlock.width + resBlock.x > this.canvasWidth) {
+                        // Check if block fits within layout width
+                        if (inputBlock.width + resBlock.x > this.layoutWidth) {
                             return
                         }
-
+                        if (targetBlock.y >= resBlock.y + resBlock.height) {
+                            return
+                        }
+                        
                         return {
                             x: resBlock.x,
                             y: resBlock.y + resBlock.height,
@@ -246,6 +247,7 @@ export default class Packer {
                 bottom: 2,
                 left: 3
             }
+
             function rectanglesOverlap(r1:Position, r2:Position) {
                 return !(r2.x >= r1.x + r1.width ||
                          r2.x + r2.width <= r1.x ||
@@ -295,10 +297,11 @@ export default class Packer {
                     height: lastBlock.height,
                     x: 0,
                     y: lowestBlock.y + lowestBlock.height,
-                    id: lastBlock.id
+                    id: lastBlock.id,
+                    sourceId: "none"
                 }
             }
-
+            
             result.push({
                 x: nextBlock.x,
                 y: nextBlock.y,
@@ -321,7 +324,7 @@ export default class Packer {
         for (const block of this.blocks) {
             // Find the best row that can fit this block
             let bestRow = null
-            let minRemainingWidth = this.canvasWidth + 1
+            let minRemainingWidth = this.layoutWidth + 1
 
             for (const row of rows) {
                 if (row.remainingWidth >= block.width && row.remainingWidth - block.width < minRemainingWidth) {
@@ -334,10 +337,10 @@ export default class Packer {
                 // No suitable row found, create a new one
                 const newRowY = rows.length > 0 ? rows[rows.length - 1].y + rows[rows.length - 1].maxHeight : 0
                 
-                if (newRowY + block.height > this.canvasHeight) {
+                if (newRowY + block.height > this.layoutHeight) {
                     // If the block doesn't fit on the canvas, resize if autoResize is enabled
                     if (this.autoResize === "height") {
-                        this.canvasHeight = newRowY + block.height
+                        this.layoutHeight = newRowY + block.height
                     } else {
                         // No resizing allowed and no space left, stop placing more blocks
                         break
@@ -345,7 +348,7 @@ export default class Packer {
                 }
 
                 bestRow = {
-                    remainingWidth: this.canvasWidth - block.width,
+                    remainingWidth: this.layoutWidth - block.width,
                     y: newRowY,
                     maxHeight: block.height,
                 }
@@ -358,7 +361,7 @@ export default class Packer {
 
             // Place the block in the best row
             this.output.push({
-                x: this.canvasWidth - bestRow.remainingWidth - block.width,
+                x: this.layoutWidth - bestRow.remainingWidth - block.width,
                 y: bestRow.y,
                 width: block.width,
                 height: block.height,
@@ -374,17 +377,17 @@ export default class Packer {
         let maxHeightInRow = 0
 
         for (const block of this.blocks) {
-            if (currentX + block.width > this.canvasWidth) {
+            if (currentX + block.width > this.layoutWidth) {
                 // Start a new row if the current block doesn't fit in the current row
                 currentX = 0
                 currentY += maxHeightInRow
                 maxHeightInRow = 0
             }
 
-            if (currentY + block.height > this.canvasHeight) {
+            if (currentY + block.height > this.layoutHeight) {
                 // If the block doesn't fit on the canvas, resize if autoResize is enabled
                 if (this.autoResize === "height") {
-                    this.canvasHeight = currentY + block.height
+                    this.layoutHeight = currentY + block.height
                 } else {
                     // No resizing allowed and no space left, stop placing more blocks
                     break
