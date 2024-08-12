@@ -75,38 +75,37 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Prioritize using GitHub environment variables
-if [ -z "$GITHUB_ENVIRONMENT" ]; then
-  # Define Environment variable
-  if [ -z "$1" ]; then
-    ENVIRONMENT_VAR=$NODE_ENV
-    echo -e "\033[33mNo environment selected explicitly, using NODE_ENV: $NODE_ENV\033[0m"
-  else
-    ENVIRONMENT_VAR=$1
-  fi
+
+# Define Environment variable
+if [ -z "$1" ]; then
+  ENVIRONMENT_VAR=$NODE_ENV
+  echo -e "\033[33mNo environment selected explicitly, using NODE_ENV:$NODE_ENV\033[0m"
 else
-  ENVIRONMENT_VAR=$GITHUB_ENVIRONMENT
-  echo -e "\033[32mUsing GitHub environment variable GITHUB_ENVIRONMENT: $GITHUB_ENVIRONMENT\033[0m"
+  ENVIRONMENT_VAR=$1
 fi
 
-# Set environment and corresponding .env file
-if [ "$ENVIRONMENT_VAR" = "production" ]; then
-  export NODE_ENV=production
-  ENV_FILE=".env.production"
-elif [ "$ENVIRONMENT_VAR" = "staging" ]; then
-  export NODE_ENV=staging
-  ENV_FILE=".env.staging"
-else
-  echo "Unknown environment: $ENVIRONMENT_VAR"
-  exit 1
+if [ -z "$GITHUB_ACTION"]; then
+  if [ "$ENVIRONMENT_VAR" = "production" ]; then
+    export NODE_ENV=production
+    ENV_FILE=".env.production"
+  elif [ "$ENVIRONMENT_VAR" = "staging" ]; then
+    export NODE_ENV=staging
+    ENV_FILE=".env.staging"
+  else
+    echo "Unknown environment: $ENVIRONMENT_VAR"
+    exit 1
+  fi
 fi
 
 # Load the environment variables from .env.production
+if [ -z "$GITHUB_ACTION"]; then
 set -o allexport
 source "$ENV_FILE"
 set +o allexport
+fi
 
-
+echo "ENV_FILE: $ENV_FILE"
+echo "GITHUB_ACTION: $GITHUB_ACTION"
 # Set MAX BACKUPS to 8 when not set
 : ${MAX_BACKUPS:=8}
 
