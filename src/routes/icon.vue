@@ -12,7 +12,7 @@
                     @mousemove="mouseMoveEvent"
                     @mousedown="mouseDownEvent"
                     >
-                    <site-icon :name="options.name" :size="options.size" :custom="customGrid" :transitEffect="options"/>
+                    <site-icon ref="svg-icon" :name="options.name" :size="options.size" :custom="customGrid" :transitEffect="options"/>
                 </div>
                 <ul class="icon-sizes">
                     <li class="extra-extra-large">
@@ -43,8 +43,10 @@
             </div>
             <button class="button" @click="copyCustomGrid()" v-if="customGrid.length > 0">
                 <span v-if="copied">Copied!</span>
-                <span v-if="!copied">Copy</span>
+                <span v-if="!copied">Copy as Array</span>
             </button>
+
+            <button class="button" @click="saveSVG">Save as SVG</button>
         </section>
 
         <aside class="sidebar">
@@ -126,6 +128,9 @@ import {defineComponent} from "vue"
 import _ from "lodash"
 import siteIcon from "@/components/site-icon/site-icon.vue"
 import {sentenceCase} from "change-case"
+import { saveAs } from "file-saver"
+
+
 interface Options {
     size: "small" | "medium" | "large"
     name:  string
@@ -165,20 +170,24 @@ export default defineComponent ({
                 "expand-border",
                 "expand",
                 "eye",
-                "on",
-                "off",
-                "heart",
+                "forbidden",
                 "heart-outline",
+                "heart",
+                "off",
+                "on",
                 "smileyFace",
                 "terminal",
+                "user",
             ],
             mediumNames: [
                 "empty",
-                "cross",
                 "circle",
+                "cross",
+                "forbidden",
                 "hamburger",
                 "leave",
                 "speech-bubble",
+                "user",
                 "wrench",
             ],
             largeNames: [
@@ -410,6 +419,18 @@ export default defineComponent ({
             result += "]\r\n]"
 
             navigator.clipboard.writeText(result)
+        },
+        saveSVG() {
+            const svgElement =  this.$el.querySelector(".viewport-content svg")
+            if (!svgElement) {
+                throw new Error("Can't find svgElement")
+            }
+            const blob = new Blob([new XMLSerializer().serializeToString(svgElement)], {type: "image/svg+xml;charset=utf-8"})
+            let filename = this.options.name
+            if (this.customGrid.length > 0) {
+                filename = "custom"
+            }
+            saveAs(blob, `${filename}.svg`)
         }
     }
 })

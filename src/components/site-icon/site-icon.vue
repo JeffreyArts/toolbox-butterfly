@@ -31,8 +31,11 @@ import smallHeart from "./small/heart.json"
 import smallHeartOutline from "./small/heart-outline.json"
 import smallOff from "./small/off.json"
 import smallOn from "./small/on.json"
+import smallPlus from "./small/plus.json"
 import smallSmileyFace from "./small/smiley-face.json"
 import smallTerminal from "./small/terminal.json"
+import smallForbidden from "./small/forbidden.json"
+import smallUser from "./small/user.json"
 
 // Medium
 import mediumCircle from "./medium/circle.json"
@@ -42,6 +45,8 @@ import mediumHamburger from "./medium/hamburger.json"
 import mediumLeave from "./medium/leave.json"
 import mediumSpeechBubble from "./medium/speech-bubble.json"
 import mediumWrench from "./medium/wrench.json"
+import mediumUser from "./medium/user.json"
+import mediumForbidden from "./medium/forbidden.json"
 
 // Large
 import largeCross from "./large/cross.json"
@@ -78,11 +83,11 @@ export default defineComponent ({
             type: String,
             required: false
         },
-        
-        activeColor: {
-            type: String,
-            required: false
-        },
+        // ! Active color is set by font color
+        // activeColor: {
+        //     type: String,
+        //     required: false
+        // },
         inactiveColor: {
             type: String,
             required: false
@@ -140,7 +145,7 @@ export default defineComponent ({
             handler: function (val) {
                 if (this.custom && this.custom.length > 0) {
                     this.originalGrid = []
-                    const activeColor = this.activeColor ? this.activeColor : "#333"
+                    const activeColor = "currentColor"
                     const inactiveColor = this.inactiveColor ? this.inactiveColor : "#efefef"
                     _.each(this.custom, (val) => {
                         const data = {
@@ -187,7 +192,11 @@ export default defineComponent ({
                 case "heart":           this.icon = smallHeart; break
                 case "heart-outline":   this.icon = smallHeartOutline; break
                 case "on":              this.icon = smallOn; break
+                case "plus":            this.icon = smallPlus; break
                 case "off":             this.icon = smallOff; break
+                case "forbidden":           
+                case "disallowed":      this.icon = smallForbidden; break
+                case "user":            this.icon = smallUser; break
         
                 default: this.icon = []; break
                 }
@@ -202,6 +211,9 @@ export default defineComponent ({
                 case "wrench":          this.icon = mediumWrench; break
                 case "close":           
                 case "cross":           this.icon = mediumCross; break
+                case "forbidden":           
+                case "disallowed":      this.icon = mediumForbidden; break
+                case "user":            this.icon = mediumUser; break
                 case "circle":          this.icon = mediumCircle; break
                 
                 default: this.icon = []; break
@@ -214,10 +226,9 @@ export default defineComponent ({
                 default: this.icon = []; break
                 }
             }
-                
             
             this.originalGrid = []
-            const activeColor = this.activeColor ? this.activeColor : "#333"
+            const activeColor = "currentColor"
             const inactiveColor = this.inactiveColor ? this.inactiveColor : "#efefef"
             
             if (this.icon.length <= 0 && this.custom) {
