@@ -14,7 +14,7 @@
         
         
         <div class="site-menu-toggle-mobile" @click="toggleMenu()" :class="[isOpen ? '__isOpen': '']">
-            <site-icon :name="isOpen ? 'cross' : 'hamburger'" :transitEffect="{duration: .6, delay:.002, ease: 'step(1)', effect: 'left-to-right'  }" size="medium" activeColor="#fff" inactiveColor="rgba(0, 0, 0,.24)" />
+            <site-icon :name="isOpen ? 'cross' : 'hamburger'" :transitEffect="{duration: .6, delay:.002, ease: 'step(1)', effect: 'left-to-right'  }" size="large" activeColor="#fff" inactiveColor="rgba(0, 0, 0,.24)" />
         </div>
         <div class="site-menu-toggle" @click="toggleMenu()" :class="[showToggle ? '__isVisible': '']">›</div>
     </div>

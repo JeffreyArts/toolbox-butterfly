@@ -129,6 +129,7 @@ import _ from "lodash"
 import siteIcon from "@/components/site-icon/site-icon.vue"
 import {sentenceCase} from "change-case"
 import { saveAs } from "file-saver"
+import { iconsMap } from "jao-icons"
 
 
 interface Options {
@@ -160,40 +161,9 @@ export default defineComponent ({
             activeRect: null as null | SVGRectElement,
             mouseDown: false,
             mouseDownStartingValue: false,
-            smallNames: [
-                "checkbox-checked",
-                "checkbox-cross",
-                "checkbox-empty",
-                "christmas-tree",
-                "circle",
-                "cross",
-                "expand-border",
-                "expand",
-                "eye",
-                "forbidden",
-                "heart-outline",
-                "heart",
-                "off",
-                "on",
-                "smileyFace",
-                "terminal",
-                "user",
-            ],
-            mediumNames: [
-                "empty",
-                "circle",
-                "cross",
-                "forbidden",
-                "hamburger",
-                "leave",
-                "speech-bubble",
-                "user",
-                "wrench",
-            ],
-            largeNames: [
-                "empty",
-                "cross",
-            ],
+            smallNames: [],
+            mediumNames: [],
+            largeNames: [],
             customGrid: [] as Array<{x: number, y: number, value: boolean}>
         }
     },
@@ -255,6 +225,38 @@ export default defineComponent ({
         },
     },
     mounted() {
+        if (iconsMap) {
+            if (iconsMap.small) {
+                this.smallNames.length = 0
+                for (const key in iconsMap.small) {
+                    if (key.startsWith("number")) {
+                        continue
+                    }
+                    this.smallNames.push(key)
+                }
+            }
+
+            if (iconsMap.medium) {
+                this.mediumNames.length = 0
+                for (const key in iconsMap.medium) {
+                    if (key.startsWith("number")) {
+                        continue
+                    }
+                    this.mediumNames.push(key)
+                }
+            }
+            
+            if (iconsMap.large) {
+                this.largeNames.length = 0
+                for (const key in iconsMap.large) {
+                    if (key.startsWith("number")) {
+                        continue
+                    }
+                    this.largeNames.push(key)
+                }
+            }
+        }
+
         document.addEventListener("mouseup", this.mouseUpEvent)
         this.loadOptions()
     },
