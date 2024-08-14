@@ -46,7 +46,7 @@ export default defineComponent ({
     name: "SiteMenu", 
     props: {
         size: {
-            type: String,
+            type: String  as PropType<"small" | "medium" | "large">,
             required: false
         },
         // ! Active color is set by font color
@@ -143,7 +143,14 @@ export default defineComponent ({
             if (!this.$el) {
                 return
             }
-            this.icon = iconsMap[this.size][this.name]
+
+            if (this.size && iconsMap[this.size] && typeof this.name === "string") {
+                this.icon = iconsMap[this.size][this.name]
+            }
+
+            if (!this.icon) {
+                throw new Error("Invalid icon")
+            }
             
             this.originalGrid = []
             const activeColor = window.getComputedStyle(this.$el).color

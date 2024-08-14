@@ -161,9 +161,9 @@ export default defineComponent ({
             activeRect: null as null | SVGRectElement,
             mouseDown: false,
             mouseDownStartingValue: false,
-            smallNames: [],
-            mediumNames: [],
-            largeNames: [],
+            smallNames: [] as string[],
+            mediumNames: [] as string[],
+            largeNames: [] as string[],
             customGrid: [] as Array<{x: number, y: number, value: boolean}>
         }
     },
