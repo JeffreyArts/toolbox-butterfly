@@ -8,6 +8,7 @@ import CatterpillarMoving from "./catterpillar-moving.vue"
 import CatterpillarMoving2 from "./catterpillar-moving-2.vue"
 import CatterpillarMoving3 from "./catterpillar-moving-3.vue"
 import CatterpillarMoving4 from "./catterpillar-moving-4.vue"
+import ColorSampler from "./color-sampler.vue"
 import Door from "./door.vue"
 import DoorV2 from "./door-v2.vue"
 import FlagColors from "./flag-colors.vue"
@@ -83,6 +84,11 @@ const routes = [
         path: "/catterpillar-moving-4",
         name: "Catterpillar moving 4",
         component: CatterpillarMoving4
+    },
+    {
+        path: "/color-sampler",
+        name: "Color sampler",
+        component: ColorSampler
     },
     {
         path: "/door",
