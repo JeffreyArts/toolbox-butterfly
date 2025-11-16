@@ -106,7 +106,16 @@ export default defineComponent ({
                         "/bodyparts/top/t1/6.svg",
                         "/bodyparts/top/t1/7.svg",
                         "/bodyparts/top/t1/8.svg",
-
+                    ],
+                    t2: [
+                        "/bodyparts/top/t2/1.svg",
+                        "/bodyparts/top/t2/2.svg",
+                        "/bodyparts/top/t2/3.svg",
+                        "/bodyparts/top/t2/4.svg",
+                        "/bodyparts/top/t2/5.svg",
+                        "/bodyparts/top/t2/6.svg",
+                        "/bodyparts/top/t2/7.svg",
+                        "/bodyparts/top/t2/8.svg",
                     ]
                 },
                 "bottom": [],
@@ -179,11 +188,6 @@ export default defineComponent ({
             if (Paper.view.viewSize.height != el.clientWidth) {
                 Paper.view.viewSize.height = el.clientWidth
             }
-            if (this.options.selectedCountry) {
-                console.log(Paper,el.clientWidth, el.clientHeight)
-                setTimeout(this.updateImage)
-                // ()
-            }
         },
         loadOptions() {
             this.ignoreOptionsUpdate = true
@@ -204,7 +208,6 @@ export default defineComponent ({
             if (!Paper || !this.$el) {
                 return
             }
-            console.log("asdf")
 
             if (this.painting.length > 0) {
                 _.each(this.painting, p => {
