@@ -228,8 +228,8 @@ export default defineComponent ({
             //     return
             // }
             
-            const width = canvas.getBoundingClientRect().width
-            const height = canvas.getBoundingClientRect().height
+            const width = Paper.view.bounds.width
+            const height = Paper.view.bounds.height
             
             // draw circle
             const circle = new Paper.Path.Circle({
@@ -325,9 +325,15 @@ export default defineComponent ({
     @import '../assets/scss/variables.scss';
     #paperCanvas {
         aspect-ratio: 1/1;
+        transition: .14s ease-in-out;
     }
     .scroll-container {
         overflow: hidden;
+        &:hover {
+            #paperCanvas {
+                scale: 0.05;
+            }
+        }
     }
     .dot {
         width: 1em;
