@@ -20,26 +20,30 @@
                         <label for="color1">
                             Color 1
                         </label>
-                        <div class="dot" :style="{ backgroundColor: options.color1 }"></div>
-                        <select name="color1" id="color1" v-model="options.color1" @change="updateImage">
+
+                        <label class="ignore-label-styling" for="customColor1">
+                            <div class="dot" :style="{ backgroundColor: options.color1 }"></div>
+                        </label>
+                        <!-- <select name="color1" id="color1" v-model="options.color1" @change="updateImage">
                             <option v-for="(c,k) in colors" :key="k" :value="c" :style="{ backgroundColor: c }">
                                 {{c}}
                             </option>
-
-                        </select>
-                        <input type="color" v-model="options.color1" @input="updateImage"/>
+                        </select> -->
+                        <input type="color" class="color-picker" id="customColor1" v-model="options.color1" @input="updateImage"/>
                     </div>
                     <div class="option">
                         <label for="color2">
                             Color 2
                         </label>
-                        <div class="dot" :style="{ backgroundColor: options.color2 }"></div>
-                        <select name="color2" id="color2" v-model="options.color2" @change="updateImage">
+                        <label class="ignore-label-styling" for="customColor2">
+                            <div class="dot" :style="{ backgroundColor: options.color2 }"></div>
+                        </label>
+                        <!-- <select name="color2" id="color2" v-model="options.color2" @change="updateImage">
                             <option v-for="(c,k) in colors" :key="k" :value="c">
                                 {{c}}
                             </option>
-                        </select>
-                        <input type="color" v-model="options.color2" @input="updateImage"/>
+                        </select> -->
+                        <input type="color" class="color-picker" id="customColor2" v-model="options.color2" @input="updateImage"/>
                     </div>
                     
                     <div class="option">
@@ -329,5 +333,12 @@ export default defineComponent ({
         display: inline-block;
         margin-right: 12px;
         translate: 0px 4px;
+        border: 0 none transparent;
+    }
+    .ignore-label-styling {
+        width: auto;
+    }
+    .color-picker {
+        margin-left: 8px;
     }
 </style>
