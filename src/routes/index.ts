@@ -1,5 +1,6 @@
 import ActiveSurface from "./active-surface.vue"
 import ActiveSurfaceCatterpillar from "./active-surface-catterpillar.vue"
+import BodypartTexture from "./bodypart-texture.vue"
 import CatterpillarBlob from "./catterpillar-blob.vue"
 import CatterpillarEyes from "./catterpillar-eyes.vue"
 import CatterpillarFalling from "./catterpillar-falling.vue"
@@ -44,6 +45,11 @@ const routes = [
         path: "/active-surface-catterpillar",
         name: "Active surface catterpillar",
         component: ActiveSurfaceCatterpillar
+    },
+    {
+        path: "/bodypart-texture",
+        name: "Bodypart texture",
+        component: BodypartTexture
     },
     {
         path: "/catterpillar-blob",
