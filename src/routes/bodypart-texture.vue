@@ -50,7 +50,7 @@
                         <label for="textureType">
                             Texture Type
                         </label>
-                        <select name="textureType" id="textureType" v-model="options.textureType" @change="updateImage">
+                        <select name="textureType" id="textureType" v-model="options.textureType" @change="textureTypeChange">
                             <option v-for="(t,k) in texture" :key="k" :value="k">
                                 {{k}}
                             </option>
@@ -68,11 +68,11 @@
                         </select>
                     </div>
 
-                    <div class="option">
+                    <div class="option" v-if="texture[options.textureType]">
                         <label for="textureIndex">
                             Texture Index
                         </label>
-                        <input type="number" min="0" :max="texture[options.textureType][options.textureName].length -1" v-model="options.textureIndex" @change="updateImage"/>
+                        <input type="number" min="0" :max="texture[options.textureType][options.textureName]?.length -1" v-model="options.textureIndex" @change="updateImage"/>
                     </div>
                 </div>
             </div>
@@ -95,7 +95,7 @@ export default defineComponent ({
             ignoreOptionsUpdate: true,
             painting: [] as Array<paper.Path>,
             texture: {
-                "360": [],
+                "360": {} as Record<string, string[]>,
                 "top": {
                     t1: [
                         "/bodyparts/top/t1/1.svg",
@@ -117,20 +117,36 @@ export default defineComponent ({
                         "/bodyparts/top/t2/7.svg",
                         "/bodyparts/top/t2/8.svg",
                     ]
-                },
-                "bottom": [],
-                "vert": []
+                } as Record<string, string[]>,
+                "bottom": {
+                    b1: [
+                        "/bodyparts/bottom/b1/1.svg",
+                        "/bodyparts/bottom/b1/2.svg",
+                        "/bodyparts/bottom/b1/3.svg",
+                        "/bodyparts/bottom/b1/4.svg",
+                        "/bodyparts/bottom/b1/5.svg",
+                        "/bodyparts/bottom/b1/6.svg",
+                        "/bodyparts/bottom/b1/7.svg",
+                        "/bodyparts/bottom/b1/8.svg",
+                    ]
+                } as Record<string, string[]>,
+                "vert": {} as Record<string, string[]>
             },
             colors: ["#f09","#9f0","#09f","#f90","#90f"],
             options: {
-                textureType: "top",
+                textureType: "top" as "360" | "top" | "bottom" | "vert",
                 textureName: "t1",
                 textureIndex: 0,
                 color1: "#9f0",
                 color2: "#f09",
                 strokeWidth: 1,
                 strokeColor: "#f90",
-            } as any
+            }
+        }
+    },
+    computed: {
+        currentTexture () {
+            return this.texture[this.options.textureType]
         }
     },
     watch: {
@@ -144,24 +160,17 @@ export default defineComponent ({
     mounted() {
         this.updateCanvas()
         window.addEventListener("resize", this.updateCanvas)
-        this.setCountryFromIP()
+        this.updateImage()
     },
     unmounted() {
         window.removeEventListener("resize", this.updateCanvas)
     },
     methods: {
-        setCountryFromIP() {
-            axios.get("http://ip-api.com/json/").then(res => {
-                if (res.data.countryCode) {
-                    this.options.selectedCountry = res.data.countryCode
-                } else {
-                    // If it can't be retrieved, just set a random one
-                    this.options.selectedCountry = _.shuffle(this.countryList)[0].code
-                }
-            }).catch(err => {
-                // If it can't be retrieved, just set a random one
-                this.options.selectedCountry = _.shuffle(this.countryList)[0].code
-            })
+        textureTypeChange() {
+            this.options.textureIndex = 0
+            console.log(this.currentTexture)
+            this.options.textureName = Object.keys(this.texture[this.options.textureType])[0]
+            this.updateImage()
         },
         updateCanvas() {
             const canvas = this.$el.querySelector("#paperCanvas")
@@ -240,7 +249,7 @@ export default defineComponent ({
             this.painting.push(circle)
 
 
-            const svgString = this.texture[this.options.textureType][this.options.textureName][this.options.textureIndex] 
+            const svgString = this.currentTexture[this.options.textureName][this.options.textureIndex] 
 
             if (!svgString) {
                 throw new Error("No valid texture found")
