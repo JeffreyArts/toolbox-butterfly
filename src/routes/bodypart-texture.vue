@@ -9,7 +9,16 @@
         <section class="viewport bodypart-texture">
             <div class="scroll-container" ref="scroll-container" ratio="1x1">
                 <canvas id="paperCanvas" />
+                <div class="texture-indexes">
+                    <canvas v-for="(t,k) in currentTexture[options.textureName]" 
+                            :key="k"
+                            :id="`textureIndex-${k}`"
+                            :class="['texture-index']"
+                            >
+                    </canvas>
+                </div>
             </div>
+
         </section>
 
         <aside class="sidebar">
@@ -72,7 +81,10 @@
                         <label for="textureIndex">
                             Texture Index
                         </label>
-                        <input type="number" min="0" :max="texture[options.textureType][options.textureName]?.length -1" v-model="options.textureIndex" @change="updateImage"/>
+                        <input type="number" 
+                                min="0" :max="texture[options.textureType][options.textureName]?.length -1" 
+                                v-model="options.textureIndex" 
+                                @change="updateImage"/>
                     </div>
                 </div>
             </div>
@@ -84,7 +96,7 @@
 <script lang="ts">
 import {defineComponent} from "vue"
 import axios from "axios"
-import _ from "lodash"
+import _, { set } from "lodash"
 import Paper from "paper"
 import paperService from "@/services/paper-js"
     
@@ -93,7 +105,8 @@ export default defineComponent ({
     data() {
         return {
             ignoreOptionsUpdate: true,
-            painting: [] as Array<paper.Path>,
+            paperScopes: [] as Array<paper.PaperScope>,
+            painting: [] as Array<paper.Path | paper.Item>,
             texture: {
                 "360": {} as Record<string, string[]>,
                 "top": {
@@ -188,46 +201,49 @@ export default defineComponent ({
         },
     },
     mounted() {
-        this.updateCanvas()
-        window.addEventListener("resize", this.updateCanvas)
         this.updateImage()
+        window.addEventListener("resize", this.updateImage)
+        
     },
     unmounted() {
-        window.removeEventListener("resize", this.updateCanvas)
+        window.removeEventListener("resize", this.updateImage)
     },
     methods: {
         textureTypeChange() {
             this.options.textureIndex = 0
-            console.log(this.currentTexture)
             this.options.textureName = Object.keys(this.texture[this.options.textureType])[0]
-            this.updateImage()
+            setTimeout(() => {
+                this.updateImage()
+            })
+            // this.updateImage()
         },
-        updateCanvas() {
-            const canvas = this.$el.querySelector("#paperCanvas")
-            const el = this.$el.querySelector(".scroll-container")
+        // updateCanvas() {
+        //     const canvas = this.$el.querySelector("#paperCanvas")
+        //     const el = this.$el.querySelector(".scroll-container")
             
-            if (!canvas) {
-                console.error("Can't find canvas")
-                return
-            }
+        //     if (!canvas) {
+        //         console.error("Can't find canvas")
+        //         return
+        //     }
 
-            if (!el) {
-                console.error("Can't find element")
-                return
-            }
-            canvas.width = el.clientWidth
-            canvas.height = el.clientHeight
+        //     if (!el) {
+        //         console.error("Can't find element")
+        //         return
+        //     }
+        //     canvas.width = el.clientWidth
+        //     canvas.height = el.clientHeight
             
-            paperService.destroy()
-            Paper.setup(canvas)
+        //     paperService.destroy()
+        //     Paper.setup(canvas)
             
-            if (Paper.view.viewSize.width != el.clientWidth) {
-                Paper.view.viewSize.width = el.clientWidth
-            }
-            if (Paper.view.viewSize.height != el.clientWidth) {
-                Paper.view.viewSize.height = el.clientWidth
-            }
-        },
+        //     if (Paper.view.viewSize.width != el.clientWidth) {
+        //         Paper.view.viewSize.width = el.clientWidth
+        //     }
+        //     if (Paper.view.viewSize.height != el.clientWidth) {
+        //         Paper.view.viewSize.height = el.clientWidth
+        //     }
+        //     this.updateImage()
+        // },
         loadOptions() {
             this.ignoreOptionsUpdate = true
             const optionsString = localStorage.getItem("options")
@@ -243,58 +259,84 @@ export default defineComponent ({
                 this.ignoreOptionsUpdate = false
             })
         },
-        async updateImage() {
-            if (!Paper || !this.$el) {
-                return
+        updateImage() {
+            // Verwijder de oude paper scopes
+            if (this.paperScopes.length > 0) {
+                _.each(this.paperScopes, scope => {
+                    scope.remove()
+                })
+                this.paperScopes.length = 0
             }
 
-            if (this.painting.length > 0) {
-                _.each(this.painting, p => {
-                    p.remove()
-                })
-                this.painting.length = 0
+            if (!this.$el) {
+                return
             }
-            const canvas = this.$el.querySelector("#paperCanvas")
+            this.drawBodyPart("#paperCanvas")
+            
+            document.querySelectorAll(".texture-index").forEach((canvas, index) => {
+                const canvasEl = canvas as HTMLCanvasElement
+                this.drawBodyPart(canvasEl, {
+                    textureName: this.options.textureName,
+                    textureIndex: index,
+                    color1: this.options.color1,
+                    color2: this.options.color2,
+                })
+            })
+        },
+        drawBodyPart(target: string | HTMLCanvasElement, options? : {
+            textureName: string,
+            textureIndex: number,
+            color1: string,
+            color2: string,
+        }) {
+
+            const paperScope = new Paper.PaperScope()
+            
+            let canvas: HTMLCanvasElement | null = null
+            if (typeof target === "string") {
+                canvas = this.$el.querySelector(target)
+            } else {
+                canvas = target
+            }
             if (!canvas) {
                 console.error("Can't find canvas")
                 return
             }
-            // const selectedCountry = _.find(this.countryList, country => {
-            //     return country.code === this.options.selectedCountry
-            // })
-            // if (!selectedCountry) {
-            //     console.error("No valid country selected")
-            //     return
-            // }
-            
-            const width = Paper.view.bounds.width
-            const height = Paper.view.bounds.height
+            paperScope.setup(canvas)
+
+            const width = paperScope.view.bounds.width
+            const height = paperScope.view.bounds.height
+
+
+            if (!options) {
+                options = this.options
+            }
             
             // draw circle
-            const circle = new Paper.Path.Circle({
-                center: new Paper.Point(width/2, height/2),
+            new paperScope.Path.Circle({
+                center: new paperScope.Point(width/2, height/2),
                 radius: Math.min(width, height)/2,
-                fillColor: new Paper.Color(this.options.color1),
+                fillColor: new paperScope.Color(options.color1),
             })
-            this.painting.push(circle)
+            // this.painting.push(circle)
 
 
-            const svgString = this.currentTexture[this.options.textureName][this.options.textureIndex] 
+            const svgString = this.currentTexture[options.textureName][options.textureIndex] 
 
             if (!svgString) {
                 throw new Error("No valid texture found")
                 return
             }
 
-            Paper.project.importSVG(svgString,
+            paperScope.project.importSVG(svgString,
                 {
-                    onLoad: (item) => {
+                    onLoad: (item: paper.Item) => {
                         // 1. Eerst SVG resetten naar positie 0,0 zodat bounds correct zijn
-                        item.position = new Paper.Point(0, 0)
+                        item.position = new paperScope.Point(0, 0)
 
                         // 2. Verkrijg originele bounding box
                         const svgBounds = item.bounds
-                        const viewBounds = Paper.view.bounds
+                        const viewBounds = paperScope.view.bounds
 
                         // 3. Schaalfactor berekenen (maximale die in canvas past)
                         const scale = Math.min(
@@ -306,53 +348,18 @@ export default defineComponent ({
                         item.scale(scale)
 
                         // 5. Nu centreren in view
-                        item.position = Paper.view.center
+                        item.position = paperScope.view.center
 
                         // 6. Eventueel kleuren aanpassen
-                        item.getItems({ class: Paper.Path }).forEach(p => {
-                            p.fillColor = this.options.color2
+                        item.getItems({ class: paperScope.Path }).forEach(p => {
+                            p.fillColor = new paperScope.Color(options.color2)
                         })
 
-                        this.painting.push(item)
+                        // this.painting.push(item)
                     }
                 }
             )
-
-            
-            // this.painting.push(texture as paper.Item)
-
-            // let prev = null as null | paper.Path
-            // _.each(selectedCountry.colors, (color, index) => {
-            //     let posTL = {x: 0, y: 0}
-            //     let posBL = {x: 0, y: 0}
-
-            //     if (prev) {
-            //         posTL.x = prev.segments[1].point.x
-            //         posBL.x = prev.segments[2].point.x
-            //     }
-
-            //     const topLeft = new Paper.Point(posTL.x,posTL.y)
-                
-            //     let topRight = new Paper.Point(posTL.x + 100/selectedCountry?.colors.length * width/100, 0) 
-            //     if (color.percent) {
-            //         topRight = new Paper.Point(posTL.x + color.percent * width/100,0)
-            //     } 
-
-            //     const bottomLeft = new Paper.Point(posBL.x,height)
-                
-            //     let bottomRight = new Paper.Point(posBL.x + 100/selectedCountry?.colors.length * width/100, 0) 
-            //     if (color.percent) {
-            //         bottomRight = new Paper.Point(posBL.x + color.percent * width/100, height)
-            //     } 
-            //     const path = new Paper.Path([
-            //         topLeft, topRight, bottomRight, bottomLeft
-            //     ])
-            //     path.fillColor = new Paper.Color(color.hex)
-            //     path.closed = true
-            //     prev = path
-            //     this.painting.push(path) 
-            // })
-            
+            this.paperScopes.push(paperScope)
         }
     }
 })
@@ -364,15 +371,10 @@ export default defineComponent ({
     @import '../assets/scss/variables.scss';
     #paperCanvas {
         aspect-ratio: 1/1;
-        transition: .14s ease-in-out;
+        // transition: .14s ease-in-out;
     }
     .scroll-container {
         overflow: hidden;
-        &:hover {
-            #paperCanvas {
-                scale: 0.05;
-            }
-        }
     }
     .dot {
         width: 1em;
@@ -388,5 +390,14 @@ export default defineComponent ({
     }
     .color-picker {
         margin-left: 8px;
+    }
+    .texture-indexes {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 4px;
+    }
+    .texture-index {
+        width: 100%;
+        aspect-ratio: 1/1;
     }
 </style>
