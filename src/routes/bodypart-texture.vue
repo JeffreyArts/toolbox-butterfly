@@ -116,7 +116,27 @@ export default defineComponent ({
                         "/bodyparts/top/t2/6.svg",
                         "/bodyparts/top/t2/7.svg",
                         "/bodyparts/top/t2/8.svg",
-                    ]
+                    ],
+                    t3: [
+                        "/bodyparts/top/t3/1.svg",
+                        "/bodyparts/top/t3/2.svg",
+                        "/bodyparts/top/t3/3.svg",
+                        "/bodyparts/top/t3/4.svg",
+                        "/bodyparts/top/t3/5.svg",
+                        "/bodyparts/top/t3/6.svg",
+                        "/bodyparts/top/t3/7.svg",
+                        "/bodyparts/top/t3/8.svg",
+                    ],
+                    t4: [
+                        "/bodyparts/top/t4/1.svg",
+                        "/bodyparts/top/t4/2.svg",
+                        "/bodyparts/top/t4/3.svg",
+                        "/bodyparts/top/t4/4.svg",
+                        "/bodyparts/top/t4/5.svg",
+                        "/bodyparts/top/t4/6.svg",
+                        "/bodyparts/top/t4/7.svg",
+                        "/bodyparts/top/t4/8.svg",
+                    ],
                 } as Record<string, string[]>,
                 "bottom": {
                     b1: [
@@ -128,6 +148,16 @@ export default defineComponent ({
                         "/bodyparts/bottom/b1/6.svg",
                         "/bodyparts/bottom/b1/7.svg",
                         "/bodyparts/bottom/b1/8.svg",
+                    ],
+                    b2: [
+                        "/bodyparts/bottom/b2/1.svg",
+                        "/bodyparts/bottom/b2/2.svg",
+                        "/bodyparts/bottom/b2/3.svg",
+                        "/bodyparts/bottom/b2/4.svg",
+                        "/bodyparts/bottom/b2/5.svg",
+                        "/bodyparts/bottom/b2/6.svg",
+                        "/bodyparts/bottom/b2/7.svg",
+                        "/bodyparts/bottom/b2/8.svg",
                     ]
                 } as Record<string, string[]>,
                 "vert": {} as Record<string, string[]>
