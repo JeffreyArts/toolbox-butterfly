@@ -5,6 +5,8 @@
             <h1>Bodypart texture</h1>
         </header>
 
+        <div class="matter-canvas" ref="matterCanvas"/>
+        <canvas id="catterpillar-canvas" ref="catterpillarCanvas"/>
         <hr>
         <section class="viewport bodypart-texture">
             <div class="scroll-container" ref="scroll-container" ratio="1x1">
@@ -64,6 +66,7 @@
                                     <li v-for="(scheme, index) in colorschemes" :key="index" @click="selectColorScheme(scheme)">
                                         <div class="color-scheme-color" :style="{ backgroundColor: scheme[0] }"></div>
                                         <div class="color-scheme-color" :style="{ backgroundColor: scheme[1] }"></div>
+                                        <span class="color-scheme-remove" @click="removeColorScheme(index)">remove</span>
                                     </li>
                                 </ul>
                             </details>
@@ -113,8 +116,11 @@
 
 <script lang="ts">
 import {defineComponent} from "vue"
-import _, { set } from "lodash"
+import _ from "lodash"
 import Paper from "paper"
+import Matter from "matter-js"
+import MatterService from "@/services/matter-js"
+import Catterpillar from "@/models/catterpillar"
     
 export default defineComponent ({ 
     props: [],
@@ -191,6 +197,12 @@ export default defineComponent ({
                 } as Record<string, string[]>,
                 "vert": {} as Record<string, string[]>
             },
+            movementTimer: 0,
+            movementAction: 200,
+            catterPillar: null as Catterpillar | null,
+            catterPillarScope: null as paper.PaperScope | null,
+            catterPillarShapes: [] as Array<paper.Path | paper.Item>,
+            catterPillarEyes: [] as Array<paper.Path | paper.Item>,
             colorschemes: JSON.parse(localStorage.getItem("colorschemes") || "[]") as Array<Array<string>>,
             options: {
                 textureType: "top" as "360" | "top" | "bottom" | "vert",
@@ -208,6 +220,43 @@ export default defineComponent ({
     },
     mounted() {
         this.updateImage()
+        this.initCatterPillar()
+        this.catterPillarScope = new Paper.PaperScope()
+        this.catterPillarScope.setup(this.$refs.catterpillarCanvas as HTMLCanvasElement)
+        
+        if (this.catterPillar) {
+            
+            // reverse this.catterPillar.bodyParts
+            this.catterPillar.bodyParts.forEach(bodyPart => {
+                if (!this.catterPillarScope) {
+                    return
+                }
+                const circle = new this.catterPillarScope.Path.Circle({
+                    center: new this.catterPillarScope.Point(bodyPart.x, bodyPart.y),
+                    radius: bodyPart.radius,
+                    fillColor: new this.catterPillarScope.Color(this.options.color1),
+                })
+                
+                this.catterPillarShapes.push(circle)
+            })
+
+            this.catterPillarEyes.push(new this.catterPillarScope.Path.Ellipse({
+                ...this.catterPillar.eye.left
+            }))
+            this.catterPillarEyes.push(new this.catterPillarScope.Path.Ellipse({
+                ...this.catterPillar.eye.right
+            }))
+            this.catterPillarEyes.push(new this.catterPillarScope.Path.Ellipse({
+                ...this.catterPillar.eye.left.pupil
+            }))
+            this.catterPillarEyes.push(new this.catterPillarScope.Path.Ellipse({
+                ...this.catterPillar.eye.right.pupil
+            }))
+        }
+        
+        this.catterPillarScope.view.onFrame = this.updateCatterpillar.bind(this)
+        
+        requestAnimationFrame(this.checkCatterpillarBounds.bind(this))
         window.addEventListener("resize", this.updateImage)
         
     },
@@ -215,6 +264,107 @@ export default defineComponent ({
         window.removeEventListener("resize", this.updateImage)
     },
     methods: {
+        updateCatterpillar() {
+            
+            if (!this.catterPillar) {
+                return
+            }
+            
+
+            this.catterPillar.bodyParts.reverse().forEach((bodyPart, i) => {
+                if (!this.catterPillarScope) {
+                    return
+                }
+
+                const shape = this.catterPillarShapes[i]
+
+                // Update centrum
+                shape.position.x = bodyPart.x
+                shape.position.y = bodyPart.y
+
+                // Als de radius dynamisch verandert → updaten:
+                if (shape.bounds.width / 2 !== bodyPart.radius) {
+                    shape.scale(bodyPart.radius / (shape.bounds.width / 2))
+                }
+
+                // Als kleur verandert:
+                shape.fillColor = new this.catterPillarScope.Color(this.options.color1)
+                shape.strokeColor = new this.catterPillarScope.Color(this.options.color2)
+            })
+
+            this.catterPillarEyes.forEach((eye, i) => {
+                if (!this.catterPillarScope || !this.catterPillar) {
+                    return
+                }
+                const catterPillarEye = this.catterPillar.eye[i%2 === 0 ? "left" : "right"]
+                if (i < 2) {
+                    eye.fillColor = new this.catterPillarScope.Color("white")
+                    eye.strokeColor = new this.catterPillarScope.Color("black")
+                    eye.position.x = catterPillarEye.x
+                    eye.position.y = catterPillarEye.y
+                    return
+                }
+                
+                const pupil = this.catterPillar.eye[i%2 === 0 ? "left" : "right"].pupil
+                pupil.fillColor = new this.catterPillarScope.Color("black")
+                pupil.strokeColor = new this.catterPillarScope.Color("transparent")
+                pupil.position.x = catterPillarEye.x + catterPillarEye.pupilOffset.x
+                pupil.position.y = catterPillarEye.y + catterPillarEye.pupilOffset.y
+            })
+        },
+        initCatterPillar() {
+
+            // Create ground
+            const el = this.$refs.matterCanvas as HTMLElement
+
+            const mjs = MatterService.init(this.$refs.matterCanvas as HTMLElement)  
+            this.catterPillar = new Catterpillar(mjs.world, {x:el.clientWidth / 2, y: 8, length: 8, bodyPart: { size: 8 }, autoBlink: true})
+
+            Matter.Composite.add(mjs.world, [
+                this.catterPillar.composite
+            ])
+
+
+            const ground = Matter.Bodies.rectangle(el.clientWidth/2, el.clientHeight+160, el.clientWidth, 348, {
+                isStatic: true,
+                label: "ground",
+                friction: 1,
+                collisionFilter: {
+                    // category: 2,create
+                    // mask: 1
+                }
+            })
+            
+            // add all of the bodies to the world
+            Matter.Composite.add(mjs.world, [ground])
+        },
+        checkCatterpillarBounds() {
+            if (!this.catterPillar) {
+                return
+            }
+            
+            if (this.movementTimer > this.movementAction) {
+                const direction = Math.random() < .5 ? "left" : "right"
+                
+                this.catterPillar.move(direction)
+                this.movementTimer = 0
+                this.movementAction = 100 + Math.random() * 200   
+            }
+
+            const el = this.$refs.matterCanvas as HTMLElement
+            if (this.catterPillar.y > el.clientHeight + 200) {
+                const world = this.catterPillar.world
+                this.catterPillar.remove()
+                this.catterPillar = new Catterpillar(world, {x:el.clientWidth / 2, y: 8,length: 8, bodyPart: { size: 16 }, autoBlink: true})
+
+                Matter.Composite.add(world, [
+                    this.catterPillar.composite
+                ])
+            }
+
+            this.movementTimer ++
+            requestAnimationFrame(this.checkCatterpillarBounds.bind(this))
+        },
         textureTypeChange() {
             this.options.textureIndex = 0
             this.options.textureName = Object.keys(this.texture[this.options.textureType])[0]
@@ -359,6 +509,10 @@ export default defineComponent ({
             this.colorschemes.push(newColorScheme)
             localStorage.setItem("colorschemes", JSON.stringify(this.colorschemes))
         },
+        removeColorScheme(index: number) {
+            this.colorschemes.splice(index, 1)
+            localStorage.setItem("colorschemes", JSON.stringify(this.colorschemes))
+        },
         selectColorScheme(scheme: Array<string>) {
             this.options.color1 = scheme[0]
             this.options.color2 = scheme[1]
@@ -372,11 +526,21 @@ export default defineComponent ({
 <style lang="scss" scoped>
 
     @import '../assets/scss/variables.scss';
+    .options-overview {
+        &:before {
+            content: "";
+            position: absolute;
+            inset: 0 0 0 0;
+            z-index: -1;
+            background-image: linear-gradient(0deg, #fff 16%, #222 20%);
+        }
+    }
     #paperCanvas {
         aspect-ratio: 1/1;
         // transition: .14s ease-in-out;
     }
     .scroll-container {
+        background-color: #fafafa;
         overflow: hidden;
         display: flex;
         justify-content: center;
@@ -428,6 +592,9 @@ export default defineComponent ({
             padding: 0;
             position: absolute;
             width: 100%;
+            max-height: 132px;
+            overflow: auto;
+            background-color: #222;
             
             li {
                 display: flex;
@@ -441,6 +608,31 @@ export default defineComponent ({
         .color-scheme-color {
             height: 16px;
             width: 100px;
+        }
+    }
+    #catterpillar-canvas,
+    .matter-canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+        pointer-events: none;
+    }
+    .matter-canvas {
+        opacity: 0;
+    }
+    .color-scheme-remove {
+        font-size: 10px;
+        margin: 0 8px;
+        font-family: "Fixedsys", monospace;
+        line-height: 16px;
+        cursor: pointer;
+
+        &:hover {
+            text-decoration: underline;
+            color: tomato;
         }
     }
 </style>
