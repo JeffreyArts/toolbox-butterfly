@@ -201,7 +201,7 @@ export default defineComponent ({
             movementAction: 200,
             catterPillar: null as Catterpillar | null,
             catterPillarScope: null as paper.PaperScope | null,
-            catterPillarShapes: [] as Array<paper.Path | paper.Item>,
+            catterPillarShapes: [] as Array<{circle: paper.Path | paper.Item, texture: paper.Path | paper.Item}>,
             catterPillarEyes: [] as Array<paper.Path | paper.Item>,
             colorschemes: JSON.parse(localStorage.getItem("colorschemes") || "[]") as Array<Array<string>>,
             options: {
@@ -218,14 +218,17 @@ export default defineComponent ({
             return this.texture[this.options.textureType]
         }
     },
-    mounted() {
+    async mounted() {
         this.updateImage()
         this.initCatterPillar()
         this.catterPillarScope = new Paper.PaperScope()
         this.catterPillarScope.setup(this.$refs.catterpillarCanvas as HTMLCanvasElement)
         
         if (this.catterPillar) {
-            
+             
+            const texture = await this.importSVGAsync( "/bodyparts/top/t1/3.svg", this.catterPillarScope) as paper.Path | paper.Item
+            texture.fillColor = new this.catterPillarScope.Color("transparent")
+            texture.scale(this.catterPillar.bodyPart.size / (texture.view.bounds.width / 2)*1.2)
             // reverse this.catterPillar.bodyParts
             this.catterPillar.bodyParts.forEach(bodyPart => {
                 if (!this.catterPillarScope) {
@@ -236,8 +239,10 @@ export default defineComponent ({
                     radius: bodyPart.radius,
                     fillColor: new this.catterPillarScope.Color(this.options.color1),
                 })
-                
-                this.catterPillarShapes.push(circle)
+                const textureClone = texture.clone()
+                // Zet de SVG boven de cirkel
+                textureClone.insertAbove(circle)
+                this.catterPillarShapes.push({circle: circle, texture: textureClone})
             })
 
             this.catterPillarEyes.push(new this.catterPillarScope.Path.Ellipse({
@@ -264,6 +269,17 @@ export default defineComponent ({
         window.removeEventListener("resize", this.updateImage)
     },
     methods: {
+        importSVGAsync(urlOrString: string, scope: paper.PaperScope) {
+            return new Promise((resolve, reject) => {
+                try {
+                    scope.project.importSVG(urlOrString, function(item) {
+                        resolve(item)
+                    })
+                } catch (error) {
+                    reject(error)
+                }
+            })
+        },
         updateCatterpillar() {
             
             if (!this.catterPillar) {
@@ -279,17 +295,22 @@ export default defineComponent ({
                 const shape = this.catterPillarShapes[i]
 
                 // Update centrum
-                shape.position.x = bodyPart.x
-                shape.position.y = bodyPart.y
+                shape.circle.position.x = bodyPart.x
+                shape.circle.position.y = bodyPart.y
+                shape.texture.position.x = bodyPart.x
+                shape.texture.position.y = bodyPart.y
 
                 // Als de radius dynamisch verandert → updaten:
-                if (shape.bounds.width / 2 !== bodyPart.radius) {
-                    shape.scale(bodyPart.radius / (shape.bounds.width / 2))
+                if (shape.circle.bounds.width / 2 !== bodyPart.radius) {
+                    shape.circle.scale(bodyPart.radius / (shape.circle.bounds.width / 2))
+                    shape.texture.scale(bodyPart.radius / (shape.texture.bounds.width / 2))
                 }
 
                 // Als kleur verandert:
-                shape.fillColor = new this.catterPillarScope.Color(this.options.color1)
-                shape.strokeColor = new this.catterPillarScope.Color(this.options.color2)
+                shape.circle.fillColor = new this.catterPillarScope.Color(this.options.color1)
+                shape.circle.strokeColor = new this.catterPillarScope.Color(this.options.color2)
+                
+                shape.texture.fillColor = new this.catterPillarScope.Color(this.options.color2)
             })
 
             this.catterPillarEyes.forEach((eye, i) => {
