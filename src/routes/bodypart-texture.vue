@@ -203,7 +203,18 @@ export default defineComponent ({
                         "/bodyparts/bottom/b2/8.svg",
                     ]
                 } as Record<string, string[]>,
-                "vert": {} as Record<string, string[]>
+                "vert": {
+                    v1: [
+                        "/bodyparts/vert/v1/1.svg",
+                        "/bodyparts/vert/v1/2.svg",
+                        "/bodyparts/vert/v1/3.svg",
+                        "/bodyparts/vert/v1/4.svg",
+                        "/bodyparts/vert/v1/5.svg",
+                        "/bodyparts/vert/v1/6.svg",
+                        "/bodyparts/vert/v1/7.svg",
+                        "/bodyparts/vert/v1/8.svg",
+                    ]
+                } as Record<string, string[]>
             },
             movementTimer: 0,
             movementAction: 200,
@@ -289,6 +300,7 @@ export default defineComponent ({
                 shape.circle.fillColor = new this.catterPillarScope.Color(this.options.color1)
                 if (this.options.stroke) {
                     shape.circle.strokeColor = new this.catterPillarScope.Color(this.options.color2)
+                    shape.circle.strokeWidth = 1
                 }
                 
                 shape.texture.fillColor = new this.catterPillarScope.Color(this.options.color2)
@@ -391,8 +403,9 @@ export default defineComponent ({
 
                 const texture = await this.importSVGAsync(this.currentTexture[this.options.textureName][this.options.textureIndex] , this.catterPillarScope) as paper.Path | paper.Item
                 texture.fillColor = new this.catterPillarScope.Color("transparent")
-                texture.scale(this.catterPillar.bodyPart.size / (texture.view.bounds.width / 2))
-                // reverse this.catterPillar.bodyParts
+                texture.scale(this.catterPillar.bodyPart.size / (texture.bounds.width/2) )
+                
+        
                 this.catterPillar.bodyParts.forEach(bodyPart => {
                     if (!this.catterPillarScope) {
                         return
