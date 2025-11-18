@@ -86,8 +86,16 @@
                             </option>
                         </select>
                     </div>
-
+                    
                     <div class="option">
+                        <input type="checkbox" id="stroke" v-model="options.stroke" @change="updateMainImage(options.textureName, options.textureIndex)"/>
+                        <label for="stroke">
+                            Stroke
+                        </label>
+                    </div>
+                    
+
+                    <!-- <div class="option">
                         <label for="textureName">
                             Texture Name
                         </label>
@@ -106,7 +114,7 @@
                                 min="0" :max="texture[options.textureType][options.textureName]?.length -1" 
                                 v-model="options.textureIndex" 
                                 @change="updateImage"/>
-                    </div>
+                    </div> -->
                 </div>
             </div>
         </aside>
@@ -209,7 +217,8 @@ export default defineComponent ({
                 textureName: "t1",
                 textureIndex: 0,
                 color1: "#9f0",
-                color2: "#f09"
+                color2: "#f09",
+                stroke: false,
             }
         }
     },
@@ -223,41 +232,8 @@ export default defineComponent ({
         this.initCatterPillar()
         this.catterPillarScope = new Paper.PaperScope()
         this.catterPillarScope.setup(this.$refs.catterpillarCanvas as HTMLCanvasElement)
+        await this.updateMainImage(this.options.textureName, this.options.textureIndex)
         
-        if (this.catterPillar) {
-             
-            const texture = await this.importSVGAsync( "/bodyparts/top/t1/3.svg", this.catterPillarScope) as paper.Path | paper.Item
-            texture.fillColor = new this.catterPillarScope.Color("transparent")
-            texture.scale(this.catterPillar.bodyPart.size / (texture.view.bounds.width / 2)*1.2)
-            // reverse this.catterPillar.bodyParts
-            this.catterPillar.bodyParts.forEach(bodyPart => {
-                if (!this.catterPillarScope) {
-                    return
-                }
-                const circle = new this.catterPillarScope.Path.Circle({
-                    center: new this.catterPillarScope.Point(bodyPart.x, bodyPart.y),
-                    radius: bodyPart.radius,
-                    fillColor: new this.catterPillarScope.Color(this.options.color1),
-                })
-                const textureClone = texture.clone()
-                // Zet de SVG boven de cirkel
-                textureClone.insertAbove(circle)
-                this.catterPillarShapes.push({circle: circle, texture: textureClone})
-            })
-
-            this.catterPillarEyes.push(new this.catterPillarScope.Path.Ellipse({
-                ...this.catterPillar.eye.left
-            }))
-            this.catterPillarEyes.push(new this.catterPillarScope.Path.Ellipse({
-                ...this.catterPillar.eye.right
-            }))
-            this.catterPillarEyes.push(new this.catterPillarScope.Path.Ellipse({
-                ...this.catterPillar.eye.left.pupil
-            }))
-            this.catterPillarEyes.push(new this.catterPillarScope.Path.Ellipse({
-                ...this.catterPillar.eye.right.pupil
-            }))
-        }
         
         this.catterPillarScope.view.onFrame = this.updateCatterpillar.bind(this)
         
@@ -291,6 +267,9 @@ export default defineComponent ({
                 if (!this.catterPillarScope) {
                     return
                 }
+                if (this.catterPillarShapes.length <= i) {
+                    return
+                }
 
                 const shape = this.catterPillarShapes[i]
 
@@ -308,7 +287,9 @@ export default defineComponent ({
 
                 // Als kleur verandert:
                 shape.circle.fillColor = new this.catterPillarScope.Color(this.options.color1)
-                shape.circle.strokeColor = new this.catterPillarScope.Color(this.options.color2)
+                if (this.options.stroke) {
+                    shape.circle.strokeColor = new this.catterPillarScope.Color(this.options.color2)
+                }
                 
                 shape.texture.fillColor = new this.catterPillarScope.Color(this.options.color2)
             })
@@ -393,10 +374,62 @@ export default defineComponent ({
                 this.updateImage()
             })
         },
-        updateMainImage(textureName: string, textureIndex: number) {
+        async updateMainImage(textureName: string, textureIndex: number) {
             this.options.textureIndex = textureIndex
             this.options.textureName = textureName
             
+            if (this.catterPillar && this.catterPillarScope) {
+                // Clear old shapes
+                if (this.catterPillarShapes.length > 0) {
+                    this.catterPillarShapes.forEach(shape => {
+                        shape.circle.remove()
+                        shape.texture.remove()
+                    })
+                    this.catterPillarShapes = []
+                }
+
+
+                const texture = await this.importSVGAsync(this.currentTexture[this.options.textureName][this.options.textureIndex] , this.catterPillarScope) as paper.Path | paper.Item
+                texture.fillColor = new this.catterPillarScope.Color("transparent")
+                texture.scale(this.catterPillar.bodyPart.size / (texture.view.bounds.width / 2))
+                // reverse this.catterPillar.bodyParts
+                this.catterPillar.bodyParts.forEach(bodyPart => {
+                    if (!this.catterPillarScope) {
+                        return
+                    }
+                    const circle = new this.catterPillarScope.Path.Circle({
+                        center: new this.catterPillarScope.Point(bodyPart.x, bodyPart.y),
+                        radius: bodyPart.radius,
+                        fillColor: new this.catterPillarScope.Color(this.options.color1),
+                    })
+                    const textureClone = texture.clone()
+                    // Zet de SVG boven de cirkel
+                    textureClone.insertAbove(circle)
+                    this.catterPillarShapes.push({circle: circle, texture: textureClone})
+
+                })
+
+                if (this.catterPillarEyes.length > 0) {
+                    this.catterPillarEyes.forEach(eye => {
+                        eye.remove()
+                    })
+                    this.catterPillarEyes = []
+                }
+
+                this.catterPillarEyes.push(new this.catterPillarScope.Path.Ellipse({
+                    ...this.catterPillar.eye.left
+                }))
+                this.catterPillarEyes.push(new this.catterPillarScope.Path.Ellipse({
+                    ...this.catterPillar.eye.right
+                }))
+                this.catterPillarEyes.push(new this.catterPillarScope.Path.Ellipse({
+                    ...this.catterPillar.eye.left.pupil
+                }))
+                this.catterPillarEyes.push(new this.catterPillarScope.Path.Ellipse({
+                    ...this.catterPillar.eye.right.pupil
+                }))
+            }
+
             this.drawBodyPart("#paperCanvas", {
                 textureName: textureName,
                 textureIndex: textureIndex,
