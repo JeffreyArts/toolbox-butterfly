@@ -10,12 +10,17 @@
             <div class="scroll-container" ref="scroll-container" ratio="1x1">
                 <canvas id="paperCanvas" />
                 <div class="texture-indexes">
-                    <canvas v-for="(t,k) in currentTexture[options.textureName]" 
-                            :key="k"
-                            :id="`textureIndex-${k}`"
-                            :class="['texture-index']"
-                            @mouseenter="updateMainImage(k)">
-                    </canvas>
+                    <span class="texture-type-range" v-for="(textureType, textureName) in texture[options.textureType]" :key="textureName"> 
+                        <canvas class="texture-index"
+                                v-for="(t,k) in textureType"
+                                :key="k"
+                                :id="`textureIndex-${textureName}-${k}`"
+                                :class="['texture-index']"
+                                @mouseenter="updateMainImage(textureName, k)">
+                                
+                        </canvas>
+
+                    </span>
                 </div>
             </div>
 
@@ -26,33 +31,46 @@
 
                 <div class="option-group" name="General">
                     <div class="option">
-                        <label for="color1">
-                            Color 1
-                        </label>
+                        <div class="row">
+                            <div>      
+                                <label for="color1">
+                                    Color 1
+                                </label>
 
-                        <label class="ignore-label-styling" for="customColor1">
-                            <div class="dot" :style="{ backgroundColor: options.color1 }"></div>
-                        </label>
-                        <!-- <select name="color1" id="color1" v-model="options.color1" @change="updateImage">
-                            <option v-for="(c,k) in colors" :key="k" :value="c" :style="{ backgroundColor: c }">
-                                {{c}}
-                            </option>
-                        </select> -->
-                        <input type="color" class="color-picker" id="customColor1" v-model="options.color1" @input="updateImage"/>
+                                <label class="ignore-label-styling" for="customColor1">
+                                    <div class="dot" :style="{ backgroundColor: options.color1 }"></div>
+                                </label>
+                                <!-- <select name="color1" id="color1" v-model="options.color1" @change="updateImage">
+                                    <option v-for="(c,k) in colors" :key="k" :value="c" :style="{ backgroundColor: c }">
+                                        {{c}}
+                                    </option>
+                                </select> -->
+                                <input type="color" class="color-picker" id="customColor1" v-model="options.color1" @input="updateImage"/>
+                            </div>
+
+                            <div>
+                                <label for="color2">
+                                    Color 2
+                                </label>
+                                <label class="ignore-label-styling" for="customColor2">
+                                    <div class="dot" :style="{ backgroundColor: options.color2 }"></div>
+                                </label>
+                                <input type="color" class="color-picker" id="customColor2" v-model="options.color2" @input="updateImage"/>
+                            </div>
+
+                            <details class="color-scheme">
+                                <summary>Color scheme</summary>
+                                <ul>
+                                    <li v-for="(scheme, index) in colorschemes" :key="index" @click="selectColorScheme(scheme)">
+                                        <div class="color-scheme-color" :style="{ backgroundColor: scheme[0] }"></div>
+                                        <div class="color-scheme-color" :style="{ backgroundColor: scheme[1] }"></div>
+                                    </li>
+                                </ul>
+                            </details>
+                        </div>
                     </div>
                     <div class="option">
-                        <label for="color2">
-                            Color 2
-                        </label>
-                        <label class="ignore-label-styling" for="customColor2">
-                            <div class="dot" :style="{ backgroundColor: options.color2 }"></div>
-                        </label>
-                        <!-- <select name="color2" id="color2" v-model="options.color2" @change="updateImage">
-                            <option v-for="(c,k) in colors" :key="k" :value="c">
-                                {{c}}
-                            </option>
-                        </select> -->
-                        <input type="color" class="color-picker" id="customColor2" v-model="options.color2" @input="updateImage"/>
+                        <button class="button" @click="addColorScheme()">Add color scheme</button>
                     </div>
                     
                     <div class="option">
@@ -95,10 +113,8 @@
 
 <script lang="ts">
 import {defineComponent} from "vue"
-import axios from "axios"
 import _, { set } from "lodash"
 import Paper from "paper"
-import paperService from "@/services/paper-js"
     
 export default defineComponent ({ 
     props: [],
@@ -175,15 +191,13 @@ export default defineComponent ({
                 } as Record<string, string[]>,
                 "vert": {} as Record<string, string[]>
             },
-            colors: ["#f09","#9f0","#09f","#f90","#90f"],
+            colorschemes: JSON.parse(localStorage.getItem("colorschemes") || "[]") as Array<Array<string>>,
             options: {
                 textureType: "top" as "360" | "top" | "bottom" | "vert",
                 textureName: "t1",
                 textureIndex: 0,
                 color1: "#9f0",
-                color2: "#f09",
-                strokeWidth: 1,
-                strokeColor: "#f90",
+                color2: "#f09"
             }
         }
     },
@@ -191,14 +205,6 @@ export default defineComponent ({
         currentTexture () {
             return this.texture[this.options.textureType]
         }
-    },
-    watch: {
-        "options.selectedCountry": {
-            handler(){
-                this.updateImage()
-            },
-            immediate: true
-        },
     },
     mounted() {
         this.updateImage()
@@ -215,41 +221,14 @@ export default defineComponent ({
             setTimeout(() => {
                 this.updateImage()
             })
-            // this.updateImage()
         },
-        // updateCanvas() {
-        //     const canvas = this.$el.querySelector("#paperCanvas")
-        //     const el = this.$el.querySelector(".scroll-container")
-            
-        //     if (!canvas) {
-        //         console.error("Can't find canvas")
-        //         return
-        //     }
-
-        //     if (!el) {
-        //         console.error("Can't find element")
-        //         return
-        //     }
-        //     canvas.width = el.clientWidth
-        //     canvas.height = el.clientHeight
-            
-        //     paperService.destroy()
-        //     Paper.setup(canvas)
-            
-        //     if (Paper.view.viewSize.width != el.clientWidth) {
-        //         Paper.view.viewSize.width = el.clientWidth
-        //     }
-        //     if (Paper.view.viewSize.height != el.clientWidth) {
-        //         Paper.view.viewSize.height = el.clientWidth
-        //     }
-        //     this.updateImage()
-        // },
-        updateMainImage(index: number) {
-            this.options.textureIndex = index
+        updateMainImage(textureName: string, textureIndex: number) {
+            this.options.textureIndex = textureIndex
+            this.options.textureName = textureName
             
             this.drawBodyPart("#paperCanvas", {
-                textureName: this.options.textureName,
-                textureIndex: index,
+                textureName: textureName,
+                textureIndex: textureIndex,
                 color1: this.options.color1,
                 color2: this.options.color2,
             })
@@ -277,9 +256,11 @@ export default defineComponent ({
             
             document.querySelectorAll(".texture-index").forEach((canvas, index) => {
                 const canvasEl = canvas as HTMLCanvasElement
+                const textureIndex = canvasEl.id.split("-")[2]
+                const textureName = canvasEl.id.split("-")[1]
                 this.drawBodyPart(canvasEl, {
-                    textureName: this.options.textureName,
-                    textureIndex: index,
+                    textureName: textureName,
+                    textureIndex: parseInt(textureIndex),
                     color1: this.options.color1,
                     color2: this.options.color2,
                 })
@@ -361,16 +342,27 @@ export default defineComponent ({
                         // 5. Nu centreren in view
                         item.position = paperScope.view.center
 
-                        // 6. Eventueel kleuren aanpassen
-                        item.getItems({ class: paperScope.Path }).forEach(p => {
+                        // 6. Eventueel kleuren aanpassen 
+                        item.getItems({
+                            class: paperScope.Path
+                        }).forEach(p => {
                             p.fillColor = new paperScope.Color(options.color2)
                         })
-
-                        // this.painting.push(item)
                     }
                 }
             )
             this.paperScopes.push(paperScope)
+        },
+        addColorScheme() {
+            const newColorScheme = [this.options.color1, this.options.color2]
+           
+            this.colorschemes.push(newColorScheme)
+            localStorage.setItem("colorschemes", JSON.stringify(this.colorschemes))
+        },
+        selectColorScheme(scheme: Array<string>) {
+            this.options.color1 = scheme[0]
+            this.options.color2 = scheme[1]
+            this.updateImage()
         }
     }
 })
@@ -386,6 +378,11 @@ export default defineComponent ({
     }
     .scroll-container {
         overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-flow: column;
+        gap: 32px;
     }
     .dot {
         width: 1em;
@@ -404,11 +401,46 @@ export default defineComponent ({
     }
     .texture-indexes {
         display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    .texture-type-range {
+        display: grid;
+        gap: 8px;
+        max-width: calc(8 * 32px);
         grid-template-columns: repeat(8, 1fr);
-        gap: 4px;
     }
     .texture-index {
         width: 100%;
         aspect-ratio: 1/1;
+    }
+    .option .row {
+        display: flex;
+        gap: 16px;
+    }
+    .color-scheme {
+        width: 50%;
+        position: relative;
+
+        ul {
+            border: 1px solid currentColor;
+            margin: 8px 0 0 ;
+            padding: 0;
+            position: absolute;
+            width: 100%;
+            
+            li {
+                display: flex;
+                padding: 4px;
+                width: 100%;
+                &:hover {
+                    background-color: rgba(0,0,0,0.1);
+                }
+            }
+        }
+        .color-scheme-color {
+            height: 16px;
+            width: 100px;
+        }
     }
 </style>
