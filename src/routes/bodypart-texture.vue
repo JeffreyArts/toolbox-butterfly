@@ -14,7 +14,7 @@
                             :key="k"
                             :id="`textureIndex-${k}`"
                             :class="['texture-index']"
-                            >
+                            @mouseenter="updateMainImage(k)">
                     </canvas>
                 </div>
             </div>
@@ -244,6 +244,16 @@ export default defineComponent ({
         //     }
         //     this.updateImage()
         // },
+        updateMainImage(index: number) {
+            this.options.textureIndex = index
+            
+            this.drawBodyPart("#paperCanvas", {
+                textureName: this.options.textureName,
+                textureIndex: index,
+                color1: this.options.color1,
+                color2: this.options.color2,
+            })
+        },
         loadOptions() {
             this.ignoreOptionsUpdate = true
             const optionsString = localStorage.getItem("options")
@@ -260,14 +270,6 @@ export default defineComponent ({
             })
         },
         updateImage() {
-            // Verwijder de oude paper scopes
-            if (this.paperScopes.length > 0) {
-                _.each(this.paperScopes, scope => {
-                    scope.remove()
-                })
-                this.paperScopes.length = 0
-            }
-
             if (!this.$el) {
                 return
             }
@@ -290,7 +292,6 @@ export default defineComponent ({
             color2: string,
         }) {
 
-            const paperScope = new Paper.PaperScope()
             
             let canvas: HTMLCanvasElement | null = null
             if (typeof target === "string") {
@@ -302,7 +303,17 @@ export default defineComponent ({
                 console.error("Can't find canvas")
                 return
             }
+            const paperScope = new Paper.PaperScope()
             paperScope.setup(canvas)
+
+            // Remove old paperScope
+            this.paperScopes = this.paperScopes.filter(scope => {
+                const match = scope.project.view._id === paperScope.project.view._id
+                if (match) {
+                    scope.remove()
+                }
+                return !match
+            })
 
             const width = paperScope.view.bounds.width
             const height = paperScope.view.bounds.height
