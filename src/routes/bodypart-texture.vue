@@ -78,10 +78,40 @@
                     
                     <div class="option">
                         <label for="textureType">
-                            Texture Type
+                            Texture 1
                         </label>
-                        <select name="textureType" id="textureType" v-model="options.textureType" @change="textureTypeChange">
+                        <select name="textureType" id="textureType" v-model="options.textureType" @change="texture1TypeChange">
                             <option v-for="(t,k) in texture" :key="k" :value="k">
+                                {{k}}
+                            </option>
+                        </select>
+                    </div>
+                    
+                    <div class="option">
+                        <label for="texture2Type">
+                            Texture 2
+                        </label>
+                        <select name="texture2Type"
+                                id="texture2Type"
+                                v-model="options.texture2Name" 
+                                v-if="options.textureType == 'top'"
+                                @change="texture2TypeChange">
+                            <option value="">
+                                None
+                            </option>
+                            <option v-for="(t,k) in texture['bottom']" :key="k" :value="k">
+                                {{k}}
+                            </option>
+                        </select>
+                        <select name="texture2Type"
+                                id="texture2Type"
+                                v-model="options.texture2Name" 
+                                v-if="options.textureType == 'bottom'"
+                                @change="texture2TypeChange">
+                            <option value="">
+                                None
+                            </option>
+                            <option v-for="(t,k) in texture['top']" :key="k" :value="k">
                                 {{k}}
                             </option>
                         </select>
@@ -136,7 +166,6 @@ export default defineComponent ({
         return {
             ignoreOptionsUpdate: true,
             paperScopes: [] as Array<paper.PaperScope>,
-            painting: [] as Array<paper.Path | paper.Item>,
             texture: {
                 "360": {} as Record<string, string[]>,
                 "top": {
@@ -250,7 +279,7 @@ export default defineComponent ({
             movementAction: 200,
             catterPillar: null as Catterpillar | null,
             catterPillarScope: null as paper.PaperScope | null,
-            catterPillarShapes: [] as Array<{circle: paper.Path | paper.Item, texture?: paper.Path | paper.Item}>,
+            catterPillarShapes: [] as Array<{circle: paper.Path | paper.Item, texture?: paper.Path | paper.Item, texture2?: paper.Path | paper.Item}>,
             catterPillarEyes: [] as Array<paper.Path | paper.Item>,
             colorschemes: JSON.parse(localStorage.getItem("colorschemes") || "[]") as Array<Array<string>>,
             options: {
@@ -259,7 +288,8 @@ export default defineComponent ({
                 textureIndex: 0,
                 color1: "#9f0",
                 color2: "#f09",
-                stroke: false,
+                texture2Type: null as "top" | "bottom" | null,
+                texture2Name: "b1",
             }
         }
     },
@@ -314,31 +344,37 @@ export default defineComponent ({
 
                 const shape = this.catterPillarShapes[i]
 
-                // Update centrum
-                shape.circle.position.x = bodyPart.x
-                shape.circle.position.y = bodyPart.y
+                // Update circle
+                if (shape.circle) {
+                    shape.circle.position.x = bodyPart.x
+                    shape.circle.position.y = bodyPart.y
+                    shape.circle.fillColor = new this.catterPillarScope.Color(this.options.color1)
+
+                    if (shape.circle.bounds.width / 2 !== bodyPart.radius) {
+                        shape.circle.scale(bodyPart.radius / (shape.circle.bounds.width / 2))
+                    }
+                }
+
+                // Update texture
                 if (shape.texture) {
                     shape.texture.position.x = bodyPart.x
                     shape.texture.position.y = bodyPart.y
-                }
+                    shape.texture.fillColor = new this.catterPillarScope.Color(this.options.color2)
 
-                // Als de radius dynamisch verandert → updaten:
-                if (shape.circle.bounds.width / 2 !== bodyPart.radius) {
-                    shape.circle.scale(bodyPart.radius / (shape.circle.bounds.width / 2))
-                    if (shape.texture) {
+                    if (shape.texture.bounds.width / 2 !== bodyPart.radius) {
                         shape.texture.scale(bodyPart.radius / (shape.texture.bounds.width / 2))
                     }
                 }
 
-                // Als kleur verandert:
-                shape.circle.fillColor = new this.catterPillarScope.Color(this.options.color1)
-                if (this.options.stroke) {
-                    shape.circle.strokeColor = new this.catterPillarScope.Color(this.options.color2)
-                    shape.circle.strokeWidth = 1
-                }
-                
-                if (shape.texture) {
-                    shape.texture.fillColor = new this.catterPillarScope.Color(this.options.color2)
+                // Update texture 2
+                if (shape.texture2) {
+                    shape.texture2.position.x = bodyPart.x
+                    shape.texture2.position.y = bodyPart.y
+                    shape.texture2.fillColor = new this.catterPillarScope.Color(this.options.color2)
+
+                    if (shape.texture2.bounds.width / 2 !== bodyPart.radius) {
+                        shape.texture2.scale(bodyPart.radius / (shape.texture2.bounds.width / 2))
+                    }
                 }
             })
 
@@ -415,12 +451,18 @@ export default defineComponent ({
             this.movementTimer ++
             requestAnimationFrame(this.checkCatterpillarBounds.bind(this))
         },
-        textureTypeChange() {
+        async texture1TypeChange() {
             this.options.textureIndex = 0
             this.options.textureName = Object.keys(this.texture[this.options.textureType])[0]
-            setTimeout(() => {
-                this.updateImage()
-            })
+            this.options.texture2Name = ""
+            await this.updateMainImage(this.options.textureName, this.options.textureIndex)
+            this.updateImage()
+        },
+        async texture2TypeChange() {
+            
+            // this.options.textureName = Object.keys(this.texture[this.options.textureType])[0]
+            await this.updateMainImage(this.options.textureName, this.options.textureIndex)
+            this.updateImage()
         },
         async updateMainImage(textureName: string, textureIndex: number) {
             this.options.textureIndex = textureIndex
@@ -434,6 +476,9 @@ export default defineComponent ({
                         if (shape.texture) {
                             shape.texture.remove()
                         }
+                        if (shape.texture2) {
+                            shape.texture2.remove()
+                        }
                     })
                     this.catterPillarShapes = []
                 }
@@ -442,6 +487,24 @@ export default defineComponent ({
                 const texture = await this.importSVGAsync(this.currentTexture[this.options.textureName][this.options.textureIndex] , this.catterPillarScope) as paper.Path | paper.Item
                 texture.fillColor = new this.catterPillarScope.Color("transparent")
                 texture.scale(this.catterPillar.bodyPart.size / (texture.bounds.width/2) )
+
+                let texture2: paper.Path | paper.Item | null = null
+                if (["bottom", "top"].includes(this.options.textureType)) {
+                    if (this.options.textureType == "top") {
+                        this.options.texture2Type = "bottom"
+                    } else if (this.options.textureType == "bottom") {
+                        this.options.texture2Type = "top"
+                    }
+
+                    if (this.options.texture2Type && this.options.texture2Name !== "") {
+                        // console.log("this.options.texture2Name", this.options.texture2Name)
+                        texture2 = await this.importSVGAsync(this.texture[this.options.texture2Type][this.options.texture2Name][this.options.textureIndex] , this.catterPillarScope) as paper.Path | paper.Item
+                        texture2.fillColor = new this.catterPillarScope.Color("transparent")
+                        texture2.scale(this.catterPillar.bodyPart.size / (texture2.bounds.width/2) )
+                    }
+                }
+
+                
                 
         
                 this.catterPillar.bodyParts.forEach((bodyPart, index) => {
@@ -453,12 +516,25 @@ export default defineComponent ({
                         radius: bodyPart.radius,
                         fillColor: new this.catterPillarScope.Color(this.options.color1),
                     })
-                    const textureClone = texture.clone()
-                    // Zet de SVG boven de cirkel
-                    textureClone.insertAbove(circle)
-                    const newShapeObject = {circle: circle} as {circle: paper.Path | paper.Item, texture?: paper.Path | paper.Item}
-                    if (index!=0) {
-                        newShapeObject.texture = textureClone
+                    const newShapeObject = {circle: circle} as {circle: paper.Path | paper.Item, texture?: paper.Path | paper.Item, texture2?: paper.Path | paper.Item}
+
+
+                    if (texture) {
+                        const textureClone = texture.clone()
+                        // Zet de SVG boven de cirkel
+                        textureClone.insertAbove(circle)
+
+                        if (index!=0) {
+                            newShapeObject.texture = textureClone
+                        }
+                    }
+
+                    if (texture2) {
+                        const texture2Clone = texture2.clone()
+                        // Zet de SVG boven de cirkel
+                        texture2Clone.insertAbove(circle)
+
+                        newShapeObject.texture2 = texture2Clone
                     }
 
                     this.catterPillarShapes.push(newShapeObject)
@@ -486,12 +562,22 @@ export default defineComponent ({
                 }))
             }
 
-            this.drawBodyPart("#paperCanvas", {
-                textureName: textureName,
-                textureIndex: textureIndex,
+            const bodyPartOptions = {
+                texture: this.currentTexture[textureName][textureIndex],
                 color1: this.options.color1,
                 color2: this.options.color2,
-            })
+            } as {
+                texture: string,
+                texture2?: string,
+                color1: string,
+                color2: string,
+            }
+
+            if (this.options.texture2Type && this.options.texture2Name) {
+                bodyPartOptions["texture2"] = this.texture[this.options.texture2Type!][this.options.texture2Name][textureIndex]
+            }
+
+            this.drawBodyPart("#paperCanvas")
         },
         loadOptions() {
             this.ignoreOptionsUpdate = true
@@ -518,17 +604,29 @@ export default defineComponent ({
                 const canvasEl = canvas as HTMLCanvasElement
                 const textureIndex = canvasEl.id.split("-")[2]
                 const textureName = canvasEl.id.split("-")[1]
-                this.drawBodyPart(canvasEl, {
-                    textureName: textureName,
-                    textureIndex: parseInt(textureIndex),
+
+                const bodyPart = {
+                    texture: this.currentTexture[textureName][parseInt(textureIndex)],
+                    // texture2: this.currentTexture[textureName][parseInt(textureIndex)],
                     color1: this.options.color1,
                     color2: this.options.color2,
-                })
+                } as {
+                    texture: string,
+                    texture2?: string,
+                    color1: string,
+                    color2: string,
+                }
+
+                if (this.options.texture2Type && this.options.texture2Name) {
+                    bodyPart.texture2 = this.texture[this.options.texture2Type][this.options.texture2Name][0]
+                }
+
+                this.drawBodyPart(canvasEl, bodyPart)
             })
         },
         drawBodyPart(target: string | HTMLCanvasElement, options? : {
-            textureName: string,
-            textureIndex: number,
+            texture: string,
+            texture2?: string,
             color1: string,
             color2: string,
         }) {
@@ -561,7 +659,11 @@ export default defineComponent ({
 
 
             if (!options) {
-                options = this.options
+                options = {
+                    color1: this.options.color1,
+                    color2: this.options.color2,
+                    texture: this.currentTexture[this.options.textureName][this.options.textureIndex],
+                }
             }
             
             // draw circle
@@ -570,10 +672,9 @@ export default defineComponent ({
                 radius: Math.min(width, height)/2,
                 fillColor: new paperScope.Color(options.color1),
             })
-            // this.painting.push(circle)
 
 
-            const svgString = this.currentTexture[options.textureName][options.textureIndex] 
+            const svgString = options.texture
 
             if (!svgString) {
                 throw new Error("No valid texture found")
