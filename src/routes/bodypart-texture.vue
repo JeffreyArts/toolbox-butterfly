@@ -180,6 +180,26 @@ export default defineComponent ({
                         "/bodyparts/top/t4/7.svg",
                         "/bodyparts/top/t4/8.svg",
                     ],
+                    t5: [
+                        "/bodyparts/top/t5/1.svg",
+                        "/bodyparts/top/t5/2.svg",
+                        "/bodyparts/top/t5/3.svg",
+                        "/bodyparts/top/t5/4.svg",
+                        "/bodyparts/top/t5/5.svg",
+                        "/bodyparts/top/t5/6.svg",
+                        "/bodyparts/top/t5/7.svg",
+                        "/bodyparts/top/t5/8.svg",
+                    ],
+                    t6: [
+                        "/bodyparts/top/t6/1.svg",
+                        "/bodyparts/top/t6/2.svg",
+                        "/bodyparts/top/t6/3.svg",
+                        "/bodyparts/top/t6/4.svg",
+                        "/bodyparts/top/t6/5.svg",
+                        "/bodyparts/top/t6/6.svg",
+                        "/bodyparts/top/t6/7.svg",
+                        "/bodyparts/top/t6/8.svg",
+                    ],
                 } as Record<string, string[]>,
                 "bottom": {
                     b1: [
@@ -213,6 +233,16 @@ export default defineComponent ({
                         "/bodyparts/vert/v1/6.svg",
                         "/bodyparts/vert/v1/7.svg",
                         "/bodyparts/vert/v1/8.svg",
+                    ],
+                    v2: [
+                        "/bodyparts/vert/v2/1.svg",
+                        "/bodyparts/vert/v2/2.svg",
+                        "/bodyparts/vert/v2/3.svg",
+                        "/bodyparts/vert/v2/4.svg",
+                        "/bodyparts/vert/v2/5.svg",
+                        "/bodyparts/vert/v2/6.svg",
+                        "/bodyparts/vert/v2/7.svg",
+                        "/bodyparts/vert/v2/8.svg",
                     ]
                 } as Record<string, string[]>
             },
@@ -220,7 +250,7 @@ export default defineComponent ({
             movementAction: 200,
             catterPillar: null as Catterpillar | null,
             catterPillarScope: null as paper.PaperScope | null,
-            catterPillarShapes: [] as Array<{circle: paper.Path | paper.Item, texture: paper.Path | paper.Item}>,
+            catterPillarShapes: [] as Array<{circle: paper.Path | paper.Item, texture?: paper.Path | paper.Item}>,
             catterPillarEyes: [] as Array<paper.Path | paper.Item>,
             colorschemes: JSON.parse(localStorage.getItem("colorschemes") || "[]") as Array<Array<string>>,
             options: {
@@ -274,7 +304,7 @@ export default defineComponent ({
             }
             
 
-            this.catterPillar.bodyParts.reverse().forEach((bodyPart, i) => {
+            this.catterPillar.bodyParts.forEach((bodyPart, i) => {
                 if (!this.catterPillarScope) {
                     return
                 }
@@ -287,13 +317,17 @@ export default defineComponent ({
                 // Update centrum
                 shape.circle.position.x = bodyPart.x
                 shape.circle.position.y = bodyPart.y
-                shape.texture.position.x = bodyPart.x
-                shape.texture.position.y = bodyPart.y
+                if (shape.texture) {
+                    shape.texture.position.x = bodyPart.x
+                    shape.texture.position.y = bodyPart.y
+                }
 
                 // Als de radius dynamisch verandert → updaten:
                 if (shape.circle.bounds.width / 2 !== bodyPart.radius) {
                     shape.circle.scale(bodyPart.radius / (shape.circle.bounds.width / 2))
-                    shape.texture.scale(bodyPart.radius / (shape.texture.bounds.width / 2))
+                    if (shape.texture) {
+                        shape.texture.scale(bodyPart.radius / (shape.texture.bounds.width / 2))
+                    }
                 }
 
                 // Als kleur verandert:
@@ -303,7 +337,9 @@ export default defineComponent ({
                     shape.circle.strokeWidth = 1
                 }
                 
-                shape.texture.fillColor = new this.catterPillarScope.Color(this.options.color2)
+                if (shape.texture) {
+                    shape.texture.fillColor = new this.catterPillarScope.Color(this.options.color2)
+                }
             })
 
             this.catterPillarEyes.forEach((eye, i) => {
@@ -395,7 +431,9 @@ export default defineComponent ({
                 if (this.catterPillarShapes.length > 0) {
                     this.catterPillarShapes.forEach(shape => {
                         shape.circle.remove()
-                        shape.texture.remove()
+                        if (shape.texture) {
+                            shape.texture.remove()
+                        }
                     })
                     this.catterPillarShapes = []
                 }
@@ -406,7 +444,7 @@ export default defineComponent ({
                 texture.scale(this.catterPillar.bodyPart.size / (texture.bounds.width/2) )
                 
         
-                this.catterPillar.bodyParts.forEach(bodyPart => {
+                this.catterPillar.bodyParts.forEach((bodyPart, index) => {
                     if (!this.catterPillarScope) {
                         return
                     }
@@ -418,7 +456,12 @@ export default defineComponent ({
                     const textureClone = texture.clone()
                     // Zet de SVG boven de cirkel
                     textureClone.insertAbove(circle)
-                    this.catterPillarShapes.push({circle: circle, texture: textureClone})
+                    const newShapeObject = {circle: circle} as {circle: paper.Path | paper.Item, texture?: paper.Path | paper.Item}
+                    if (index!=0) {
+                        newShapeObject.texture = textureClone
+                    }
+
+                    this.catterPillarShapes.push(newShapeObject)
 
                 })
 
