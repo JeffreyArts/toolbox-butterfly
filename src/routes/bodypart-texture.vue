@@ -167,7 +167,18 @@ export default defineComponent ({
             ignoreOptionsUpdate: true,
             paperScopes: [] as Array<paper.PaperScope>,
             texture: {
-                "360": {} as Record<string, string[]>,
+                "360": {
+                    worms: [
+                        "/bodyparts/360/worms/1.svg",
+                        "/bodyparts/360/worms/2.svg",
+                        "/bodyparts/360/worms/3.svg",
+                        "/bodyparts/360/worms/4.svg",
+                        "/bodyparts/360/worms/5.svg",
+                        "/bodyparts/360/worms/6.svg",
+                        "/bodyparts/360/worms/7.svg",
+                        "/bodyparts/360/worms/8.svg",
+                    ],
+                } as Record<string, string[]>,
                 "top": {
                     t1: [
                         "/bodyparts/top/t1/1.svg",
@@ -229,6 +240,16 @@ export default defineComponent ({
                         "/bodyparts/top/t6/7.svg",
                         "/bodyparts/top/t6/8.svg",
                     ],
+                    t7: [
+                        "/bodyparts/top/t7/1.svg",
+                        "/bodyparts/top/t7/2.svg",
+                        "/bodyparts/top/t7/3.svg",
+                        "/bodyparts/top/t7/4.svg",
+                        "/bodyparts/top/t7/5.svg",
+                        "/bodyparts/top/t7/6.svg",
+                        "/bodyparts/top/t7/7.svg",
+                        "/bodyparts/top/t7/8.svg",
+                    ]
                 } as Record<string, string[]>,
                 "bottom": {
                     b1: [
@@ -250,6 +271,26 @@ export default defineComponent ({
                         "/bodyparts/bottom/b2/6.svg",
                         "/bodyparts/bottom/b2/7.svg",
                         "/bodyparts/bottom/b2/8.svg",
+                    ],
+                    b3: [
+                        "/bodyparts/bottom/b3/1.svg",
+                        "/bodyparts/bottom/b3/2.svg",
+                        "/bodyparts/bottom/b3/3.svg",
+                        "/bodyparts/bottom/b3/4.svg",
+                        "/bodyparts/bottom/b3/5.svg",
+                        "/bodyparts/bottom/b3/6.svg",
+                        "/bodyparts/bottom/b3/7.svg",
+                        "/bodyparts/bottom/b3/8.svg",
+                    ],
+                    b4: [
+                        "/bodyparts/bottom/b4/1.svg",
+                        "/bodyparts/bottom/b4/2.svg",
+                        "/bodyparts/bottom/b4/3.svg",
+                        "/bodyparts/bottom/b4/4.svg",
+                        "/bodyparts/bottom/b4/5.svg",
+                        "/bodyparts/bottom/b4/6.svg",
+                        "/bodyparts/bottom/b4/7.svg",
+                        "/bodyparts/bottom/b4/8.svg",
                     ]
                 } as Record<string, string[]>,
                 "vert": {
@@ -288,6 +329,7 @@ export default defineComponent ({
                 textureIndex: 0,
                 color1: "#9f0",
                 color2: "#f09",
+                stroke: false,
                 texture2Type: null as "top" | "bottom" | null,
                 texture2Name: "b1",
             }
@@ -319,7 +361,10 @@ export default defineComponent ({
         importSVGAsync(urlOrString: string, scope: paper.PaperScope) {
             return new Promise((resolve, reject) => {
                 try {
-                    scope.project.importSVG(urlOrString, function(item) {
+                    scope.project.importSVG(urlOrString, (item) => {
+                        // if (this.options.textureType == "360") {
+                        //     item.rotate(Math.random() * 360)
+                        // }
                         resolve(item)
                     })
                 } catch (error) {
@@ -349,6 +394,12 @@ export default defineComponent ({
                     shape.circle.position.x = bodyPart.x
                     shape.circle.position.y = bodyPart.y
                     shape.circle.fillColor = new this.catterPillarScope.Color(this.options.color1)
+                    if (this.options.stroke) {
+                        shape.circle.strokeColor = new this.catterPillarScope.Color(this.options.color2)
+                        shape.circle.strokeWidth = 1
+                    } else {
+                        shape.circle.strokeColor = new this.catterPillarScope.Color("transparent")
+                    }
 
                     if (shape.circle.bounds.width / 2 !== bodyPart.radius) {
                         shape.circle.scale(bodyPart.radius / (shape.circle.bounds.width / 2))
