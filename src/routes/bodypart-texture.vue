@@ -243,13 +243,9 @@ import Matter from "matter-js"
 import MatterService from "@/services/matter-js"
 import Catterpillar from "@/models/catterpillar"
 import Color from "@/models/color"
+import defaultTextures from "@/assets/default-textures"
+import defaultColorSchemes, { ColorScheme } from "@/assets/default-color-schemes"
     
-interface ColorScheme {
-    id: number;
-    colors: Array<string>;
-    disabled?: boolean;
-}
-
 export default defineComponent ({ 
     props: [],
     data() {
@@ -605,10 +601,11 @@ export default defineComponent ({
             catterPillarScope: null as paper.PaperScope | null,
             catterPillarShapes: [] as Array<{circle: paper.Path | paper.Item, texture?: paper.Path | paper.Item, texture2?: paper.Path | paper.Item}>,
             catterPillarEyes: [] as Array<paper.Path | paper.Item>,
-            colorschemes: JSON.parse(localStorage.getItem("colorschemes") || "[]") as Array<ColorScheme>,
-            textureCombinations: [] as Array<{top?: string, bottom?: string, vert?: string, "360"?: string, stroke?: boolean, disabled?: boolean}>,
-            originalColor1: "",
-            originalColor2: "",
+            catterPillarMouth: null as paper.Path | paper.Item | null,
+            colorschemes: [] as Array<ColorScheme>,
+            textureCombinations: defaultTextures as Array<{top?: string, bottom?: string, vert?: string, "360"?: string, stroke?: boolean, disabled?: boolean}>,
+            originalColor1: "#9f0",
+            originalColor2: "#f09",
             options: {
                 textureType: "top" as "360" | "top" | "bottom" | "vert",
                 textureName: "t1",
@@ -656,14 +653,31 @@ export default defineComponent ({
         this.addCloseDetailsListener(textureListDropdown)
 
 
+
+        // Set color schemes
+        const tempSchemes = localStorage.getItem("colorschemes")
+        if (tempSchemes) {
+            this.colorschemes = JSON.parse(tempSchemes)
+        } else {
+            this.colorschemes = defaultColorSchemes
+        }
+
+
         // Set texture combinations
         this.textureCombinations = this.generateAllPossibleTextureCombinations()
-        const storedCombinations = JSON.parse(localStorage.getItem("textureCombinations") || "[]") as Array<{top?: string, bottom?: string, vert?: string, "360"?: string, stroke?: boolean, disabled?: boolean}>
+        const tempCombinations = localStorage.getItem("enabledTextureCombinations")
+        
+        let storedTextureCombinations = [] as Array<{top?: string, bottom?: string, vert?: string, "360"?: string, stroke?: boolean}>
+        if (tempCombinations) {
+            storedTextureCombinations = JSON.parse(tempCombinations)
+        } else {
+            storedTextureCombinations = defaultTextures
+        }
         
         
         this.textureCombinations.forEach(combination => {
             // Find if this combination is in the stored combinations
-            const storedCombination = storedCombinations.find(stored => {
+            const storedCombination = storedTextureCombinations.find(stored => {
                 if (stored["360"] && combination["360"]) {
                     return stored["360"] === combination["360"] && stored.stroke === combination.stroke
                 } else if (stored.top && combination.top) {
@@ -716,11 +730,9 @@ export default defineComponent ({
                 this.options.offset = Math.floor(Math.random() * 16)
                 this.parseOffset()
 
-                this.updateMainImage(this.options.textureName, this.options.textureIndex)
-                this.updateImage()
             }
         },
-        parseOffset() {
+        async parseOffset() {
             const offset = this.options.offset
             if (offset == 0) {
                 this.options.color1 = this.originalColor1
@@ -775,6 +787,9 @@ export default defineComponent ({
                 this.options.color1 = new Color(this.originalColor1).adjustHsl(3,0.1,.05).toHex()
                 this.options.color2 =  new Color(this.originalColor2).adjustHsl(-2,0.05,0).toHex()       
             }
+
+            await this.updateMainImage(this.options.textureName, this.options.textureIndex)
+            this.updateImage()
         },
 
         onDragStart(scheme: ColorScheme) {
@@ -926,7 +941,7 @@ export default defineComponent ({
                 }
             })
         },
-        selectTextureCombination(combination: {top?: string, bottom?: string, vert?: string, "360"?: string, stroke?: boolean}) {
+        async selectTextureCombination(combination: {top?: string, bottom?: string, vert?: string, "360"?: string, stroke?: boolean}) {
             if (combination["360"]) {
                 this.options.textureType = "360"
                 this.options.textureName = combination["360"]
@@ -943,7 +958,7 @@ export default defineComponent ({
                 this.options.textureName = combination.vert
             }
             this.options.stroke = !!combination.stroke
-            this.updateMainImage(this.options.textureName, this.options.textureIndex)
+            await this.updateMainImage(this.options.textureName, this.options.textureIndex)
             this.updateImage()
         },
         importSVGAsync(urlOrString: string, scope: paper.PaperScope) {
@@ -953,6 +968,17 @@ export default defineComponent ({
                         // if (this.options.textureType == "360") {
                         //     item.rotate(Math.random() * 360)
                         // }
+                        if (!this.catterPillar) {
+                            reject("No catterpillar")
+                            return
+                        }
+                        
+                        item.scale(this.catterPillar.bodyPart.size / (item.bounds.width/2) )
+
+                        if (this.options.textureType == "360") {
+                            const offsetAngle = (this.options.offset / 16) * 360
+                            item.rotate(offsetAngle)
+                        }
                         resolve(item)
                     })
                 } catch (error) {
@@ -966,8 +992,8 @@ export default defineComponent ({
                 return
             }
             
-
-            this.catterPillar.bodyParts.forEach((bodyPart, i) => {
+            const bodyParts = _.reverse(this.catterPillar.bodyParts)
+            bodyParts.forEach((bodyPart, i) => {
                 if (!this.catterPillarScope) {
                     return
                 }
@@ -1000,8 +1026,8 @@ export default defineComponent ({
                     shape.texture.position.y = bodyPart.y
                     shape.texture.fillColor = new this.catterPillarScope.Color(this.options.color2)
 
-                    if (shape.texture.bounds.width / 2 !== bodyPart.radius) {
-                        shape.texture.scale(bodyPart.radius / (shape.texture.bounds.width / 2))
+                    if (shape.circle.bounds.width / 2 !== bodyPart.radius) {
+                        shape.texture.scale(bodyPart.radius / (shape.circle.bounds.width / 2))
                     }
                 }
 
@@ -1011,8 +1037,8 @@ export default defineComponent ({
                     shape.texture2.position.y = bodyPart.y
                     shape.texture2.fillColor = new this.catterPillarScope.Color(this.options.color2)
 
-                    if (shape.texture2.bounds.width / 2 !== bodyPart.radius) {
-                        shape.texture2.scale(bodyPart.radius / (shape.texture2.bounds.width / 2))
+                    if (shape.circle.bounds.width / 2 !== bodyPart.radius) {
+                        shape.texture2.scale(bodyPart.radius / (shape.circle.bounds.width / 2))
                     }
                 }
             })
@@ -1025,17 +1051,47 @@ export default defineComponent ({
                 if (i < 2) {
                     eye.fillColor = new this.catterPillarScope.Color("white")
                     eye.strokeColor = new this.catterPillarScope.Color("black")
-                    eye.position.x = catterPillarEye.x
-                    eye.position.y = catterPillarEye.y
+                    eye.position.x = catterPillarEye.x + catterPillarEye.offset.x
+                    eye.position.y = catterPillarEye.y + catterPillarEye.offset.y
                     return
                 }
                 
                 const pupil = this.catterPillar.eye[i%2 === 0 ? "left" : "right"].pupil
                 pupil.fillColor = new this.catterPillarScope.Color("black")
                 pupil.strokeColor = new this.catterPillarScope.Color("transparent")
-                pupil.position.x = catterPillarEye.x + catterPillarEye.pupilOffset.x
-                pupil.position.y = catterPillarEye.y + catterPillarEye.pupilOffset.y
+                pupil.position.x = catterPillarEye.x + catterPillarEye.offset.x
+                pupil.position.y = catterPillarEye.y + catterPillarEye.offset.y
             })
+
+
+            if (this.catterPillarMouth) {
+                if (!this.catterPillarScope || !this.catterPillar) {
+                    return
+                }
+                
+                this.catterPillar.mouth.paper.segments.forEach((segment, index) => {
+                    this.catterPillarMouth.segments[index] = segment
+                })
+                this.catterPillarMouth.smooth({ type: "continuous"})
+                this.catterPillarMouth.position = this.catterPillar.mouth.paper.position 
+                this.catterPillarMouth.fillColor = new this.catterPillarScope.Color("#000")
+            }
+
+            /**
+             * 
+        this.bottomLip = {
+            left:  this.paper.segments[0].point,
+            center:  this.paper.segments[1].point,
+            right:  this.paper.segments[2].point,
+        }
+        this.topLip = {
+            left:  this.paper.segments[5].point,
+            center:  this.paper.segments[4].point,
+            right:  this.paper.segments[3].point,
+        }
+
+        this.paper.fillColor = new Paper.Color("#222")
+             */
         },
         initCatterPillar() {
 
@@ -1043,7 +1099,7 @@ export default defineComponent ({
             const el = this.$refs.matterCanvas as HTMLElement
 
             const mjs = MatterService.init(this.$refs.matterCanvas as HTMLElement)  
-            this.catterPillar = new Catterpillar(mjs.world, {x:el.clientWidth / 2, y: 8, length: 8, bodyPart: { size: 8 }, autoBlink: true})
+            this.catterPillar = new Catterpillar(mjs.world, {x:el.clientWidth / 2, y: 8, length: 8, bodyPart: { size: 10 }, autoBlink: true})
 
             Matter.Composite.add(mjs.world, [
                 this.catterPillar.composite
@@ -1125,8 +1181,7 @@ export default defineComponent ({
 
                 const texture = await this.importSVGAsync(this.currentTexture[this.options.textureName][this.options.textureIndex] , this.catterPillarScope) as paper.Path | paper.Item
                 texture.fillColor = new this.catterPillarScope.Color("transparent")
-                texture.scale(this.catterPillar.bodyPart.size / (texture.bounds.width/2) )
-
+                
                 let texture2: paper.Path | paper.Item | null = null
                 if (["bottom", "top"].includes(this.options.textureType)) {
                     if (this.options.textureType == "top") {
@@ -1138,15 +1193,15 @@ export default defineComponent ({
                     if (this.options.texture2Type && this.options.texture2Name !== "") {
                         texture2 = await this.importSVGAsync(this.texture[this.options.texture2Type][this.options.texture2Name][this.options.textureIndex] , this.catterPillarScope) as paper.Path | paper.Item
                         texture2.fillColor = new this.catterPillarScope.Color("transparent")
-                        texture2.scale(this.catterPillar.bodyPart.size / (texture2.bounds.width/2) )
+                        // texture2.scale(this.catterPillar.bodyPart.size / (texture2.bounds.width/2) )
                     }
                 }
 
                 
                 
-        
-                this.catterPillar.bodyParts.forEach((bodyPart, index) => {
-                    if (!this.catterPillarScope) {
+                const bodyParts = _.reverse(this.catterPillar.bodyParts)
+                bodyParts.forEach((bodyPart, index) => {
+                    if (!this.catterPillar || !this.catterPillarScope) {
                         return
                     }
                     const circle = new this.catterPillarScope.Path.Circle({
@@ -1162,7 +1217,7 @@ export default defineComponent ({
                         // Zet de SVG boven de cirkel
                         textureClone.insertAbove(circle)
 
-                        if (index!=0) {
+                        if (index!=this.catterPillar.bodyParts.length -1) {
                             newShapeObject.texture = textureClone
                         }
                     }
@@ -1186,6 +1241,7 @@ export default defineComponent ({
                     this.catterPillarEyes = []
                 }
 
+
                 this.catterPillarEyes.push(new this.catterPillarScope.Path.Ellipse({
                     ...this.catterPillar.eye.left
                 }))
@@ -1198,6 +1254,25 @@ export default defineComponent ({
                 this.catterPillarEyes.push(new this.catterPillarScope.Path.Ellipse({
                     ...this.catterPillar.eye.right.pupil
                 }))
+
+
+                // Mouth
+                if (this.catterPillarMouth) {
+                    this.catterPillarMouth.remove()
+                    this.catterPillarMouth = null
+                }
+                
+                this.catterPillarMouth =  new Paper.Path([
+                    new Paper.Point(0,  0),
+                    new Paper.Point(1000 ,  0),
+                    new Paper.Point(1000,  1000),
+                    new Paper.Point(0,  1000),
+                    new Paper.Point(0,  0),
+                    new Paper.Point(2,  0),
+                    // new Paper.Point(2,  0),// This is going to be removed by calling the closePath method
+                ])
+
+                this.catterPillarMouth.fillColor = new this.catterPillarScope.Color("#333")
             }
 
             const bodyPartOptions = {
