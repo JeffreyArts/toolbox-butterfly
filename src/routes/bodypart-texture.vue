@@ -104,6 +104,10 @@
                         </details>
                     </div>
                     <div class="option">
+                        <label for="offset">Offset</label>
+                        <input type="number" min="0" max="15" id="offset" v-model="options.offset" @input="parseOffset"/>
+                    </div>
+                    <div class="option">
                         <button class="button" @click="exportJSON()">Export JSON</button>
                     </div>
                 </div>  
@@ -124,6 +128,9 @@
                                     </option>
                                 </select> -->
                                 <input type="color" class="color-picker" id="customColor1" v-model="options.color1" @input="updateImage"/>
+                            </div>
+                            <div @click="switchColors()">
+                                🔄
                             </div>
 
                             <div>
@@ -231,6 +238,7 @@ import Paper from "paper"
 import Matter from "matter-js"
 import MatterService from "@/services/matter-js"
 import Catterpillar from "@/models/catterpillar"
+import Color from "@/models/color"
     
 interface ColorScheme {
     id: number;
@@ -595,6 +603,8 @@ export default defineComponent ({
             catterPillarEyes: [] as Array<paper.Path | paper.Item>,
             colorschemes: JSON.parse(localStorage.getItem("colorschemes") || "[]") as Array<ColorScheme>,
             textureCombinations: [] as Array<{top?: string, bottom?: string, vert?: string, "360"?: string, stroke?: boolean, disabled?: boolean}>,
+            originalColor1: "",
+            originalColor2: "",
             options: {
                 textureType: "top" as "360" | "top" | "bottom" | "vert",
                 textureName: "t1",
@@ -604,6 +614,7 @@ export default defineComponent ({
                 stroke: false,
                 texture2Type: null as "top" | "bottom" | null,
                 texture2Name: "b1",
+                offset: 0
             }
         }
     },
@@ -671,6 +682,62 @@ export default defineComponent ({
     },
     methods: {
         
+        parseOffset() {
+            const offset = this.options.offset
+            if (offset == 0) {
+                this.options.color1 = this.originalColor1
+                this.options.color2 = this.originalColor2
+                    
+            } else if (offset == 1) {
+                this.options.color1 = new Color(this.originalColor1).adjustHsl(0,0,.1).toHex()
+                this.options.color2 =  new Color(this.originalColor2).adjustHsl(0,0,.1).toHex()       
+            } else if (offset == 2) {
+                this.options.color1 = new Color(this.originalColor1).adjustHsl(0,.08,0).toHex()
+                this.options.color2 =  new Color(this.originalColor2).adjustHsl(0,0.1,0.1).toHex()       
+            } else if (offset == 3) {
+                this.options.color1 = new Color(this.originalColor1).adjustHsl(.08,0,0).toHex()
+                this.options.color2 =  new Color(this.originalColor2).adjustHsl(0,0,.08).toHex()       
+            } else if (offset == 4) {
+                this.options.color1 = new Color(this.originalColor1).adjustHsl(.02,0,0).toHex()
+                this.options.color2 =  new Color(this.originalColor2).adjustHsl(-.02,0,0).toHex()       
+            } else if (offset == 5) {
+                this.options.color1 = new Color(this.originalColor1).adjustHsl(-.04,0,0).toHex()
+                this.options.color2 =  new Color(this.originalColor2).adjustHsl(.08,-.04,0).toHex()       
+            } else if (offset == 6) {
+                this.options.color1 = new Color(this.originalColor1).adjustHsl(.1,0,0.02).toHex()
+                this.options.color2 =  new Color(this.originalColor2).adjustHsl(-.1,-.08,0).toHex()       
+            } else if (offset == 7) {
+                this.options.color1 = new Color(this.originalColor1).adjustHsl(1,0,-0.04).toHex()
+                this.options.color2 =  new Color(this.originalColor2).adjustHsl(6,0,0.06).toHex()       
+            } else if (offset == 8) {
+                this.options.color1 = new Color(this.originalColor1).adjustHsl(0,0,0).toHex()
+                this.options.color2 =  new Color(this.originalColor2).adjustHsl(4,0,0).toHex()       
+            } else if (offset == 9) {
+                this.options.color1 = new Color(this.originalColor1).adjustHsl(10,0,0.08).toHex()
+                this.options.color2 =  new Color(this.originalColor2).adjustHsl(10,0,.02).toHex()       
+            } else if (offset == 9) {
+                this.options.color1 = new Color(this.originalColor1).adjustHsl(0,0,0).toHex()
+                this.options.color2 =  new Color(this.originalColor2).adjustHsl(0,0,0).toHex()       
+            } else if (offset == 10) {
+                this.options.color1 = new Color(this.originalColor1).adjustHsl(-8,0,0.1).toHex()
+                this.options.color2 =  new Color(this.originalColor2).adjustHsl(-5,0,0.1).toHex()       
+            } else if (offset == 11) {
+                this.options.color1 = new Color(this.originalColor1).adjustHsl(-4,0.1,0.1).toHex()
+                this.options.color2 =  new Color(this.originalColor2).adjustHsl(-8,0.1,0.1).toHex()       
+            } else if (offset == 12) {
+                this.options.color1 = new Color(this.originalColor1).adjustHsl(1,-0.1,0.1).toHex()
+                this.options.color2 =  new Color(this.originalColor2).adjustHsl(-2,0.1,0).toHex()       
+            } else if (offset == 13) {
+                this.options.color1 = new Color(this.originalColor1).adjustHsl(0,0.1,0).toHex()
+                this.options.color2 =  new Color(this.originalColor2).adjustHsl(0,0.1,0).toHex()       
+            } else if (offset == 14) {
+                this.options.color1 = new Color(this.originalColor1).adjustHsl(0,0.2,0.04).toHex()
+                this.options.color2 =  new Color(this.originalColor2).adjustHsl(0,0.2,0.04).toHex()       
+            } else if (offset == 15) {
+                this.options.color1 = new Color(this.originalColor1).adjustHsl(3,0.1,.05).toHex()
+                this.options.color2 =  new Color(this.originalColor2).adjustHsl(-2,0.05,0).toHex()       
+            }
+        },
 
         onDragStart(scheme: ColorScheme) {
             this.dragData = { index: scheme.id }
@@ -699,6 +766,12 @@ export default defineComponent ({
             localStorage.setItem("colorschemes", JSON.stringify(this.colorschemes))
 
             this.dragData = null
+        },
+        switchColors() {
+            const temp = this.options.color1
+            this.options.color1 = this.options.color2
+            this.options.color2 = temp
+            this.updateImage()
         },
         exportJSON() {
             const textureCombinations = this.textureCombinations.filter(combination => !combination.disabled).map(combination => {
@@ -1262,9 +1335,16 @@ export default defineComponent ({
             localStorage.setItem("colorschemes", JSON.stringify(this.colorschemes))
         },
         selectColorScheme(scheme: ColorScheme) {
-            this.options.color1 = scheme.colors[0]
-            this.options.color2 = scheme.colors[1]
+            this.originalColor1 = scheme.colors[0]
+            this.originalColor2 = scheme.colors[1]
+            
+            this.parseOffset()
+
+            // this.options.color1 = scheme.colors[0]
+            // this.options.color2 = scheme.colors[1]
             this.updateImage()
+            
+            console.log("set colorscheme", this.originalColor1, this.originalColor2)  
         }
     }
 })
