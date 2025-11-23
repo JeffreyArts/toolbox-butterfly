@@ -19,7 +19,6 @@
                                 :id="`textureIndex-${textureName}-${k}`"
                                 :class="['texture-index']"
                                 @mouseenter="updateMainImage(textureName, k)">
-                                
                         </canvas>
 
                     </span>
@@ -49,6 +48,45 @@
                                 </li>
                             </ul>
                         </details>
+                    </div>
+
+                    <div class="option">
+                        <details class="texture-list-container" ref="textureListDropdown">
+                            <summary>Texture combinations ( {{ enabledTextureCombinations }} )</summary>
+                            <div class="texture-combination-list">
+                                <header class="texture-combination-list-header">
+                                    <span>Texture name(s)</span>
+                                    <span>Stroke</span>
+                                    <span>Disabled</span>
+                                </header>
+                                <li 
+                                    v-for="(combination, index) in textureCombinations" 
+                                    :key="index" 
+                                    :class="['texture-combination-list-item', { __isDisabled: combination.disabled }]">
+                                    <span class="texture-combination-description" @click="selectTextureCombination(combination)" >
+                                        <span v-if="combination['360']">
+                                            {{ combination["360"] }}
+                                        </span>
+                                        <span v-if="combination.top">
+                                            {{ combination.top }}
+                                        </span>
+                                        <span v-if="combination.bottom">
+                                            {{ combination.bottom }}
+                                        </span>
+                                        <span v-if="combination.vert">
+                                            {{ combination.vert }}
+                                        </span>
+                                    </span>
+                                    <span v-text="combination['stroke'] ? '✅' : '❌'" @click="selectTextureCombination(combination)" ></span>
+                                    <span>
+                                        <input type="checkbox" :id="'disabled-' + index" v-model="combination.disabled" @change="storeTextureCombinations()"><label :for="'disabled-' + index">&nbsp;</label>
+                                    </span>
+                                </li>
+                            </div>
+                        </details>
+                    </div>
+                    <div class="option">
+                        <button class="button" @click="exportJSON()">Export JSON</button>
                     </div>
                 </div>  
                 <div class="option-group" name="Custom">
@@ -531,6 +569,7 @@ export default defineComponent ({
             catterPillarShapes: [] as Array<{circle: paper.Path | paper.Item, texture?: paper.Path | paper.Item, texture2?: paper.Path | paper.Item}>,
             catterPillarEyes: [] as Array<paper.Path | paper.Item>,
             colorschemes: JSON.parse(localStorage.getItem("colorschemes") || "[]") as Array<Array<string>>,
+            textureCombinations: [] as Array<{top?: string, bottom?: string, vert?: string, "360"?: string, stroke?: boolean, disabled?: boolean}>,
             options: {
                 textureType: "top" as "360" | "top" | "bottom" | "vert",
                 textureName: "t1",
@@ -544,6 +583,9 @@ export default defineComponent ({
         }
     },
     computed: {
+        enabledTextureCombinations() {
+            return this.textureCombinations.filter(combination => !combination.disabled).length
+        },
         currentTexture () {
             return this.texture[this.options.textureType]
         }
@@ -562,8 +604,34 @@ export default defineComponent ({
 
         
         const colorSchemeDropdown = this.$refs.colorSchemeDropdown as HTMLElement
-
         this.addCloseDetailsListener(colorSchemeDropdown)
+
+        const textureListDropdown = this.$refs.textureListDropdown as HTMLElement
+        this.addCloseDetailsListener(textureListDropdown)
+
+
+        // Set texture combinations
+        this.textureCombinations = this.generateAllPossibleTextureCombinations()
+        const storedCombinations = JSON.parse(localStorage.getItem("textureCombinations") || "[]") as Array<{top?: string, bottom?: string, vert?: string, "360"?: string, stroke?: boolean, disabled?: boolean}>
+        
+        
+        this.textureCombinations.forEach(combination => {
+            // Find if this combination is in the stored combinations
+            const storedCombination = storedCombinations.find(stored => {
+                if (stored["360"] && combination["360"]) {
+                    return stored["360"] === combination["360"] && stored.stroke === combination.stroke
+                } else if (stored.top && combination.top) {
+                    return stored.top === combination.top && stored.bottom === combination.bottom && stored.stroke === combination.stroke
+                } else if (stored.bottom && combination.bottom) {
+                    return stored.bottom === combination.bottom && stored.top === combination.top && stored.stroke === combination.stroke
+                } else if (stored.vert && combination.vert) {
+                    return stored.vert === combination.vert && stored.stroke === combination.stroke
+                }
+            })
+            
+            combination.disabled = !storedCombination ? true : false
+        })
+
         window.addEventListener("resize", this.updateImage)
         
     },
@@ -571,6 +639,91 @@ export default defineComponent ({
         window.removeEventListener("resize", this.updateImage)
     },
     methods: {
+        exportJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
+                colorschemes: this.colorschemes,
+                textureCombinations: this.textureCombinations.filter(combination => !combination.disabled)
+            }))
+            const downloadAnchorNode = document.createElement("a")
+            downloadAnchorNode.setAttribute("href",     dataStr)
+            downloadAnchorNode.setAttribute("download", "bodypart-texture-settings.json")
+            document.body.appendChild(downloadAnchorNode) // required for firefox
+            downloadAnchorNode.click()
+            downloadAnchorNode.remove()
+        },
+        storeTextureCombinations() {
+            // filter out disabled combinations before storing
+            const enabledCombinations = this.textureCombinations.filter(combination => !combination.disabled)
+            localStorage.setItem("textureCombinations", JSON.stringify(enabledCombinations))
+        },
+        generateAllPossibleTextureCombinations() {
+            const combinations = []  as Array<{top?: string, bottom?: string, vert?: string, "360"?: string, stroke?: boolean}>
+
+            // Add all 360 textures
+            Object.keys(this.texture["360"]).forEach(textureName => {
+                combinations.push({
+                    "360": textureName,
+                    stroke: false
+                })
+                combinations.push({
+                    "360": textureName,
+                    stroke: true
+                })
+            })
+
+            // Add all top + bottom combinations
+            Object.keys(this.texture["top"]).forEach(topTextureName => {
+                Object.keys(this.texture["bottom"]).forEach(bottomTextureName => {
+                    combinations.push({
+                        top: topTextureName,
+                        bottom: bottomTextureName,
+                        stroke: false
+                    })
+                    combinations.push({
+                        top: topTextureName,
+                        bottom: bottomTextureName,
+                        stroke: true
+                    })
+                })
+
+                // Add top only
+                combinations.push({
+                    top: topTextureName,
+                    stroke: false
+                })
+                combinations.push({
+                    top: topTextureName,
+                    stroke: true
+                })
+            })
+
+            // Add all bottom only combinations
+            Object.keys(this.texture["bottom"]).forEach(bottomTextureName => {
+                combinations.push({
+                    bottom: bottomTextureName,
+                    stroke: false
+                })
+                combinations.push({
+                    bottom: bottomTextureName,
+                    stroke: true
+                })
+            })
+
+            // Add all vert only combinations
+            Object.keys(this.texture["vert"]).forEach(vertTextureName => {
+                combinations.push({
+                    vert: vertTextureName,
+                    stroke: false
+                })
+                combinations.push({
+                    vert: vertTextureName,
+                    stroke: true
+                })
+            })
+
+            return combinations
+
+        },
         addCloseDetailsListener(htmlElement: HTMLElement) {
             document.addEventListener("click", (event) => {
                 const target = event.target as HTMLElement
@@ -581,6 +734,26 @@ export default defineComponent ({
                     htmlElement.removeAttribute("open")
                 }
             })
+        },
+        selectTextureCombination(combination: {top?: string, bottom?: string, vert?: string, "360"?: string, stroke?: boolean}) {
+            if (combination["360"]) {
+                this.options.textureType = "360"
+                this.options.textureName = combination["360"]
+            } else if (combination.top) {
+                this.options.textureType = "top"
+                this.options.textureName = combination.top
+                this.options.texture2Name = combination.bottom || ""
+            } else if (combination.bottom) {
+                this.options.textureType = "bottom"
+                this.options.textureName = combination.bottom
+                this.options.texture2Name = combination.top || ""
+            } else if (combination.vert) {
+                this.options.textureType = "vert"
+                this.options.textureName = combination.vert
+            }
+            this.options.stroke = !!combination.stroke
+            this.updateMainImage(this.options.textureName, this.options.textureIndex)
+            this.updateImage()
         },
         importSVGAsync(urlOrString: string, scope: paper.PaperScope) {
             return new Promise((resolve, reject) => {
@@ -772,7 +945,6 @@ export default defineComponent ({
                     }
 
                     if (this.options.texture2Type && this.options.texture2Name !== "") {
-                        // console.log("this.options.texture2Name", this.options.texture2Name)
                         texture2 = await this.importSVGAsync(this.texture[this.options.texture2Type][this.options.texture2Name][this.options.textureIndex] , this.catterPillarScope) as paper.Path | paper.Item
                         texture2.fillColor = new this.catterPillarScope.Color("transparent")
                         texture2.scale(this.catterPillar.bodyPart.size / (texture2.bounds.width/2) )
@@ -1149,6 +1321,91 @@ export default defineComponent ({
         &:hover {
             text-decoration: underline;
             color: tomato;
+        }
+    }
+
+    .texture-combination-list {
+        display:grid;
+        grid-template-columns: repeat(1, 1fr);
+        width: 100%;
+        // padding: 8px;
+        // gap: 16px;
+        border: 1px solid currentColor;
+        margin: 8px 0 0 ;
+        position: absolute;
+        max-height: 256px;
+        overflow: auto;
+        background-color: #222;
+        z-index: 100;
+    }
+
+    .texture-combination-list-header {
+        background-color: #fff;
+        color: #222;
+        padding: 8px;
+        font-weight: bold;
+        width: 100%;
+        position: sticky;
+        top: 0;
+        display: grid;
+        z-index: 1;
+        grid-template-columns: repeat(8, 1fr);
+
+        > span {
+            grid-column: span 2;
+            
+            &:first-child {
+                grid-column: span 4;
+            }
+            &:last-child {
+                grid-column: span 2;
+            }
+        }
+    }
+
+
+    .texture-combination-list-item {
+        padding-top: 4px;
+        padding-bottom: 4px;
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        align-items: center;
+        transition: .2s all ease-in-out;
+        cursor: pointer;
+        
+        &:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        &.__isDisabled {
+            opacity: 0.4;
+            filter: grayscale(100%);
+        }
+
+        > span {
+            display: flex;
+            grid-column: span 2;
+
+            &:first-child {
+                grid-column: span 4;
+                padding-left: 8px;
+                text-transform: capitalize;
+            }
+            &:last-child {
+                grid-column: span 2;
+                label {
+                    top: 2px;
+                }
+            }
+        }
+    }
+
+    .texture-combination-description {
+        span + span {
+            &:before {
+                margin-left: .25em;
+                content: " + ";
+            }
         }
     }
 </style>
