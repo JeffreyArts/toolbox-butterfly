@@ -33,18 +33,32 @@
                 <div class="option-group" name="Identity bitmap">
                     <div class="option">
                         <details class="color-scheme" ref="colorSchemeDropdown">
-                            <summary>Color scheme</summary>
+                            <summary>Color scheme  ( {{ enabledColorSchemes.length }} )</summary>
                             <ul class="color-scheme-list">
                                 <li 
-                                    v-for="(scheme, index) in colorschemes" 
+                                    v-for="(scheme, index) in enabledColorSchemes" 
                                     :key="index" 
                                     @click="selectColorScheme(scheme)" 
                                     class="color-scheme-color-container">
                                     <div class="color-scheme-color">
-                                        <span :style="{ backgroundColor: scheme[0] }"></span>
-                                        <span :style="{ backgroundColor: scheme[1] }"></span>
+                                        <span :style="{ backgroundColor: scheme.colors[0] }"></span>
+                                        <span :style="{ backgroundColor: scheme.colors[1] }"></span>
                                     </div>
-                                    <span class="color-scheme-color-remove" @click="removeColorScheme(index)">remove</span>
+                                    <span class="color-scheme-item-disable" @click="toggleDisabled(scheme, $event)">{{ scheme.disabled ? 'enable' : 'disable' }}</span>
+                                </li>
+
+                                <hr style="grid-column: span 5;" v-if="disabledColorSchemes.length > 0">
+
+                                <li v-for="(scheme, index) in disabledColorSchemes" 
+                                    :key="index" 
+                                    @click="selectColorScheme(scheme)" 
+                                    class="color-scheme-color-container __isDisabled">
+                                    <div class="color-scheme-color">
+                                        <span :style="{ backgroundColor: scheme.colors[0] }"></span>
+                                        <span :style="{ backgroundColor: scheme.colors[1] }"></span>
+                                    </div>
+                                    <span class="color-scheme-item-disable" @click="toggleDisabled(scheme, $event)">{{ scheme.disabled ? 'enable' : 'disable' }}</span>
+                                    <span class="color-scheme-item-remove" @click="removeColorScheme(scheme, $event)">❌</span>
                                 </li>
                             </ul>
                         </details>
@@ -568,7 +582,7 @@ export default defineComponent ({
             catterPillarScope: null as paper.PaperScope | null,
             catterPillarShapes: [] as Array<{circle: paper.Path | paper.Item, texture?: paper.Path | paper.Item, texture2?: paper.Path | paper.Item}>,
             catterPillarEyes: [] as Array<paper.Path | paper.Item>,
-            colorschemes: JSON.parse(localStorage.getItem("colorschemes") || "[]") as Array<Array<string>>,
+            colorschemes: JSON.parse(localStorage.getItem("colorschemes") || "[]") as Array<{colors:Array<string>, disabled?: boolean}>,
             textureCombinations: [] as Array<{top?: string, bottom?: string, vert?: string, "360"?: string, stroke?: boolean, disabled?: boolean}>,
             options: {
                 textureType: "top" as "360" | "top" | "bottom" | "vert",
@@ -588,6 +602,12 @@ export default defineComponent ({
         },
         currentTexture () {
             return this.texture[this.options.textureType]
+        },
+        enabledColorSchemes() {
+            return this.colorschemes.filter(scheme => !scheme.disabled)
+        },
+        disabledColorSchemes() {
+            return this.colorschemes.filter(scheme => scheme.disabled)
         }
     },
     async mounted() {
@@ -640,9 +660,24 @@ export default defineComponent ({
     },
     methods: {
         exportJSON() {
+
+            const textureCombinations = this.textureCombinations.filter(combination => !combination.disabled).map(combination => {
+                return {
+                    top: combination.top,
+                    bottom: combination.bottom,
+                    vert: combination.vert,
+                    "360": combination["360"],
+                    stroke: combination.stroke
+                }
+            })
+
+            const colorSchemes = this.colorschemes.filter(scheme => !scheme.disabled).map(scheme => {
+                return scheme.colors
+            })
+
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
-                colorschemes: this.colorschemes,
-                textureCombinations: this.textureCombinations.filter(combination => !combination.disabled)
+                colorSchemes,
+                textureCombinations
             }))
             const downloadAnchorNode = document.createElement("a")
             downloadAnchorNode.setAttribute("href",     dataStr)
@@ -650,6 +685,11 @@ export default defineComponent ({
             document.body.appendChild(downloadAnchorNode) // required for firefox
             downloadAnchorNode.click()
             downloadAnchorNode.remove()
+        },
+        toggleDisabled(scheme: {colors:Array<string>, disabled?: boolean}, event: Event) {
+            event.stopPropagation()
+            scheme.disabled = !scheme.disabled
+            localStorage.setItem("colorschemes", JSON.stringify(this.colorschemes))
         },
         storeTextureCombinations() {
             // filter out disabled combinations before storing
@@ -1162,18 +1202,19 @@ export default defineComponent ({
             this.paperScopes.push(paperScope)
         },
         addColorScheme() {
-            const newColorScheme = [this.options.color1, this.options.color2]
+            const newColorScheme = {colors: [this.options.color1, this.options.color2], disabled: false}
            
             this.colorschemes.push(newColorScheme)
             localStorage.setItem("colorschemes", JSON.stringify(this.colorschemes))
         },
-        removeColorScheme(index: number) {
-            this.colorschemes.splice(index, 1)
+        removeColorScheme(scheme: {colors: Array<string>, disabled?: boolean}, event: Event) {
+            event.stopPropagation()
+            this.colorschemes = this.colorschemes.filter(s => s !== scheme)
             localStorage.setItem("colorschemes", JSON.stringify(this.colorschemes))
         },
-        selectColorScheme(scheme: Array<string>) {
-            this.options.color1 = scheme[0]
-            this.options.color2 = scheme[1]
+        selectColorScheme(scheme: {colors: Array<string>, disabled?: boolean}) {
+            this.options.color1 = scheme.colors[0]
+            this.options.color2 = scheme.colors[1]
             this.updateImage()
         }
     }
@@ -1280,9 +1321,22 @@ export default defineComponent ({
         display: flex;
         flex-flow: column;
         align-items: center;
+        transition:.2s all ease-in-out;
 
         &:hover {
             background-color: rgba(0,0,0,0.1);
+        }
+
+        &.__isDisabled {
+            filter: grayscale(80%);
+            &:hover {
+                filter: grayscale(0%);
+            }
+            
+            .color-scheme-color:hover {
+                scale: 1;
+                
+            }
         }
     }
 
@@ -1310,7 +1364,7 @@ export default defineComponent ({
         }
     }
 
-    .color-scheme-color-remove {
+    .color-scheme-item-disable {
         font-size: 10px;
         margin: 0 8px;
         font-family: "Fixedsys", monospace;
@@ -1407,5 +1461,13 @@ export default defineComponent ({
                 content: " + ";
             }
         }
+    }
+
+    .color-scheme-item-remove {
+        position: absolute;
+        top: 0;
+        right: 0;
+        font-size: 12px;
+        cursor: pointer;
     }
 </style>
