@@ -37,8 +37,12 @@
                             <ul class="color-scheme-list">
                                 <li 
                                     v-for="(scheme, index) in enabledColorSchemes" 
-                                    :key="index" 
+                                    :key="scheme.id" 
                                     @click="selectColorScheme(scheme)" 
+                                    draggable="true"
+                                    @dragstart="onDragStart(scheme)"
+                                    @dragover.prevent
+                                    @drop="onDrop(scheme)"
                                     class="color-scheme-color-container">
                                     <div class="color-scheme-color">
                                         <span :style="{ backgroundColor: scheme.colors[0] }"></span>
@@ -228,6 +232,12 @@ import Matter from "matter-js"
 import MatterService from "@/services/matter-js"
 import Catterpillar from "@/models/catterpillar"
     
+interface ColorScheme {
+    id: number;
+    colors: Array<string>;
+    disabled?: boolean;
+}
+
 export default defineComponent ({ 
     props: [],
     data() {
@@ -576,13 +586,14 @@ export default defineComponent ({
                     
                 } as Record<string, string[]>
             },
+            dragData: null as null | { index: number, list: "enabled" | "disabled" },
             movementTimer: 0,
             movementAction: 200,
             catterPillar: null as Catterpillar | null,
             catterPillarScope: null as paper.PaperScope | null,
             catterPillarShapes: [] as Array<{circle: paper.Path | paper.Item, texture?: paper.Path | paper.Item, texture2?: paper.Path | paper.Item}>,
             catterPillarEyes: [] as Array<paper.Path | paper.Item>,
-            colorschemes: JSON.parse(localStorage.getItem("colorschemes") || "[]") as Array<{colors:Array<string>, disabled?: boolean}>,
+            colorschemes: JSON.parse(localStorage.getItem("colorschemes") || "[]") as Array<ColorScheme>,
             textureCombinations: [] as Array<{top?: string, bottom?: string, vert?: string, "360"?: string, stroke?: boolean, disabled?: boolean}>,
             options: {
                 textureType: "top" as "360" | "top" | "bottom" | "vert",
@@ -659,8 +670,37 @@ export default defineComponent ({
         window.removeEventListener("resize", this.updateImage)
     },
     methods: {
-        exportJSON() {
+        
 
+        onDragStart(scheme: ColorScheme) {
+            this.dragData = { id: scheme.id }
+        },
+
+        onDrop(target: ColorScheme) {
+            console.log("drop", target, this.dragData)
+            if (!this.dragData) return
+
+            const draggedIndex = this.colorschemes.findIndex(
+                s => s.id === this.dragData!.id
+            )
+            const targetIndex = this.colorschemes.findIndex(
+                s => s.id === target.id
+            )
+
+            const dragged = this.colorschemes[draggedIndex]
+
+            // Verwijderen uit originele positie
+            this.colorschemes.splice(draggedIndex, 1)
+
+            // Toevoegen op nieuwe positie
+            this.colorschemes.splice(targetIndex, 0, dragged)
+
+            // Opslaan
+            localStorage.setItem("colorschemes", JSON.stringify(this.colorschemes))
+
+            this.dragData = null
+        },
+        exportJSON() {
             const textureCombinations = this.textureCombinations.filter(combination => !combination.disabled).map(combination => {
                 return {
                     top: combination.top,
@@ -1202,7 +1242,10 @@ export default defineComponent ({
             this.paperScopes.push(paperScope)
         },
         addColorScheme() {
-            const newColorScheme = {colors: [this.options.color1, this.options.color2], disabled: false}
+
+            // unix timestamp as id
+            const id = Date.now()
+            const newColorScheme = {id, colors: [this.options.color1, this.options.color2], disabled: false}
            
             this.colorschemes.push(newColorScheme)
             localStorage.setItem("colorschemes", JSON.stringify(this.colorschemes))
