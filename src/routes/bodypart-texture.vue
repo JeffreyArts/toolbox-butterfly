@@ -31,7 +31,27 @@
         <aside class="sidebar">
             <div class="options">
 
-                <div class="option-group" name="General">
+                <div class="option-group" name="Identity bitmap">
+                    <div class="option">
+                        <details class="color-scheme" ref="colorSchemeDropdown">
+                            <summary>Color scheme</summary>
+                            <ul class="color-scheme-list">
+                                <li 
+                                    v-for="(scheme, index) in colorschemes" 
+                                    :key="index" 
+                                    @click="selectColorScheme(scheme)" 
+                                    class="color-scheme-color-container">
+                                    <div class="color-scheme-color">
+                                        <span :style="{ backgroundColor: scheme[0] }"></span>
+                                        <span :style="{ backgroundColor: scheme[1] }"></span>
+                                    </div>
+                                    <span class="color-scheme-color-remove" @click="removeColorScheme(index)">remove</span>
+                                </li>
+                            </ul>
+                        </details>
+                    </div>
+                </div>  
+                <div class="option-group" name="Custom">
                     <div class="option">
                         <div class="row">
                             <div>      
@@ -60,70 +80,66 @@
                                 <input type="color" class="color-picker" id="customColor2" v-model="options.color2" @input="updateImage"/>
                             </div>
 
-                            <details class="color-scheme">
-                                <summary>Color scheme</summary>
-                                <ul>
-                                    <li v-for="(scheme, index) in colorschemes" :key="index" @click="selectColorScheme(scheme)">
-                                        <div class="color-scheme-color" :style="{ backgroundColor: scheme[0] }"></div>
-                                        <div class="color-scheme-color" :style="{ backgroundColor: scheme[1] }"></div>
-                                        <span class="color-scheme-remove" @click="removeColorScheme(index)">remove</span>
-                                    </li>
-                                </ul>
-                            </details>
+
+                            <div>
+                                <button class="button __isSmall" @click="addColorScheme()">Add color scheme</button>
+                            </div>
                         </div>
                     </div>
-                    <div class="option">
-                        <button class="button" @click="addColorScheme()">Add color scheme</button>
-                    </div>
                     
                     <div class="option">
-                        <label for="textureType">
-                            Texture 1
-                        </label>
-                        <select name="textureType" id="textureType" v-model="options.textureType" @change="texture1TypeChange">
-                            <option v-for="(t,k) in texture" :key="k" :value="k">
-                                {{k}}
-                            </option>
-                        </select>
-                    </div>
-                    
-                    <div class="option">
-                        <label for="texture2Type">
-                            Texture 2
-                        </label>
-                        <select name="texture2Type"
-                                id="texture2Type"
-                                v-model="options.texture2Name" 
-                                v-if="options.textureType == 'top'"
-                                @change="texture2TypeChange">
-                            <option value="">
-                                None
-                            </option>
-                            <option v-for="(t,k) in texture['bottom']" :key="k" :value="k">
-                                {{k}}
-                            </option>
-                        </select>
-                        <select name="texture2Type"
-                                id="texture2Type"
-                                v-model="options.texture2Name" 
-                                v-if="options.textureType == 'bottom'"
-                                @change="texture2TypeChange">
-                            <option value="">
-                                None
-                            </option>
-                            <option v-for="(t,k) in texture['top']" :key="k" :value="k">
-                                {{k}}
-                            </option>
-                        </select>
-                    </div>
-                    
-                    <div class="option">
-                        <input type="checkbox" id="stroke" v-model="options.stroke" @change="updateMainImage(options.textureName, options.textureIndex)"/>
-                        <label for="stroke">
-                            Stroke
-                        </label>
-                    </div>
-                    
+                        <div class="row">
+                            <div>
+                                <label for="textureType">
+                                    Texture 1
+                                </label>
+                                <select name="textureType" id="textureType" v-model="options.textureType" @change="texture1TypeChange">
+                                    <option v-for="(t,k) in texture" :key="k" :value="k">
+                                        {{k}}
+                                    </option>
+                                </select>
+                            </div>
+
+
+                            <div v-if="options.textureType == 'top' || options.textureType == 'bottom'">
+                                <label for="texture2Type">
+                                    Texture 2
+                                </label>
+                                <select name="texture2Type"
+                                        id="texture2Type"
+                                        v-model="options.texture2Name" 
+                                        v-if="options.textureType == 'top'"
+                                        @change="texture2TypeChange"><br>
+                                    <option value="">
+                                        None
+                                    </option>
+                                    <option v-for="(t,k) in texture['bottom']" :key="k" :value="k">
+                                        {{k}}
+                                    </option>
+                                </select>
+
+                                <select name="texture2Type"
+                                        id="texture2Type"
+                                        v-model="options.texture2Name" 
+                                        v-if="options.textureType == 'bottom'"
+                                        @change="texture2TypeChange"><br>
+                                    <option value="">
+                                        None
+                                    </option>
+                                    <option v-for="(t,k) in texture['top']" :key="k" :value="k">
+                                        {{k}}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <input type="checkbox" id="stroke" v-model="options.stroke" @change="updateMainImage(options.textureName, options.textureIndex)"/>
+                                <label for="stroke">
+                                    Stroke
+                                </label>
+                            </div>
+                        </div>
+                    </div>    
 
                     <!-- <div class="option">
                         <label for="textureName">
@@ -543,6 +559,11 @@ export default defineComponent ({
         this.catterPillarScope.view.onFrame = this.updateCatterpillar.bind(this)
         
         requestAnimationFrame(this.checkCatterpillarBounds.bind(this))
+
+        
+        const colorSchemeDropdown = this.$refs.colorSchemeDropdown as HTMLElement
+
+        this.addCloseDetailsListener(colorSchemeDropdown)
         window.addEventListener("resize", this.updateImage)
         
     },
@@ -550,6 +571,17 @@ export default defineComponent ({
         window.removeEventListener("resize", this.updateImage)
     },
     methods: {
+        addCloseDetailsListener(htmlElement: HTMLElement) {
+            document.addEventListener("click", (event) => {
+                const target = event.target as HTMLElement
+                if (!target)  {
+                    return
+                }
+                if (!htmlElement.contains(target)) {
+                    htmlElement.removeAttribute("open")
+                }
+            })
+        },
         importSVGAsync(urlOrString: string, scope: paper.PaperScope) {
             return new Promise((resolve, reject) => {
                 try {
@@ -1035,34 +1067,7 @@ export default defineComponent ({
     .option .row {
         display: flex;
         gap: 16px;
-    }
-    .color-scheme {
-        width: 50%;
-        position: relative;
-
-        ul {
-            border: 1px solid currentColor;
-            margin: 8px 0 0 ;
-            padding: 0;
-            position: absolute;
-            width: 100%;
-            max-height: 132px;
-            overflow: auto;
-            background-color: #222;
-            
-            li {
-                display: flex;
-                padding: 4px;
-                width: 100%;
-                &:hover {
-                    background-color: rgba(0,0,0,0.1);
-                }
-            }
-        }
-        .color-scheme-color {
-            height: 16px;
-            width: 100px;
-        }
+        align-items: flex-end;
     }
     #catterpillar-canvas,
     .matter-canvas {
@@ -1077,12 +1082,69 @@ export default defineComponent ({
     .matter-canvas {
         opacity: 0;
     }
-    .color-scheme-remove {
+    
+    
+    .color-scheme {
+        width: 100%;
+        position: relative;
+        z-index: 100;
+    }
+    
+    .color-scheme-list {
+        display:grid;
+        grid-template-columns: repeat(5, 1fr);
+        width: 100%;
+        padding: 8px;
+        gap: 16px;
+        border: 1px solid currentColor;
+        margin: 8px 0 0 ;
+        position: absolute;
+        max-height: 256px;
+        overflow: auto;
+        background-color: #222;
+    }
+
+    .color-scheme-color-container {
+        display: flex;
+        flex-flow: column;
+        align-items: center;
+
+        &:hover {
+            background-color: rgba(0,0,0,0.1);
+        }
+    }
+
+    .color-scheme-color {
+        aspect-ratio: 1/1;
+        display: flex;
+        width: 100%;
+        overflow: hidden;
+        border-radius: 100%;
+        rotate: 45deg;
+        text-align: center;
+        transition: .2s all ease-in-out;
+        cursor: pointer;
+
+        &:hover {
+            box-shadow: rgba(255, 255, 255, 0.15) 0 0 8px;
+            // outline: 1px solid currentColor;
+            scale: 1.2;
+        }
+
+        span {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    .color-scheme-color-remove {
         font-size: 10px;
         margin: 0 8px;
         font-family: "Fixedsys", monospace;
         line-height: 16px;
         cursor: pointer;
+        display: inline-block;
 
         &:hover {
             text-decoration: underline;
