@@ -55,8 +55,8 @@
                         </i>
                     </div>
                     <div class="option">
-                        <label for="colorOffset">Color Offset:</label>
-                        <input type="number" id="colorOffset" v-model="options.colorOffset" min="0" max="15" />
+                        <label for="offset">Offset:</label>
+                        <input type="number" id="offset" v-model="options.offset" min="0" max="15" />
                         <i class="info">
                             <span class="info-icon">?</span>
                             <span class="info-details">
@@ -94,15 +94,13 @@
 <script lang="ts">
 import {defineComponent} from "vue"
 import QR from "qrcode"
-import { c, M } from "vite/dist/node/types.d-aGj9QkWt"
-import { decode } from "punycode"
 
 interface Options {
     id: number // 29-bit: 23 bits seconds/4 + 6 bits random
     name: string // max 16 chars, letters A-Z/a-z + space
     textureId: number // 0-1023
     colorSchemeId: number // 0-1023
-    colorOffset: number // 0-15
+    offset: number // 0-15
     url: string
     encodedString: string
 }
@@ -115,7 +113,7 @@ type IdentityField = {
   name: string;          // max 16 chars, letters A-Z/a-z + space
   textureId: number;     // 0-1023
   colorSchemeId: number; // 0-1023
-  colorOffset: number;   // 0-15
+  offset: number;   // 0-15
 };
 
 // Generate and encode identity to QR-ready Base45 string of 29 + 96 + 10 + 10 + 4 = 149 bits
@@ -154,7 +152,7 @@ class IdentityEncoder {
         if (typeof json !== "object" || json === null)
             throw new Error("Input must be a non-null object")
 
-        const { id, name, textureId, colorSchemeId, colorOffset } = json
+        const { id, name, textureId, colorSchemeId, offset } = json
 
         if (typeof id !== "number" || id < 0 || id > 0x1FFFFFFF)
             throw new Error("Invalid id: must be 0-536870911 (29-bit)")
@@ -169,10 +167,10 @@ class IdentityEncoder {
             throw new Error("Invalid textureId: must be 0-1023")
         if (typeof colorSchemeId !== "number" || colorSchemeId < 0 || colorSchemeId > 1023)
             throw new Error("Invalid colorSchemeId: must be 0-1023")
-        if (typeof colorOffset !== "number" || colorOffset < 0 || colorOffset > 15)
-            throw new Error("Invalid colorOffset: must be 0-15")
+        if (typeof offset !== "number" || offset < 0 || offset > 15)
+            throw new Error("Invalid offset: must be 0-15")
 
-        return { id, name, textureId, colorSchemeId, colorOffset }
+        return { id, name, textureId, colorSchemeId, offset }
     }
 
     // Decoding
@@ -248,8 +246,8 @@ class IdentityEncoder {
         // colorSchemeId: 10 bits
         this.push(bits, identity.colorSchemeId, 10)
 
-        // colorOffset: 4 bits
-        this.push(bits, identity.colorOffset, 4)
+        // offset: 4 bits
+        this.push(bits, identity.offset, 4)
 
         // Convert bits to bytes
         const bytes = new Uint8Array(Math.ceil(bits.length / 8))
@@ -298,12 +296,12 @@ class IdentityEncoder {
         const colorSchemeId = result.value
         cursor = result.cursor
 
-        // colorOffset: 4 bits
+        // offset: 4 bits
         result = this.unPush(bits, cursor, 4)
-        const colorOffset = result.value
+        const offset = result.value
         cursor = result.cursor
 
-        return { id, name, textureId, colorSchemeId, colorOffset }
+        return { id, name, textureId, colorSchemeId, offset }
     }
 
     private base45Encode(bytes: Uint8Array): string {
@@ -382,7 +380,7 @@ export default defineComponent ({
                 name: "",
                 textureId: 0, // 0-1023
                 colorSchemeId: 0, // 0-1023
-                colorOffset: 0, // 0-15
+                offset: 0, // 0-15
                 url: "https://jeffa.nl",
                 encodedString: "",
             } as Options,
