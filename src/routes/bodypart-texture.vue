@@ -586,7 +586,7 @@ export default defineComponent ({
                     
                 } as Record<string, string[]>
             },
-            dragData: null as null | { index: number, list: "enabled" | "disabled" },
+            dragData: null as null | { index: number},
             movementTimer: 0,
             movementAction: 200,
             catterPillar: null as Catterpillar | null,
@@ -673,7 +673,7 @@ export default defineComponent ({
         
 
         onDragStart(scheme: ColorScheme) {
-            this.dragData = { id: scheme.id }
+            this.dragData = { index: scheme.id }
         },
 
         onDrop(target: ColorScheme) {
@@ -681,7 +681,7 @@ export default defineComponent ({
             if (!this.dragData) return
 
             const draggedIndex = this.colorschemes.findIndex(
-                s => s.id === this.dragData!.id
+                s => s.id === this.dragData!.index
             )
             const targetIndex = this.colorschemes.findIndex(
                 s => s.id === target.id
@@ -838,7 +838,7 @@ export default defineComponent ({
         importSVGAsync(urlOrString: string, scope: paper.PaperScope) {
             return new Promise((resolve, reject) => {
                 try {
-                    scope.project.importSVG(urlOrString, (item) => {
+                    scope.project.importSVG(urlOrString, (item: paper.Item) => {
                         // if (this.options.textureType == "360") {
                         //     item.rotate(Math.random() * 360)
                         // }
@@ -1113,6 +1113,7 @@ export default defineComponent ({
                 const localOptions = JSON.parse(optionsString)
                 _.forOwn(this.options, (value,key) => {
                     if (localOptions[key]) {
+                        // @ts-expect-error Geen idee hoe dit te fixen
                         this.options[key] = localOptions[key]
                     }
                 })
@@ -1174,8 +1175,10 @@ export default defineComponent ({
 
             // Remove old paperScope
             this.paperScopes = this.paperScopes.filter(scope => {
+                // @ts-expect-error view._id bestaat wel, maar ts weet dat niet
                 const match = scope.project.view._id === paperScope.project.view._id
                 if (match) {
+                    // @ts-expect-error remove is gewoon een default JS functie, de TS definities kloppen hier niet
                     scope.remove()
                 }
                 return !match
@@ -1234,6 +1237,9 @@ export default defineComponent ({
                         item.getItems({
                             class: paperScope.Path
                         }).forEach(p => {
+                            if (!options) {
+                                return
+                            }
                             p.fillColor = new paperScope.Color(options.color2)
                         })
                     }
@@ -1250,12 +1256,12 @@ export default defineComponent ({
             this.colorschemes.push(newColorScheme)
             localStorage.setItem("colorschemes", JSON.stringify(this.colorschemes))
         },
-        removeColorScheme(scheme: {colors: Array<string>, disabled?: boolean}, event: Event) {
+        removeColorScheme(scheme: ColorScheme, event: Event) {
             event.stopPropagation()
             this.colorschemes = this.colorschemes.filter(s => s !== scheme)
             localStorage.setItem("colorschemes", JSON.stringify(this.colorschemes))
         },
-        selectColorScheme(scheme: {colors: Array<string>, disabled?: boolean}) {
+        selectColorScheme(scheme: ColorScheme) {
             this.options.color1 = scheme.colors[0]
             this.options.color2 = scheme.colors[1]
             this.updateImage()
