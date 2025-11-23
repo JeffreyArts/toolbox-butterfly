@@ -1,5 +1,6 @@
 import ActiveSurface from "./active-surface.vue"
 import ActiveSurfaceCatterpillar from "./active-surface-catterpillar.vue"
+import BodypartTexture from "./bodypart-texture.vue"
 import CatterpillarBlob from "./catterpillar-blob.vue"
 import CatterpillarEyes from "./catterpillar-eyes.vue"
 import CatterpillarFalling from "./catterpillar-falling.vue"
@@ -8,6 +9,7 @@ import CatterpillarMoving from "./catterpillar-moving.vue"
 import CatterpillarMoving2 from "./catterpillar-moving-2.vue"
 import CatterpillarMoving3 from "./catterpillar-moving-3.vue"
 import CatterpillarMoving4 from "./catterpillar-moving-4.vue"
+import ColorSampler from "./color-sampler.vue"
 import Door from "./door.vue"
 import DoorV2 from "./door-v2.vue"
 import FlagColors from "./flag-colors.vue"
@@ -43,6 +45,11 @@ const routes = [
         path: "/active-surface-catterpillar",
         name: "Active surface catterpillar",
         component: ActiveSurfaceCatterpillar
+    },
+    {
+        path: "/bodypart-texture",
+        name: "Bodypart texture",
+        component: BodypartTexture
     },
     {
         path: "/catterpillar-blob",
@@ -83,6 +90,11 @@ const routes = [
         path: "/catterpillar-moving-4",
         name: "Catterpillar moving 4",
         component: CatterpillarMoving4
+    },
+    {
+        path: "/color-sampler",
+        name: "Color sampler",
+        component: ColorSampler
     },
     {
         path: "/door",
