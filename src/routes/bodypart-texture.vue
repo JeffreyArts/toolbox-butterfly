@@ -108,7 +108,11 @@
                         <input type="number" min="0" max="15" id="offset" v-model="options.offset" @input="parseOffset"/>
                     </div>
                     <div class="option">
-                        <button class="button" @click="exportJSON()">Export JSON</button>
+                        <div class="row">
+
+                            <button class="button" @click="randomize()">Randomize</button>
+                            <button class="button" @click="exportJSON()">Export JSON</button>
+                        </div>
                     </div>
                 </div>  
                 <div class="option-group" name="Custom">
@@ -681,7 +685,41 @@ export default defineComponent ({
         window.removeEventListener("resize", this.updateImage)
     },
     methods: {
-        
+        randomize() {
+            // Pick random colorscheme
+            const enabledSchemes = this.enabledColorSchemes
+            if (enabledSchemes.length > 0) {
+                const randomScheme = enabledSchemes[Math.floor(Math.random() * enabledSchemes.length)]
+                this.originalColor1 = randomScheme.colors[0]
+                this.originalColor2 = randomScheme.colors[1]
+            }
+
+            // Pick random texture
+            const enabledCombinations = this.textureCombinations.filter(combination => !combination.disabled)
+            if (enabledCombinations.length > 0) {
+                const randomCombination = enabledCombinations[Math.floor(Math.random() * enabledCombinations.length)]
+                if (randomCombination["360"]) {
+                    this.options.textureType = "360"
+                    this.options.textureName = randomCombination["360"]
+                } else if (randomCombination.top && randomCombination.bottom) {
+                    this.options.textureType = "top"
+                    this.options.textureName = randomCombination.top
+                    this.options.texture2Type = "bottom"
+                    this.options.texture2Name = randomCombination.bottom
+                } else if (randomCombination.vert) {
+                    this.options.textureType = "vert"
+                    this.options.textureName = randomCombination.vert
+                }
+
+                this.options.stroke = randomCombination.stroke || false
+
+                this.options.offset = Math.floor(Math.random() * 16)
+                this.parseOffset()
+
+                this.updateMainImage(this.options.textureName, this.options.textureIndex)
+                this.updateImage()
+            }
+        },
         parseOffset() {
             const offset = this.options.offset
             if (offset == 0) {
