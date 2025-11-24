@@ -1070,8 +1070,10 @@ export default defineComponent ({
                 }
                 
                 this.catterPillar.mouth.paper.segments.forEach((segment, index) => {
+                    // @ts-expect-error segments bestaat wel
                     this.catterPillarMouth.segments[index] = segment
                 })
+                // @ts-expect-error smooth bestaat wel
                 this.catterPillarMouth.smooth({ type: "continuous"})
                 this.catterPillarMouth.position = this.catterPillar.mouth.paper.position 
                 this.catterPillarMouth.fillColor = new this.catterPillarScope.Color("#000")
