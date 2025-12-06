@@ -35,8 +35,8 @@
                         </i>
                     </div>
                     <div class="option">
-                        <label for="textureId">Texture ID:</label>
-                        <input type="number" id="textureId" v-model="options.textureId" min="0" max="1023" />
+                        <label for="textureIndex">Texture ID:</label>
+                        <input type="number" id="textureIndex" v-model="options.textureIndex" min="0" max="1023" />
                         <i class="info">
                             <span class="info-icon">?</span>
                             <span class="info-details">
@@ -45,8 +45,8 @@
                         </i>
                     </div>
                     <div class="option">
-                        <label for="colorSchemeId">Color Scheme ID:</label>
-                        <input type="number" id="colorSchemeId" v-model="options.colorSchemeId" min="0" max="1023" />
+                        <label for="colorSchemeIndex">Color Scheme ID:</label>
+                        <input type="number" id="colorSchemeIndex" v-model="options.colorSchemeIndex" min="0" max="1023" />
                         <i class="info">
                             <span class="info-icon">?</span>
                             <span class="info-details">
@@ -61,6 +61,24 @@
                             <span class="info-icon">?</span>
                             <span class="info-details">
                                 Number between 0 and 15.
+                            </span>
+                        </i>
+                    </div>
+                    <div class="option">
+                        <label>Radio input</label>
+                        <input type="radio" id="radio-v0" value="0" v-model="options.gender">
+                        <label for="radio-v0">
+                            Male
+                        </label>
+
+                        <input type="radio" id="radio-v1" value="1" v-model="options.gender">
+                        <label for="radio-v1">
+                            Female
+                        </label>
+                        <i class="info">
+                            <span class="info-icon">?</span>
+                            <span class="info-details">
+                                This will set the gender bit to either 0(male) or 1 (female)
                             </span>
                         </i>
                     </div>
@@ -98,10 +116,11 @@ import QR from "qrcode"
 interface Options {
     id: number // 29-bit: 23 bits seconds/4 + 6 bits random
     name: string // max 16 chars, letters A-Z/a-z + space
-    textureId: number // 0-1023
-    colorSchemeId: number // 0-1023
+    textureIndex: number // 0-1023
+    colorSchemeIndex: number // 0-1023
     offset: number // 0-15
     url: string
+    gender: number // 0 | 1
     encodedString: string
 }
 
@@ -111,9 +130,10 @@ const qrAlphaNumeric = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:"
 type IdentityField = {
   id: number;            // 29-bit: 23 bits seconds/4 + 6 bits random
   name: string;          // max 16 chars, letters A-Z/a-z + space
-  textureId: number;     // 0-1023
-  colorSchemeId: number; // 0-1023
-  offset: number;   // 0-15
+  textureIndex: number;     // 0-1023
+  colorSchemeIndex: number; // 0-1023
+  offset: number;        // 0-15
+  gender: number;        // 0 | 1
 };
 
 // Generate and encode identity to QR-ready Base45 string of 29 + 96 + 10 + 10 + 4 = 149 bits
@@ -149,28 +169,48 @@ class IdentityEncoder {
 
     // Encoding
     private validateIdentityJSON(json: IdentityField): IdentityField {
-        if (typeof json !== "object" || json === null)
+        if (typeof json !== "object" || json === null) {
             throw new Error("Input must be a non-null object")
+        }
 
-        const { id, name, textureId, colorSchemeId, offset } = json
 
-        if (typeof id !== "number" || id < 0 || id > 0x1FFFFFFF)
+        const { id, name, textureIndex, colorSchemeIndex, offset, gender } = json
+
+        // Check id
+        if (typeof id !== "number" || id < 0 || id > 0x1FFFFFFF) {
             throw new Error("Invalid id: must be 0-536870911 (29-bit)")
-
-        if (typeof name !== "string" || name.length > 16)
+        }
+        
+        // Check name 
+        if (typeof name !== "string" || name.length > 16) {
             throw new Error("Invalid name: must be string of max 16 chars")
+        }
 
-        if (!/^[A-Za-z ]*$/.test(name))
+        if (!/^[A-Za-z ]*$/.test(name)) {
             throw new Error("Invalid name: must contain only letters A-Z/a-z or space")
+        }
 
-        if (typeof textureId !== "number" || textureId < 0 || textureId > 1023)
-            throw new Error("Invalid textureId: must be 0-1023")
-        if (typeof colorSchemeId !== "number" || colorSchemeId < 0 || colorSchemeId > 1023)
-            throw new Error("Invalid colorSchemeId: must be 0-1023")
-        if (typeof offset !== "number" || offset < 0 || offset > 15)
+        // Check textureIndex
+        if (typeof textureIndex !== "number" || textureIndex < 0 || textureIndex > 1023) {
+            throw new Error("Invalid textureIndex: must be 0-1023")
+        }
+
+        // Check colorSchemeIndex
+        if (typeof colorSchemeIndex !== "number" || colorSchemeIndex < 0 || colorSchemeIndex > 1023){
+            throw new Error("Invalid colorSchemeIndex: must be 0-1023")
+        }
+
+        // Check offset
+        if (typeof offset !== "number" || offset < 0 || offset > 15) {
             throw new Error("Invalid offset: must be 0-15")
+        }
 
-        return { id, name, textureId, colorSchemeId, offset }
+        // Check gender
+        if (gender != 0 && gender != 1) {
+            throw new Error("Invalid gender: must be 0 (male) or 1 (female)")
+        }
+
+        return { id, name, textureIndex, colorSchemeIndex, offset, gender }
     }
 
     // Decoding
@@ -184,8 +224,8 @@ class IdentityEncoder {
         }
 
         // UPDATE: Totaal is nu 149 bits (was 147)
-        // 149 bits / 8 = 18,625 bytes → afgerond naar 19 bytes (nog steeds 19, maar krap aan!)
-        const minBytes = Math.ceil(149 / 8) // 19 bytes
+        // 150 bits / 8 = 18,750 bytes → afgerond naar 19 bytes (nog steeds 19, maar krap aan!)
+        const minBytes = Math.ceil(150 / 8) // 19 bytes
         
         const minLength = Math.ceil(minBytes * 3 / 2) 
         if (encodedString.length < minLength) {
@@ -228,7 +268,7 @@ class IdentityEncoder {
     }
 
     // Encoding
-    private bitPack(identity: IdentityField): Uint8Array {
+    private bitPack(identity: IdentityString): Uint8Array {
         const bits: number[] = []
 
         // ID: 29 bits
@@ -240,14 +280,17 @@ class IdentityEncoder {
             this.push(bits, this.encodeChar(c), 6)
         }
 
-        // textureId: 10 bits
-        this.push(bits, identity.textureId, 10)
+        // textureIndex: 10 bits
+        this.push(bits, identity.textureIndex, 10)
         
-        // colorSchemeId: 10 bits
-        this.push(bits, identity.colorSchemeId, 10)
+        // colorSchemeIndex: 10 bits
+        this.push(bits, identity.colorSchemeIndex, 10)
 
         // offset: 4 bits
         this.push(bits, identity.offset, 4)
+
+        // gender: 1 bit
+        this.push(bits, identity.gender, 1)
 
         // Convert bits to bytes
         const bytes = new Uint8Array(Math.ceil(bits.length / 8))
@@ -286,14 +329,14 @@ class IdentityEncoder {
         }
         name = name.trimEnd()
 
-        // textureId: 10 bits
+        // textureIndex: 10 bits
         result = this.unPush(bits, cursor, 10)
-        const textureId = result.value
+        const textureIndex = result.value
         cursor = result.cursor
 
-        // colorSchemeId: 10 bits
+        // colorSchemeIndex: 10 bits
         result = this.unPush(bits, cursor, 10)
-        const colorSchemeId = result.value
+        const colorSchemeIndex = result.value
         cursor = result.cursor
 
         // offset: 4 bits
@@ -301,7 +344,12 @@ class IdentityEncoder {
         const offset = result.value
         cursor = result.cursor
 
-        return { id, name, textureId, colorSchemeId, offset }
+        // gender: 1 bit
+        result = this.unPush(bits, cursor, 1)
+        const gender = result.value
+        cursor = result.cursor
+
+        return { id, name, textureIndex, colorSchemeIndex, offset, gender }
     }
 
     private base45Encode(bytes: Uint8Array): string {
@@ -332,6 +380,7 @@ class IdentityEncoder {
 
         return result
     }
+
     private base45Decode(str: string): Uint8Array {
         const chars = IdentityEncoder.BASE45_CHARS
         const bytes: number[] = []
@@ -378,9 +427,10 @@ export default defineComponent ({
             options: {
                 id: 0,
                 name: "",
-                textureId: 0, // 0-1023
-                colorSchemeId: 0, // 0-1023
+                textureIndex: 0, // 0-1023
+                colorSchemeIndex: 0, // 0-1023
                 offset: 0, // 0-15
+                gender: 0,
                 url: "https://jeffa.nl",
                 encodedString: "",
             } as Options,
