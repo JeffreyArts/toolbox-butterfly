@@ -34,51 +34,53 @@
                             </span>
                         </i>
                     </div>
-                    <div class="option">
-                        <label for="textureIndex">Texture ID:</label>
-                        <input type="number" id="textureIndex" v-model="options.textureIndex" min="0" max="1023" />
-                        <i class="info">
-                            <span class="info-icon">?</span>
-                            <span class="info-details">
-                                Number between 0 and 1023.
-                            </span>
-                        </i>
+                    <div class="option-row">
+                        <div class="option">
+                            <label for="textureIndex">Texture ID:</label>
+                            <input type="number" id="textureIndex" v-model="options.textureIndex" min="0" max="1023" />
+                            <i class="info">
+                                <span class="info-icon">?</span>
+                                <span class="info-details">
+                                    Number between 0 and 1023.
+                                </span>
+                            </i>
+                        </div>
+                        <div class="option">
+                            <label for="colorSchemeIndex">Color Scheme ID:</label>
+                            <input type="number" id="colorSchemeIndex" v-model="options.colorSchemeIndex" min="0" max="1023" />
+                            <i class="info">
+                                <span class="info-icon">?</span>
+                                <span class="info-details">
+                                    Number between 0 and 1023.
+                                </span>
+                            </i>
+                        </div>
+                        <div class="option">
+                            <label for="offset">Offset:</label>
+                            <input type="number" id="offset" v-model="options.offset" min="0" max="15" />
+                            <i class="info">
+                                <span class="info-icon">?</span>
+                                <span class="info-details">
+                                    Number between 0 and 15.
+                                </span>
+                            </i>
+                        </div>
                     </div>
                     <div class="option">
-                        <label for="colorSchemeIndex">Color Scheme ID:</label>
-                        <input type="number" id="colorSchemeIndex" v-model="options.colorSchemeIndex" min="0" max="1023" />
-                        <i class="info">
-                            <span class="info-icon">?</span>
-                            <span class="info-details">
-                                Number between 0 and 1023.
-                            </span>
-                        </i>
-                    </div>
-                    <div class="option">
-                        <label for="offset">Offset:</label>
-                        <input type="number" id="offset" v-model="options.offset" min="0" max="15" />
-                        <i class="info">
-                            <span class="info-icon">?</span>
-                            <span class="info-details">
-                                Number between 0 and 15.
-                            </span>
-                        </i>
-                    </div>
-                    <div class="option">
-                        <label>Radio input</label>
-                        <input type="radio" id="radio-v0" value="0" v-model="options.gender">
-                        <label for="radio-v0">
+                        <label>Gender</label>
+                        <input type="radio" id="gender-v0" value="0" v-model="options.gender">
+                        <label for="gender-v0">
                             Male
                         </label>
 
-                        <input type="radio" id="radio-v1" value="1" v-model="options.gender">
-                        <label for="radio-v1">
+                        <input type="radio" id="gender-v1" value="1" v-model="options.gender">
+                        <label for="gender-v1">
                             Female
                         </label>
                         <i class="info">
                             <span class="info-icon">?</span>
                             <span class="info-details">
-                                This will set the gender bit to either 0(male) or 1 (female)
+                                This will set the gender bit to either 0 (male) or 1 (female)
                             </span>
                         </i>
                     </div>
@@ -487,5 +489,15 @@ export default defineComponent ({
     border-radius: 4px;
     display: inline-block;
     translate: 10px 7px;
+}
+.option-row {
+    display: flex;
+    flex-flow: row;
+    gap: 16px;
+}
+
+.option-group pre {
+    overflow-x: auto;
+    padding-bottom: 16px;
 }
 </style>
