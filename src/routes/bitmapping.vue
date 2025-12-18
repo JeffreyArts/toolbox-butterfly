@@ -34,6 +34,20 @@
                             </span>
                         </i>
                     </div>
+
+
+                    <div class="option">
+                        <label for="seed">Seed:</label>
+                        <input type="text" id="seed" v-model="options.seed" />&nbsp;
+                        <button @click="parseSeed(options.seed)" class="button __isSmall">Parse</button>
+                            <i class="info">
+                                <span class="info-icon">?</span>
+                                <span class="info-details">
+                                    De identity string kan ook gegenereerd vanuit een input string.
+                                </span>
+                            </i>
+                    </div>
+
                     <div class="option-row">
                         <div class="option">
                             <label for="textureIndex">Texture ID:</label>
@@ -96,7 +110,7 @@
                 <div class="option-group" name="QR options" >
                     <div class="option">
                         <label for="url">Url:</label>
-                        <input type="text" id="url" v-model="options.url" placeholder="http://jeffa.nl?n=" />
+                        <input type="text" id="url" v-model="options.url" placeholder="http://jeffa.nl?i=" />
                         <i class="info">
                             <span class="info-icon">?</span>
                             <span class="info-details">
@@ -123,6 +137,7 @@ interface Options {
     offset: number // 0-15
     url: string
     gender: number // 0 | 1
+    seed: string
     encodedString: string
 }
 
@@ -167,6 +182,32 @@ class IdentityEncoder {
         this.validateIdentityString(encoded)
         const bytes = this.base45Decode(encoded)
         return this.bitUnpack(bytes)
+    }
+
+    async deriveIdentityFromHash(seed: string): Promise<IdentityField> {
+        const data = new TextEncoder().encode(seed)
+        const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", data))
+        let bitIndex = 0
+
+        function readBits(n: number): number {
+            let val = 0
+            for (let i = 0; i < n; i++) {
+                const byte = hash[Math.floor(bitIndex / 8)]
+                const bit = (byte >> (7 - (bitIndex % 8))) & 1
+                val = (val << 1) | bit
+                bitIndex++
+            }
+            return val
+        }
+
+        return {
+            id: this.generateId(),
+            name: "",
+            textureIndex: readBits(10),      // 0-1023
+            colorSchemeIndex: readBits(10),  // 0-1023
+            offset: readBits(4),             // 0-15
+            gender: readBits(1)              // 0 of 1
+        }
     }
 
     // Encoding
@@ -429,6 +470,7 @@ export default defineComponent ({
             options: {
                 id: 0,
                 name: "",
+                seed: "",
                 textureIndex: 0, // 0-1023
                 colorSchemeIndex: 0, // 0-1023
                 offset: 0, // 0-15
@@ -468,7 +510,16 @@ export default defineComponent ({
         this.options.id = this.encoder.generateId() // automatisch gegenereerd
     },
     methods: {
-        
+        async parseSeed(seed: string) {
+            const identity = new IdentityEncoder()
+            const identityJSON = await identity.deriveIdentityFromHash(seed)
+
+            this.options.textureIndex = identityJSON.textureIndex
+            this.options.colorSchemeIndex =  identityJSON.colorSchemeIndex
+            this.options.offset = identityJSON.offset
+            this.options.gender = identityJSON.gender
+            // console.log(hash,identity.deriveIdentityFromHash(hash))
+        }
     }
 })
 </script>
