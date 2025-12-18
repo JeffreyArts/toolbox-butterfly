@@ -40,12 +40,24 @@
                         <label for="seed">Seed:</label>
                         <input type="text" id="seed" v-model="options.seed" />&nbsp;
                         <button @click="parseSeed(options.seed)" class="button __isSmall">Parse</button>
-                            <i class="info">
-                                <span class="info-icon">?</span>
-                                <span class="info-details">
-                                    De identity string kan ook gegenereerd vanuit een input string.
-                                </span>
-                            </i>
+                        <i class="info">
+                            <span class="info-icon">?</span>
+                            <span class="info-details">
+                                De identity string kan ook gegenereerd vanuit een input string.
+                            </span>
+                        </i>
+
+                    </div>
+                    <div class="option">
+                        <label for="seed">Make up parsable seed:</label>
+                        <input type="text" id="seed" v-model="parsableSeed" />&nbsp;
+                        <button @click="makeUpParsableSeed()" class="button __isSmall">Make up</button>
+                        <i class="info">
+                            <span class="info-icon">?</span>
+                            <span class="info-details">
+                                Hulper functie om een string te maken die omgezet kan worden naar een valide identity.
+                            </span>
+                        </i>
                     </div>
 
                     <div class="option-row">
@@ -467,6 +479,7 @@ export default defineComponent ({
         return {
             encoder: new IdentityEncoder(),
             decodedString: "",
+            parsableSeed: "",
             options: {
                 id: 0,
                 name: "",
@@ -518,7 +531,30 @@ export default defineComponent ({
             this.options.colorSchemeIndex =  identityJSON.colorSchemeIndex
             this.options.offset = identityJSON.offset
             this.options.gender = identityJSON.gender
+            return identityJSON
+            
             // console.log(hash,identity.deriveIdentityFromHash(hash))
+        },
+        async makeUpParsableSeed() {
+            let base = "https://www.jeffreyarts.nl/"
+            let i = 0
+            let validMatch = false
+            while (!validMatch && i < 1000) {
+                i++
+                try {
+                    const seed = await this.parseSeed(base + i)
+                    if (seed.textureIndex < 100  && seed.colorSchemeIndex <100) {
+                        validMatch = true
+                        this.parsableSeed = base + i
+                        break
+                    }
+                } catch (e) {
+                    validMatch = true
+                    console.error(e)
+                }
+            }
+            this.parseSeed(base + i)
+            
         }
     }
 })
