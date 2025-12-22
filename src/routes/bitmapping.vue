@@ -95,23 +95,45 @@
                             </i>
                         </div>
                     </div>
-                    <div class="option">
-                        <label>Gender</label>
-                        <input type="radio" id="gender-v0" value="0" v-model="options.gender">
-                        <label for="gender-v0">
-                            Male
-                        </label>
+                    <div class="option-row">
+                        <div class="option">
+                            <label>Gender</label>
+                            <input type="radio" id="gender-v0" value="0" v-model="options.gender">
+                            <label for="gender-v0">
+                                Male
+                            </label>
 
-                        <input type="radio" id="gender-v1" value="1" v-model="options.gender">
-                        <label for="gender-v1">
-                            Female
-                        </label>
-                        <i class="info">
-                            <span class="info-icon">?</span>
-                            <span class="info-details">
-                                This will set the gender bit to either 0 (male) or 1 (female)
-                            </span>
-                        </i>
+                            <input type="radio" id="gender-v1" value="1" v-model="options.gender">
+                            <label for="gender-v1">
+                                Female
+                            </label>
+                            <i class="info">
+                                <span class="info-icon">?</span>
+                                <span class="info-details">
+                                    This will set the gender bit to either 0 (male) or 1 (female)
+                                </span>
+                            </i>
+                        </div>
+                        <div class="option">
+                            <label>Length</label>
+                            <input type="number" id="length" v-model="options.length" min="0" max="32" />
+                            <i class="info">
+                                <span class="info-icon">?</span>
+                                <span class="info-details">
+                                    This will set the length of the wurmpje
+                                </span>
+                            </i>
+                        </div>
+                        <div class="option">
+                            <label>Thickness</label>
+                            <input type="number" id="thickness" v-model="options.thickness" min="8" max="64" />
+                            <i class="info">
+                                <span class="info-icon">?</span>
+                                <span class="info-details">
+                                    This will set the thickness of the wurmpje
+                                </span>
+                            </i>
+                        </div>
                     </div>
                 </div>
                 
@@ -153,6 +175,8 @@ interface Options {
     url: string
     gender: number // 0 | 1
     seed: string
+    length: number // 3-20
+    thickness: number // 8-64
     encodedString: string
 }
 
@@ -160,12 +184,14 @@ interface Options {
 const qrAlphaNumeric = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:"
 
 type IdentityField = {
-  id: number;            // 29-bit: 23 bits seconds/4 + 6 bits random
-  name: string;          // max 16 chars, letters A-Z/a-z + space
+  id: number;               // 29-bit: 23 bits seconds/4 + 6 bits random
+  name: string;             // max 16 chars, letters A-Z/a-z + space
   textureIndex: number;     // 0-1023
   colorSchemeIndex: number; // 0-1023
-  offset: number;        // 0-15
-  gender: number;        // 0 | 1
+  offset: number;           // 0-15
+  length: number;           // 0-32
+  thickness: number;        // 0-64
+  gender: number;           // 0 | 1
 };
 
 // Generate and encode identity to QR-ready Base45 string of 29 + 96 + 10 + 10 + 4 = 149 bits
@@ -216,14 +242,24 @@ class IdentityEncoder {
             }
             return val
         }
+        const textureIndex = readBits(10)      // 0-1023
+        const colorSchemeIndex = readBits(10)  // 0-1023
+        const offset = readBits(4)             // 0-15
+        const gender = readBits(1)             // 0 of 1
+        let length = readBits(4)               // 0-15
+        let thickness = readBits(5)            // 8-64
 
+
+        
         return {
             id: this.generateId(),
             name: "",
-            textureIndex: readBits(10),      // 0-1023
-            colorSchemeIndex: readBits(10),  // 0-1023
-            offset: readBits(4),             // 0-15
-            gender: readBits(1)              // 0 of 1
+            textureIndex,
+            colorSchemeIndex,
+            offset,
+            gender,
+            length: length + 3,                 // 3-18
+            thickness: thickness + 8,           // 8-39
         }
     }
 
@@ -242,7 +278,7 @@ class IdentityEncoder {
             throw new Error("Input must be a non-null object")
         }
 
-        const { id, name, textureIndex, colorSchemeIndex, offset, gender } = json
+        const { id, name, textureIndex, colorSchemeIndex, offset, gender, length, thickness } = json
 
         // Check id
         if (typeof id !== "number" || id < 0 || id > 0x1FFFFFFF) {
@@ -277,8 +313,18 @@ class IdentityEncoder {
         if (gender != 0 && gender != 1) {
             throw new Error("Invalid gender: must be 0 (male) or 1 (female)")
         }
+        
+        // Check length
+        if (typeof length !== "number" || length < 3 || length > 20) {
+            throw new Error("Invalid length: must be 3-20")
+        }
 
-        return { id, name, textureIndex, colorSchemeIndex, offset, gender }
+        // Check thickness
+        if (typeof thickness !== "number" || thickness < 8 || thickness > 64) {
+            throw new Error("Invalid thickness: must be 8-64")
+        }
+
+        return { id, name, textureIndex, colorSchemeIndex, offset, gender, length, thickness }
     }
 
     // Decoding
@@ -291,9 +337,9 @@ class IdentityEncoder {
             }
         }
 
-        // UPDATE: Totaal is nu 149 bits (was 147)
-        // 150 bits / 8 = 18,750 bytes → afgerond naar 19 bytes (nog steeds 19, maar krap aan!)
-        const minBytes = Math.ceil(150 / 8) // 19 bytes
+        // UPDATE: Totaal is nu 160 bits (was 147)
+        // 160 bits / 8 = 20 bytes → afgerond naar 20 bytes
+        const minBytes = Math.ceil(160 / 8) // 20 bytes
         
         const minLength = Math.ceil(minBytes * 3 / 2) 
         if (encodedString.length < minLength) {
@@ -360,6 +406,12 @@ class IdentityEncoder {
         // gender: 1 bit
         this.push(bits, identity.gender, 1)
 
+        // length: 5 bits
+        this.push(bits, identity.length, 5)
+
+        // thickness: 6 bits
+        this.push(bits, identity.thickness, 6)
+
         // Convert bits to bytes
         const bytes = new Uint8Array(Math.ceil(bits.length / 8))
         bits.forEach((bit, i) => {
@@ -417,7 +469,17 @@ class IdentityEncoder {
         const gender = result.value
         cursor = result.cursor
 
-        return { id, name, textureIndex, colorSchemeIndex, offset, gender }
+        // length: 5 bits
+        result = this.unPush(bits, cursor, 5)
+        const length = result.value
+        cursor = result.cursor
+
+        // thickness: 6 bits
+        result = this.unPush(bits, cursor, 6)
+        const thickness = result.value
+        cursor = result.cursor
+
+        return { id, name, textureIndex, colorSchemeIndex, offset, gender, length, thickness }
     }
 
     private base45Encode(bytes: Uint8Array): string {
@@ -545,6 +607,9 @@ export default defineComponent ({
             this.options.colorSchemeIndex =  identityJSON.colorSchemeIndex
             this.options.offset = identityJSON.offset
             this.options.gender = identityJSON.gender
+            this.options.length = identityJSON.length
+            this.options.thickness = identityJSON.thickness
+            
             return identityJSON
             
             // console.log(hash,identity.deriveIdentityFromHash(hash))
