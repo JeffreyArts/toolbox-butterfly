@@ -51,7 +51,10 @@
                     <div class="option">
                         <label for="seed">Make up parsable seed:</label>
                         <input type="text" id="seed" v-model="parsableSeed" />&nbsp;
-                        <button @click="makeUpParsableSeed()" class="button __isSmall">Make up</button>
+                        <button @click="makeUpParsableSeed()" class="button __isSmall">
+                            <span v-if="!parsableSeed">Make up</span>    
+                            <span v-if="parsableSeed">Another one</span>    
+                        </button>
                         <i class="info">
                             <span class="info-icon">?</span>
                             <span class="info-details">
@@ -196,8 +199,10 @@ class IdentityEncoder {
         return this.bitUnpack(bytes)
     }
 
-    async deriveIdentityFromHash(seed: string): Promise<IdentityField> {
-        const data = new TextEncoder().encode(seed)
+
+    // --- Generate Identity from String ---
+    async deriveIdentityFromHash(string: string): Promise<IdentityField> {
+        const data = new TextEncoder().encode(string)
         const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", data))
         let bitIndex = 0
 
@@ -222,12 +227,20 @@ class IdentityEncoder {
         }
     }
 
+    stringToId(str: string): number {
+        let hash = 0
+        for (let i = 0; i < str.length; i++) {
+            hash = (hash * 31 + str.charCodeAt(i)) >>> 0 // 32-bit unsigned
+        }
+        // Limiteer tot 29 bits
+        return hash & 0x1FFFFFFF // 29 bits mask: 2^29 - 1
+    }
+
     // Encoding
     private validateIdentityJSON(json: IdentityField): IdentityField {
         if (typeof json !== "object" || json === null) {
             throw new Error("Input must be a non-null object")
         }
-
 
         const { id, name, textureIndex, colorSchemeIndex, offset, gender } = json
 
@@ -269,7 +282,7 @@ class IdentityEncoder {
     }
 
     // Decoding
-    private validateIdentityString(encodedString: string): string {
+    validateIdentityString(encodedString: string): string {
         const BASE45_CHARS = IdentityEncoder.BASE45_CHARS
 
         for (const c of encodedString) {
@@ -323,7 +336,7 @@ class IdentityEncoder {
     }
 
     // Encoding
-    private bitPack(identity: IdentityString): Uint8Array {
+    private bitPack(identity: IdentityField): Uint8Array {
         const bits: number[] = []
 
         // ID: 29 bits
@@ -480,6 +493,7 @@ export default defineComponent ({
             encoder: new IdentityEncoder(),
             decodedString: "",
             parsableSeed: "",
+            seedIndex: 0,
             options: {
                 id: 0,
                 name: "",
@@ -537,15 +551,16 @@ export default defineComponent ({
         },
         async makeUpParsableSeed() {
             let base = "https://www.jeffreyarts.nl/"
-            let i = 0
+            let i = this.seedIndex
             let validMatch = false
-            while (!validMatch && i < 1000) {
+            while (!validMatch && i < this.seedIndex+1000) {
                 i++
                 try {
                     const seed = await this.parseSeed(base + i)
                     if (seed.textureIndex < 100  && seed.colorSchemeIndex <100) {
                         validMatch = true
                         this.parsableSeed = base + i
+                        this.seedIndex = i
                         break
                     }
                 } catch (e) {
